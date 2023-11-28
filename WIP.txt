@@ -1,1 +1,22 @@
-(WIP) to add clean codes for GNC interfaces
+Structure of the folders
+
+-functions
+  -gnc
+  -hil
+  -inputGeneration
+  -modelGeneration
+  -noise
+  -postProcess
+  -rendering
+  -scattering
+  -utils
+-data
+  -scenarios
+    -S1_Eros
+    -S2_Itokawa
+    -S4_Bennu
+    -S5_Didymos
+    -S6_Moon
+    WIP.txt
+-input
+  -ALL.txt
