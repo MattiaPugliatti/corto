@@ -1,15 +1,15 @@
 Structure of the folders
 
 -functions
-  -gnc
-  -hil
-  -inputGeneration
-  -modelGeneration
-  -noise
-  -postProcess
+  -gnc (WIP) 
+  -hil (WIP)
+  -inputGeneration (WIP)
+  -modelGeneration (WIP)
+  -noise (WIP)
+  -postProcess (WIP)
   -rendering
-  -scattering
-  -utils
+  -scattering (WIP)
+  -utils (WIP)
 -data
   -scenarios
     -S1_Eros
