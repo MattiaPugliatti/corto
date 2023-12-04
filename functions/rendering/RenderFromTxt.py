@@ -56,12 +56,12 @@ def read_and_parse_config(filename):
     return body, geometry, scene, corto
 
 ######[1]  (START) INPUT SECTION (START) [1]######
-filename = '//Users//mattia//Library//CloudStorage//GoogleDrive-pugliatti.mattia@gmail.com//My Drive//OneDrive - Politecnico di Milano//09-Code//052-NavigationRegimes//Rendering Models//DeployCORTO//input//ALL.txt'
 filename = 'G:\\My Drive\\OneDrive - Politecnico di Milano\\09-Code\\052-NavigationRegimes\\Rendering Models\\DeployCORTO\\input\\ALL.txt'
+filename = 'ENTER THE PATH where your "ALL.txt" is saved '
+######[1]  (END) INPUT SECTION (END) [1]######
 
 body, geometry, scene, corto = read_and_parse_config(filename)
 
-######[1]  (END) INPUT SECTION (END) [1]######
 
 ######[2]  SETUP OBJ PROPERTIES [2]######
 
@@ -269,15 +269,13 @@ if scene['labelDepth'] == 1 or scene['labelID'] == 1 or scene['labelSlopes'] == 
         MakeDir(os.path.join(output_label_savepath,'depth'))
     if scene['labelID'] == 1:
         MakeDir(os.path.join(output_label_savepath,'IDmask'))
+        bpy.data.scenes["Scene"].node_tree.nodes["File Output"].base_path = output_label_savepath
+        bpy.data.scenes["Scene"].node_tree.nodes['File Output'].file_slots[0].path="\IDmask\Mask_1\######" 
+        bpy.data.scenes["Scene"].node_tree.nodes['File Output'].file_slots[1].path="\IDmask\Mask_1_shadow\######" 
+        bpy.data.scenes["Scene"].node_tree.nodes['File Output'].file_slots[2].path="\IDmask\Mask_2\######"
+        bpy.data.scenes["Scene"].node_tree.nodes['File Output'].file_slots[3].path="\IDmask\Mask_2_shadow\######"
     if scene['labelSlopes'] == 1:
         MakeDir(os.path.join(output_label_savepath,'slopes'))
-
-'''
-bpy.data.scenes["Scene"].node_tree.nodes["File Output"].base_path = home_path
-bpy.data.scenes["Scene"].node_tree.nodes['File Output'].file_slots[0].path="\Results\Images\######" 
-bpy.data.scenes["Scene"].node_tree.nodes['File Output'].file_slots[1].path="\Results\D1\######" 
-bpy.data.scenes["Scene"].node_tree.nodes['File Output'].file_slots[2].path="\Results\D2\######"
-'''
 
 ## Cyclic rendering
 SetKeyframe(1)
