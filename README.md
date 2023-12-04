@@ -1,4 +1,4 @@
-# corto
+# corto v.0.1
 The Celestial Object Rendering TOol (CORTO) is a bundle of codes that can be used to generate synthetic images-label pairs of celestial bodies.
 
 The Toy-probem scenarios can be downloaded at the following link
