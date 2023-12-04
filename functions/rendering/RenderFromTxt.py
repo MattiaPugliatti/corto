@@ -64,50 +64,46 @@ body, geometry, scene, corto = read_and_parse_config(filename)
 
 
 ######[2]  SETUP OBJ PROPERTIES [2]######
-
+# Set object names
+CAM = bpy.data.objects["Camera"]
+SUN = bpy.data.objects["Sun"]
 if body['name'] == 'S1_Eros':
     albedo = 0.15 # TBD
-    SUN_energy = 7
+    SUN_energy = 7 # TBD
     BODY = bpy.data.objects["Eros"]
     scale_BU = 10
     texture_name = 'Eros Grayscale'
 elif body['name'] == 'S2_Itokawa':
     albedo = 0.15 # TBD
-    SUN_energy = 5
+    SUN_energy = 5 # TBD
     BODY = bpy.data.objects["Itokawa"]
     scale_BU = 1
     texture_name = 'Itokawa Grayscale'
-elif body['name'] == 'S3':
-    a =1  
 elif body['name'] == 'S4_Bennu':
     albedo = 0.15 # TBD
-    SUN_energy = 7
+    SUN_energy = 7 # TBD
     BODY = bpy.data.objects["Bennu"]
     scale_BU = 1
     texture_name = 'Bennu_global_FB34_FB56_ShapeV28_GndControl_MinnaertPhase30_PAN_8bit'
 elif body['name'] == 'S5_Didymos':
     albedo = 0.15 # TBD
-    SUN_energy = 7
+    SUN_energy = 7 # TBD
     BODY = bpy.data.objects["Didymos"]
     BODY_Secondary = bpy.data.objects["Dimorphos"]
     scale_BU = 1
 elif body['name'] == 'S5_Didymos_Milani':
     albedo = 0.15 # TBD
-    SUN_energy = 7
+    SUN_energy = 7 # TBD
     BODY = bpy.data.objects["Didymos"]
     BODY_Secondary = bpy.data.objects["Dimorphos"]
     scale_BU = 1
 elif body['name'] == 'S6_Moon':
-    albedo = 0.169 
+    albedo = 0.169 # TBD
+    SUN_energy = 30 # TBD
     BODY = bpy.data.objects["Moon"]
-    SUN_energy = 30
     scale_BU = 1e-3
     displacemenet_name = 'ldem_16'
     texture_name = 'lroc_color_poles_32k'
-        
-# Set object names
-CAM = bpy.data.objects["Camera"]
-SUN = bpy.data.objects["Sun"]
 
 #I/O paths
 home_path = bpy.path.abspath("//")
@@ -269,13 +265,15 @@ if scene['labelDepth'] == 1 or scene['labelID'] == 1 or scene['labelSlopes'] == 
         MakeDir(os.path.join(output_label_savepath,'depth'))
     if scene['labelID'] == 1:
         MakeDir(os.path.join(output_label_savepath,'IDmask'))
-        bpy.data.scenes["Scene"].node_tree.nodes["File Output"].base_path = output_label_savepath
-        bpy.data.scenes["Scene"].node_tree.nodes['File Output'].file_slots[0].path="\IDmask\Mask_1\######" 
-        bpy.data.scenes["Scene"].node_tree.nodes['File Output'].file_slots[1].path="\IDmask\Mask_1_shadow\######" 
-        bpy.data.scenes["Scene"].node_tree.nodes['File Output'].file_slots[2].path="\IDmask\Mask_2\######"
-        bpy.data.scenes["Scene"].node_tree.nodes['File Output'].file_slots[3].path="\IDmask\Mask_2_shadow\######"
+        bpy.data.scenes["Scene"].node_tree.nodes["MaskOutput"].base_path = output_label_savepath
+        bpy.data.scenes["Scene"].node_tree.nodes['MaskOutput'].file_slots[0].path="\IDmask\Mask_1\######" 
+        bpy.data.scenes["Scene"].node_tree.nodes['MaskOutput'].file_slots[1].path="\IDmask\Mask_1_shadow\######" 
+        bpy.data.scenes["Scene"].node_tree.nodes['MaskOutput'].file_slots[2].path="\IDmask\Mask_2\######"
+        bpy.data.scenes["Scene"].node_tree.nodes['MaskOutput'].file_slots[3].path="\IDmask\Mask_2_shadow\######"
     if scene['labelSlopes'] == 1:
         MakeDir(os.path.join(output_label_savepath,'slopes'))
+        bpy.data.scenes["Scene"].node_tree.nodes["SlopeOutput"].base_path = output_label_savepath
+        bpy.data.scenes["Scene"].node_tree.nodes['SlopeOutput'].file_slots[0].path="\slopes\######" 
 
 ## Cyclic rendering
 SetKeyframe(1)
