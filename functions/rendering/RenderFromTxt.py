@@ -56,7 +56,7 @@ def read_and_parse_config(filename):
     return body, geometry, scene, corto
 
 ######[1]  (START) INPUT SECTION (START) [1]######
-filename = 'G:\\My Drive\\OneDrive - Politecnico di Milano\\09-Code\\052-NavigationRegimes\\Rendering Models\\DeployCORTO\\input\\ALL.txt'
+filename = '/Users/mattia/Desktop/corto/input/ALL.txt'
 filename = 'ENTER THE PATH where your "ALL.txt" is saved '
 ######[1]  (END) INPUT SECTION (END) [1]######
 
@@ -77,31 +77,31 @@ elif body['name'] == 'S2_Itokawa':
     albedo = 0.15 # TBD
     SUN_energy = 5 # TBD
     BODY = bpy.data.objects["Itokawa"]
-    scale_BU = 1
+    scale_BU = 0.2
     texture_name = 'Itokawa Grayscale'
 elif body['name'] == 'S4_Bennu':
     albedo = 0.15 # TBD
     SUN_energy = 7 # TBD
     BODY = bpy.data.objects["Bennu"]
-    scale_BU = 1
+    scale_BU = 0.2
     texture_name = 'Bennu_global_FB34_FB56_ShapeV28_GndControl_MinnaertPhase30_PAN_8bit'
 elif body['name'] == 'S5_Didymos':
     albedo = 0.15 # TBD
     SUN_energy = 7 # TBD
     BODY = bpy.data.objects["Didymos"]
     BODY_Secondary = bpy.data.objects["Dimorphos"]
-    scale_BU = 1
+    scale_BU = 0.2
 elif body['name'] == 'S5_Didymos_Milani':
     albedo = 0.15 # TBD
     SUN_energy = 7 # TBD
     BODY = bpy.data.objects["Didymos"]
     BODY_Secondary = bpy.data.objects["Dimorphos"]
-    scale_BU = 1
+    scale_BU = 0.5
 elif body['name'] == 'S6_Moon':
     albedo = 0.169 # TBD
     SUN_energy = 30 # TBD
     BODY = bpy.data.objects["Moon"]
-    scale_BU = 1e-3
+    scale_BU = 1
     displacemenet_name = 'ldem_16'
     texture_name = 'lroc_color_poles_32k'
 
@@ -155,7 +155,7 @@ bpy.context.scene.cycles.preview_samples = scene['viewSamples']
 ######[3]  EXTRACT DATA FROM TXT [3]######
 
 n_rows = len(open(os.path.join(txt_path)).readlines())
-n_col = 15
+n_col = 18
 
 from_txt = np.zeros((n_rows,n_col))
 
@@ -169,22 +169,45 @@ for line in file:
     
 file.close()
 
-et_SC = from_txt[:,0]
-R_pos_SUN = from_txt[:,4:7] # (km) 
-R_pos_SC = from_txt[:,8:11]*scale_BU # (km) 
+# [0] ID or ET
+# [1,2,3] Body pos [BU] and [4,5,6,7] orientation [-]
+# [8,9,10] Camera pos [BU] and [11,12,13,14] orientation [-]
+# [15,16,17] Sun pos [BU]
+
+# ID
+ID_pose = from_txt[:,0]
+# Body
+R_pos_BODY = from_txt[:,1:4]*scale_BU # (BU) 
+R_q_BODY = from_txt[:,4:8] # (-) 
+# Camera
+R_pos_SC = from_txt[:,8:11]*scale_BU # (BU) 
 R_q_SC = from_txt[:,11:15] # (-) 
+# Sun 
+R_pos_SUN = from_txt[:,15:18] # (BU) 
 
 ######[4] FUNCTIONS DEFINITIONS [4]######
 
 def PositionAll(ii):
+    POS_BODY_ii = R_pos_BODY[ii,:]
+    OR_BODY_ii = R_q_BODY[ii,:]
     POS_SC_ii = R_pos_SC[ii,:]
     OR_SC_ii = R_q_SC[ii,:]
     POS_SUN_ii = -R_pos_SUN[ii,:]
+    # BODY position
+    BODY.location[0] = POS_BODY_ii[0]
+    BODY.location[1] = POS_BODY_ii[1]
+    BODY.location[2] = POS_BODY_ii[2]
+    # BODY orientation
+    BODY.rotation_mode = 'QUATERNION'
+    BODY.rotation_quaternion[0] = OR_BODY_ii[0]
+    BODY.rotation_quaternion[1] = OR_BODY_ii[1]
+    BODY.rotation_quaternion[2] = OR_BODY_ii[2]
+    BODY.rotation_quaternion[3] = OR_BODY_ii[3]
     # CAM position
     CAM.location[0] = POS_SC_ii[0]
     CAM.location[1] = POS_SC_ii[1]
     CAM.location[2] = POS_SC_ii[2]
-    # CAM orientaion
+    # CAM orientation
     CAM.rotation_mode = 'QUATERNION'
     CAM.rotation_quaternion[0] = OR_SC_ii[0]
     CAM.rotation_quaternion[1] = OR_SC_ii[1]
