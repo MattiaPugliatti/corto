@@ -9,8 +9,7 @@ body_name = S1_Eros
  
 body_num = 1
 
-#geometry_name = 1_2023_07_09_300s_v3
-geometry_name = 2_2023_06_28_60s_v1
+geometry_name = Cloud_2023_12_06_20_16_48
 geometry_ii0 = 0
 
 scene_fov = 10
@@ -23,7 +22,5 @@ scene_scattering = 0
 scene_labelDepth = 0
 scene_labelID = 0
 scene_labelSlopes = 0
-
-#corto_savepath = C:\Users\Mattia Pugliatti\Desktop\TestRendering
 
 corto_savepath = /Users/mattia/Desktop/DEMO_CORTO/CORTO/output
