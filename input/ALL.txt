@@ -1,7 +1,6 @@
 
 body_name = S1_Eros
 #body_name = S2_Itokawa
-#body_name = S3_Vesta
 #body_name = S4_Bennu
 #body_name = S5_Didymos
 #body_name = S5_Didymos_Milani
@@ -23,4 +22,4 @@ scene_labelDepth = 0
 scene_labelID = 0
 scene_labelSlopes = 0
 
-corto_savepath = /Users/mattia/Desktop/DEMO_CORTO/CORTO/output
+corto_savepath = /Users/mattia/Desktop/corto/output
