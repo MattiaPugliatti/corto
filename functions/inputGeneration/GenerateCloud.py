@@ -143,4 +143,4 @@ for ii in range(0,nPoints,1):
   LABEL[ii,17] = z_Sun_dist[ii] 
 
 # Export the LABEL matrix for rendering in CORTO
-np.savetxt(output_timestamp + '.txt', LABEL)
+np.savetxt('Cloud_' + output_timestamp + '.txt', LABEL)
