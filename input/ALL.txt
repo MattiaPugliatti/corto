@@ -21,5 +21,8 @@ scene_scattering = 0
 scene_labelDepth = 0
 scene_labelID = 0
 scene_labelSlopes = 0
+# Choose between Filmic, Raw, AgX...
+scene_viewtransform = Filmic
+scene_filmexposure = 1
 
 corto_savepath = /Users/mattia/Desktop/corto/output
