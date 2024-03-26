@@ -1,2 +1,4 @@
 numpy 
-matplotlib
+matplotlib 
+scipy
+datetime
