@@ -1,3 +1,7 @@
+
+import sys
+sys.path.append("./src/")
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -7,9 +11,9 @@ from scipy.spatial.transform import Rotation as R
 
 ######[1]  (START) INPUT SECTION (START) [1]######
 
-nPoints = 5000 # [-]
-R_min = 10 # [BU]
-R_max = 40 # [BU]
+nPoints = 5000 # [-], Number of points in the cloud
+R_min = 10 # [BU], minimum distance from the body
+R_max = 40 # [BU], maximum distance from the body
 theta_min = 0 # [deg]
 theta_max = 180 # [deg]
 phi_min = -30 # [deg]
@@ -90,11 +94,11 @@ q_Cam_dist = np.zeros((nPoints,4)) # [-]
 for ii in range (0,nPoints,1):
   q_Cam_dist[ii,:] = GenerateQSC_origin(np.array([x_Cam_dist[ii],y_Cam_dist[ii],z_Cam_dist[ii]]))
 # Generate Body poses 
-x_Body_dist = np.zeros((nPoints,1)) # [BU]
-y_Body_dist = np.zeros((nPoints,1)) # [BU]
-z_Body_dist = np.zeros((nPoints,1)) # [BU]
-rot_Body_x_dist = np.zeros((nPoints,1)) # [deg]
-rot_Body_y_dist = np.zeros((nPoints,1)) # [deg]
+x_Body_dist = np.zeros((nPoints)) # [BU]
+y_Body_dist = np.zeros((nPoints)) # [BU]
+z_Body_dist = np.zeros((nPoints)) # [BU]
+rot_Body_x_dist = np.zeros((nPoints)) # [deg]
+rot_Body_y_dist = np.zeros((nPoints)) # [deg]
 rot_Body_z_dist = GenerateRandP(0,360,nPoints) # [deg]
 q_Body_dist = np.zeros((nPoints,4)) # [-]
 for ii in range (0,nPoints,1):
@@ -110,11 +114,12 @@ output_timestamp = GenerateTimestamp()
 
 # Display camera positions
 plt.figure()
-ax = plt.axes(projection='3d')
-ax.scatter(x_Cam_dist,y_Cam_dist,z_Cam_dist, c=theta_dist, cmap='viridis', linewidth=0.1);
+#ax.axes(projection='3d')
+plt.scatter(x_Cam_dist,y_Cam_dist,z_Cam_dist, c=theta_dist, cmap='viridis', linewidth=0.1)
 plt.axis('equal')
 plt.xlabel('X axis [BU]')
 plt.ylabel('Y axis [BU]')
+plt.show()
 
 # Generate LABEL matrix for export as .txt
 LABEL = np.zeros((nPoints,18))
