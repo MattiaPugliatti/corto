@@ -1,27 +1,34 @@
 """
-# CORTO - cortopy (da sostituire con nome per pip install)
+# CORTO - cortopy 
 
-INSERT NAME AND URL OF THE PROJECT
+https://github.com/MattiaPugliatti/corto
+
 ------------------------------------------------------------------------------
-INSERT DETAILS OF THE LICENSE HERE
+MIT License
+
+Copyright (c) 2023 Mattia Pugliatti
 ------------------------------------------------------------------------------
+
 """
 
 __all__ = (
     # should contain name of things that you can import from the module
     # just some dummy examples are provided here
-    "__version__",
+    "__0.1.1__",
     "Camera",
+    "Body",
     "Sun",
-    "Model",
-    "Renderer",
+    "State",
+    "Environment",
+    "Rendering"
+    "PostPro",
 )
 
 from ._version import __version__
-from ._Camera import Camera, AdditionalExampleClass
+from ._Camera import Camera
+from ._Body import Body
 from ._Sun import Sun
-from ._Model import Model
-from ._Renderer import Renderer
-
-# here you can add additional istructions that will be called when module
-# is imported: e.g., global variables declaration
+from ._State import State
+from ._Environment import Environment
+from ._Rendering import Rendering
+from ._PostPro import PostPro
