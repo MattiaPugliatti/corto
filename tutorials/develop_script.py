@@ -1,11 +1,17 @@
 
 import sys
 import numpy as np
-sys.path.append("./src/")
+sys.path.append('./cortopy')
+
+import cortopy as corto
+
+#from corto._Body import Body
+
+'''
 from corto.rendering.camera import camera
 
 properties = {}
-# These should be reat from .txt
+# These should be read from .txt
 properties['fov'] = 10
 properties['res_x'] = 1024
 properties['res_y'] = 2048
@@ -29,3 +35,4 @@ print(cam_1.get_Tint())
 print(cam_1.get_sensor())
 print(cam_1.get_K())
 
+'''

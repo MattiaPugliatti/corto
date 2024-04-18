@@ -7,10 +7,7 @@ from __future__ import annotations
 # useful for type-hinting
 from typing import (Any, List, Mapping, Optional, Tuple, Union, overload)
 
-from ._PrettyType import PrettyType
-
-#class name (what is indicated in __init__.py)
-class Camera(metaclass=PrettyType):
+class Camera():
 
     @classmethod # decorator for class methods
     def exampleClass(cls, arg1: int, arg2: int) -> Tuple[int, int]: # type hinting
@@ -99,9 +96,6 @@ class Camera(metaclass=PrettyType):
 
     def __init__(self, *args, **kwargs) -> None: # version that actually implements the different args checks and implementation
         ...
-
-class AdditionalExampleClass(metaclass=PrettyType):
-    ...
 
 '''
 import numpy as np
