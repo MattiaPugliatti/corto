@@ -9,11 +9,12 @@ path = 'C://Desktop/input_v1.txt'
 ### STATE ###
 
 states = corto.state.from_txt(path)
+properties = ReadFromSettings_txt
 
 ### SETUP THE SCENE ###
 
 BODY = corto.body.get_body('asteroid',from_txt)
-CAM1 = corto.camera.generate_camera('WFOV_NavCAM','from_txt')
+CAM1 = corto.camera.generate_camera('WFOV_NavCAM', properties)
 SUN = corto.sun.generate_sun('Sun','from_txt')
 REN = corto.rendering.generate_rendering('R1','from_txt')
 
