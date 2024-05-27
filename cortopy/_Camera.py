@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import numpy as np
-#import bpy 
+import bpy 
 
 from typing import (Any, List, Mapping, Optional, Tuple, Union, overload)
 
@@ -92,17 +92,19 @@ class Camera:
 
         # TODO: transform self.orientation from quaternion to default rotation in Blender
         #self.CAM_Blender.rotation_mode = 'QUATERNION'
-        '''
-        # Generate the Blende object
+        
+        # Generate the Blender object
+        # Add a camera
         bpy.ops.object.camera_add(enter_editmode=False, align='VIEW', location=self.position, rotation=(0, 0, 0), scale=(1, 1, 1))
         CAM = bpy.context.object
         CAM.name = self.name
-        # Setup FOV
+        # Setup its properties
         CAM.data.type = 'PERSP'
         CAM.data.lens_unit = 'FOV'
-        CAM.data.angle = self.fov * np.pi / 180
-        CAM.data.clip_start = self.clip_start # [m]
-        CAM.data.clip_end = self.clip_end # [m]
+        CAM.data.angle = self.fov # [rad]
+        CAM.data.clip_start = self.clip_start # [BU]
+        CAM.data.clip_end = self.clip_end # [BU]
+        # Setup related properties
         bpy.context.scene.cycles.film_exposure = self.film_exposure
         bpy.context.scene.view_settings.view_transform = self.viewtransform
         bpy.context.scene.render.pixel_aspect_x = 1 # TODO: generalize for different sensor aspect ratios
@@ -112,8 +114,8 @@ class Camera:
         bpy.context.scene.render.image_settings.color_mode = self.sensor
         bpy.context.scene.render.image_settings.color_depth = self.bit_encoding
         self.CAM_Blender = CAM
-        '''
-    #def __init__(self, *args, **kwargs) -> None: # version that actually implements the different args checks and implementation
+
+        #def __init__(self, *args, **kwargs) -> None: # version that actually implements the different args checks and implementation
 
     # Instance methods
     def get_name(self):
@@ -152,20 +154,17 @@ class Camera:
 
     def get_viewtransform(self):
         return self.viewtransform
-    
+        
     def set_position(self, position:np.array):
         self.position = position
-        #self.CAM_Blender.location = self.position
+        self.CAM_Blender.location = self.position
 
     def set_orientation(self, orientation:np.array):
         self.orientation = orientation
-        #self.CAM_Blender.rotation_mode = 'QUATERNION'
-        #self.CAM_Blender.rotation_quaternion = self.orientation
+        self.CAM_Blender.rotation_mode = 'QUATERNION'
+        self.CAM_Blender.rotation_quaternion = self.orientation
 
     def set_film_exposure(self, film_exposure:float):
         self.film_exposure = film_exposure
-        #self.CAM_Blender.film_exposure = self.film_exposure
-    
-
-
+        bpy.context.scene.cycles.film_exposure = self.film_exposure
  
