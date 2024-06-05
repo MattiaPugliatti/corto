@@ -40,7 +40,7 @@ properties_rendering = {
 cam_1 = corto.Camera('WFOV_1', properties_cam)
 sun = corto.Sun('Sun',properties_sun)
 body = corto.Body('Cube',properties_body)
-rendering_engine = corto.Rendering('R1',properties_rendering) # Rendering Engine
+rendering_engine = corto.Rendering(properties_rendering)
 
 print('---Camera--')
 print(cam_1.get_name())
@@ -78,13 +78,12 @@ body.set_orientation(np.array([0.707107,0.707107,0,0]))
 print(body.get_orientation())
 
 print('---Rendering engine--')
-print(rendering_engine.get_name())
 print(rendering_engine.get_engine())
 print(rendering_engine.get_device())
 print(rendering_engine.get_sample())
 print(rendering_engine.get_preview_sample())
 
-rendering_engine.set_sample(16)
+rendering_engine.set_sample(64)
 print(rendering_engine.get_sample())
 
 '''

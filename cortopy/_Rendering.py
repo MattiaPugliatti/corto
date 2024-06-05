@@ -58,7 +58,7 @@ class Rendering:
     # *************************************************************************
 
     #@overload
-    def __init__(self, name: str, properties: dict) -> None:
+    def __init__(self, properties: dict) -> None:
         """
         Description of the method
 
@@ -73,8 +73,6 @@ class Rendering:
             additional function and modules imported
 
         """
-        # Ren name
-        self.name = name
         # Ren properties
         self.engine = properties['engine']
         self.device = properties['device']
@@ -89,10 +87,6 @@ class Rendering:
         #def __init__(self, *args, **kwargs) -> None: # version that actually implements the different args checks and implementation
 
     # Instance methods
-    def get_name(self):
-        print(self)
-        return self.name
-
     def get_engine(self):
         return self.engine
     
