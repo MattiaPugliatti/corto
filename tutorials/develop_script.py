@@ -37,10 +37,14 @@ properties_rendering = {
 }
 
 ### SETUP THE SCENE ###
+# Setup bodies
 cam_1 = corto.Camera('WFOV_1', properties_cam)
 sun = corto.Sun('Sun',properties_sun)
 body = corto.Body('Cube',properties_body)
+# Setup rendering engine
 rendering_engine = corto.Rendering(properties_rendering)
+# Setup environmen
+ENV = corto.Environment(cam_1,body,sun, rendering_engine)
 
 print('---Camera--')
 print(cam_1.get_name())
@@ -86,8 +90,16 @@ print(rendering_engine.get_preview_sample())
 rendering_engine.set_sample(64)
 print(rendering_engine.get_sample())
 
+print(ENV.get_positions())
+print(ENV.get_orientations())
+
+state_cam = np.array([1,1,1,1,0,0,0])
+state_body = np.array([2,2,2,1,0,0,0])
+state_sun = np.array([3,3,3])
+
+state_env = np.concatenate((state_cam,state_body,state_sun))
+
 '''
-#ENV = corto.environment.generate_environment(CAM1,BODY,SUN, REN,'Scene')
 
 ### SHADING AND COMPOSITING ###
 
