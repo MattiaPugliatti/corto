@@ -1,4 +1,5 @@
 import sys, os
+import json
 import numpy as np
 
 sys.path.append(os.getcwd())
@@ -6,35 +7,19 @@ sys.path.append(os.getcwd())
 import cortopy as corto
 
 # These should be read from .txt, prototyping in python ad properties dictionary
-properties_cam = {
-    'fov': 10, # [deg]]
-    'res_x': 1024, # [px]
-    'res_y': 1024, # [px]
-    'film_exposure': 10, # [s]
-    'sensor': 'RGB',
-    'K': np.eye(3,dtype = float),
-    'clip_start': 0.1, # [BU]
-    'clip_end': 1e4, # [BU]
-    'bit_encoding': '8',
-    'viewtransform': 'Filmic',
-}
+print(os.getcwd())
+# Opening JSON file
+f = open('./tutorials/settings.json')
+# returns JSON object as 
+# a dictionary
+settings_json = json.load(f)
 
-properties_sun = {
-    'angle': 0.53, # [deg]
-    'energy': 7, # [W]
-}
-
-properties_body = {
-    'pass_index': 1, # [-]
-    'diffuse_bounces': 0, # [-]
-}
-
-properties_rendering = {
-    'engine': 'CYCLES',
-    'device': 'CPU',
-    'samples': 32, # [-]
-    'preview_samples': 4, # [-]
-}
+# check lenght of input data, if less than 4 not all structures were initialized.
+properties_cam = settings_json["camera_settings"]
+properties_cam["K"] = eval(properties_cam["K"])
+properties_sun = settings_json["sun_settings"]
+properties_body = settings_json["body_settings"]
+properties_rendering = settings_json["rendering_settings"]
 
 ### SETUP THE SCENE ###
 # Setup bodies
