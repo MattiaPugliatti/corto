@@ -58,19 +58,21 @@ class Environment:
     # *************************************************************************
 
     #@overload
-    def __init__(self, CAM:corto.Camera, BODY:corto.Body, SUN:corto.Sun, RENDERING:corto.Rendering) -> None:
+    def __init__(self, CAM: corto.Camera, BODY: corto.Body, SUN: corto.Sun, RENDERING: corto.Rendering) -> None:
         """
-        Description of the method
+        Constructor for the class CAM defining Blender camera
 
         Args:
-            name: name of the CAM object 
-            properties: properties of the CAM object
-
-        Raises:
-            which kind of exceptions
-
+            CAM       : instance of CAM class describing a camera
+            BODY      : instance of the class describing an object
+            SUN       : instance of SUN class describing a light source
+            RENDERING : instance of RENDERING class describing the rendering engine
+            
         See also:
-            additional function and modules imported
+        corto.Camera
+        corto.Body
+        corto.Sun
+        corto.Rendering
 
         """
         # ENV setup 
@@ -83,13 +85,34 @@ class Environment:
 
 
     # Instance methods
-    def get_positions(self):
+    def get_positions(self) -> Tuple[np.array, np.array, np.array]:
+        """
+        Get position of the BODY, CAM, and SUN instances in the scene
+
+        Returns:
+            tuple containing the vector of location of the BODY, CAM, and SUN instances in the scene
+
+        See also:
+        corto.Body.get_position()
+        corto.Camera.get_position()
+        corto.Sun.get_position()
+        """
         pos_body = self.body.get_position()
         pos_cam = self.camera.get_position()
         pos_sun = self.sun.get_position()
         return pos_body, pos_cam, pos_sun
 
-    def get_orientations(self):
+    def get_orientations(self) -> Tuple[np.array, np.array]:
+        """
+        Get orientation of the BODY and CAM instances in the scene
+
+        Returns:
+            tuple containing the quaternion describing the orientation of the BODY and CAM instances in the scene
+
+        See also:
+        corto.Body.get_orientation()
+        corto.Camera.get_orientation()
+        """
         quat_body = self.body.get_orientation()
         quat_cam = self.camera.get_orientation()
         return quat_body, quat_cam

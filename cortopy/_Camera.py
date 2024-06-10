@@ -109,7 +109,7 @@ class Camera:
         self.CAM_Blender = CAM
 
     # Instance methods
-    def get_name(self):
+    def get_name(self) -> str:
         """
         Get name of the CAM instance
 
@@ -125,7 +125,7 @@ class Camera:
         print(self)
         return self.name
 
-    def get_position(self):
+    def get_position(self) -> np.array:
         """
         Get position of the CAM instance
 
@@ -141,7 +141,7 @@ class Camera:
         
         return self.position
     
-    def get_orientation(self):
+    def get_orientation(self) -> np.array:
         """
         Get orientation of the CAM instance
 
@@ -157,7 +157,7 @@ class Camera:
         
         return self.orientation
 
-    def get_fov(self):
+    def get_fov(self) -> float:
         """
         Get fov property of the CAM instance
 
@@ -173,17 +173,17 @@ class Camera:
         
         return self.fov
     
-    def get_res(self):
+    def get_res(self) -> np.array:
         # TBD: resolution seems to be a property of the renderer.
         # as a consequence 2 cameras with different resolution cannot coexhist
         return self.res
 
-    def get_film_exposure(self):
+    def get_film_exposure(self) -> float:
         # TBD: film exposure seems to be a property of the renderer.
         # as a consequence 2 cameras with different exposures cannot coexhist
         return self.film_exposure
 
-    def get_K(self):
+    def get_K(self) -> np.array:
         """
         Get K matrix of the CAM instance
 
@@ -192,12 +192,12 @@ class Camera:
         """
         return self.K
 
-    def get_sensor(self):
+    def get_sensor(self) -> str:
         # TBD: sensor type seems to be a property of the renderer.
         # as a consequence 2 different sensor types cannot coexhist
         return self.sensor
 
-    def get_clip_start(self):
+    def get_clip_start(self) -> float:
         """
         Get clip_start property of the CAM instance
 
@@ -212,7 +212,7 @@ class Camera:
         
         return self.clip_start
 
-    def get_clip_end(self):
+    def get_clip_end(self) -> float:
         """
         Get clip_end property of the CAM instance
 
@@ -227,17 +227,17 @@ class Camera:
         
         return self.clip_end
 
-    def get_bit_encoding(self):
+    def get_bit_encoding(self) -> str:
         # TBD: bit encoding seems to be a property of the renderer.
         # as a consequence 2 cameras with different bit encoding cannot coexhist
         return self.bit_encoding
 
-    def get_viewtransform(self):
+    def get_viewtransform(self) -> str:
         # TBD: viewtransform seems to be a property of the environment.
         # as a consequence 2 cameras with different viewtransform cannot coexhist
         return self.viewtransform
         
-    def set_position(self, position:np.array):
+    def set_position(self, position: np.array) -> None:
         """
         Set position of the CAM instance
 
@@ -247,7 +247,7 @@ class Camera:
         self.position = position
         self.CAM_Blender.location = self.position
 
-    def set_orientation(self, orientation:np.array):
+    def set_orientation(self, orientation: np.array) -> None:
         """
         Set orientation of the CAM instance
 
@@ -258,7 +258,7 @@ class Camera:
         self.CAM_Blender.rotation_mode = 'QUATERNION'
         self.CAM_Blender.rotation_quaternion = self.orientation
 
-    def set_film_exposure(self, film_exposure:float):
+    def set_film_exposure(self, film_exposure: float) -> None:
         # TBD: film exposure seems to be a property of the renderer.
         # as a consequence 2 cameras with different exposures cannot coexhist
         self.film_exposure = film_exposure

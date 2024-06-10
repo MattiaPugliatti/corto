@@ -95,7 +95,7 @@ class Body:
     # *     Instance Methods
     # *************************************************************************
 
-    def get_name(self):
+    def get_name(self) -> str:
         """
         Get name of the BODY instance
 
@@ -111,7 +111,7 @@ class Body:
 
         return self.name
 
-    def get_position(self):
+    def get_position(self) -> np.array:
         """
         Get position of the BODY instance
 
@@ -127,7 +127,7 @@ class Body:
         
         return self.position
     
-    def get_orientation(self):
+    def get_orientation(self) -> np.array:
         """
         Get orientation of the BODY instance
 
@@ -143,7 +143,7 @@ class Body:
         
         return self.orientation
 
-    def get_scale(self):
+    def get_scale(self) -> float:
         """
         Get scale of the BODY instance
 
@@ -158,7 +158,7 @@ class Body:
 
         return self.scale
     
-    def get_passID(self):
+    def get_passID(self) -> int:
         """
         Get pass index of the BODY instance
 
@@ -173,7 +173,7 @@ class Body:
         
         return self.pass_index
     
-    def get_diffuse_bounces(self):
+    def get_diffuse_bounces(self) -> int:
         """
         Get diffuse bounces setting for the BODY instance
 
@@ -188,7 +188,7 @@ class Body:
             raise ValueError("parameter mismatch between workspaces.")
         return self.diffuse_bounces
         
-    def set_position(self, position:np.array):
+    def set_position(self, position: np.array) -> None:
         """
         Set position of the BODY instance
 
@@ -198,7 +198,7 @@ class Body:
         self.position = position
         self.BODY_Blender.location = self.position
 
-    def set_orientation(self, orientation:np.array):
+    def set_orientation(self, orientation: np.array) -> None:
         """
         Set orientation of the BODY instance
 
@@ -209,7 +209,7 @@ class Body:
         self.BODY_Blender.rotation_mode = 'QUATERNION'
         self.BODY_Blender.rotation_quaternion = self.orientation
 
-    def set_scale(self, scale:np.array):
+    def set_scale(self, scale: np.array) -> None:
         """
         Set scale of the BODY instance
 
@@ -219,7 +219,7 @@ class Body:
         self.scale = scale
         self.BODY_Blender.scale = self.scale
 
-    def set_passID(self, ID):
+    def set_passID(self, ID: int) -> None:
         """
         Set pass index of the BODY instance
 
@@ -230,7 +230,7 @@ class Body:
         self.BODY_Blender.pass_index = self.pass_index
 
 # anche questa funzione da vedere imho
-    def set_diffuse_bounces(self, par):
+    def set_diffuse_bounces(self, par: int) -> None:
         """
         Set diffuse bounces property for the BODY instance
 
