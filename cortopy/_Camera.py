@@ -59,18 +59,11 @@ class Camera:
     #@overload
     def __init__(self, name: str, properties: dict) -> None:
         """
-        Description of the method
+        Constructor for the class CAM defining Blender camera
 
         Args:
             name: name of the CAM object 
             properties: properties of the CAM object
-
-        Raises:
-            which kind of exceptions
-
-        See also:
-            additional function and modules imported
-
         """
         # CAM name
         self.name = name
@@ -115,56 +108,158 @@ class Camera:
         bpy.context.scene.render.image_settings.color_depth = self.bit_encoding
         self.CAM_Blender = CAM
 
-        #def __init__(self, *args, **kwargs) -> None: # version that actually implements the different args checks and implementation
-
     # Instance methods
     def get_name(self):
+        """
+        Get name of the CAM instance
+
+        Raises:
+            NameError : CAM instance has mismatching name
+
+        Returns:
+            name : name of the CAM object
+        """
+        if self.CAM_Blender.name != self.name:
+            raise NameError("Naming mismatch between workspaces.")
+
         print(self)
         return self.name
 
     def get_position(self):
+        """
+        Get position of the CAM instance
+
+        Raises:
+            ValueError : CAM instance has mismatching location
+
+        Returns:
+            position : vector containing the location of the CAM
+        """
+
+        if not all(self.CAM_Blender.location == self.position):
+            raise ValueError("Position mismatch between workspaces.")
+        
         return self.position
     
     def get_orientation(self):
+        """
+        Get orientation of the CAM instance
+
+        Raises:
+            ValueError : CAM instance has mismatching orientation
+
+        Returns:
+            orientation : vector containing the quaternion representing the orientation of the CAM
+        """
+        
+        if not all(self.CAM_Blender.rotation_quaternion == self.orientation):
+            raise ValueError("orientation mismatch between workspaces.")
+        
         return self.orientation
 
     def get_fov(self):
+        """
+        Get fov property of the CAM instance
+
+        Raises:
+            ValueError : CAM instance has mismatching fov property
+
+        Returns:
+            fov : scalar containing the fov of the CAM
+        """
+        
+        if self.CAM_Blender.data.angle != self.fov:
+            raise ValueError("property mismatch between workspaces.")
+        
         return self.fov
     
     def get_res(self):
+        # TBD: resolution seems to be a property of the renderer.
+        # as a consequence 2 cameras with different resolution cannot coexhist
         return self.res
 
     def get_film_exposure(self):
+        # TBD: film exposure seems to be a property of the renderer.
+        # as a consequence 2 cameras with different exposures cannot coexhist
         return self.film_exposure
 
     def get_K(self):
+        """
+        Get K matrix of the CAM instance
+
+        Returns:
+            K : K matrix of the CAM
+        """
         return self.K
-               
+
     def get_sensor(self):
+        # TBD: sensor type seems to be a property of the renderer.
+        # as a consequence 2 different sensor types cannot coexhist
         return self.sensor
 
     def get_clip_start(self):
+        """
+        Get clip_start property of the CAM instance
+
+        Raises:
+            ValueError : CAM instance has mismatching clip_start property
+
+        Returns:
+            clip_start : scalar containing the clip_start of the CAM
+        """
+        if self.CAM_Blender.data.clip_start != self.clip_start:
+            raise ValueError("property mismatch between workspaces.")
+        
         return self.clip_start
 
     def get_clip_end(self):
+        """
+        Get clip_end property of the CAM instance
+
+        Raises:
+            ValueError : CAM instance has mismatching clip_end property
+
+        Returns:
+            clip_end : scalar containing the clip_end of the CAM
+        """
+        if self.CAM_Blender.data.clip_end != self.clip_end:
+            raise ValueError("property mismatch between workspaces.")
+        
         return self.clip_end
 
     def get_bit_encoding(self):
+        # TBD: bit encoding seems to be a property of the renderer.
+        # as a consequence 2 cameras with different bit encoding cannot coexhist
         return self.bit_encoding
 
     def get_viewtransform(self):
+        # TBD: viewtransform seems to be a property of the environment.
+        # as a consequence 2 cameras with different viewtransform cannot coexhist
         return self.viewtransform
         
     def set_position(self, position:np.array):
+        """
+        Set position of the CAM instance
+
+        Args:
+            position : array containing 3d coordinates for the CAM
+        """
         self.position = position
         self.CAM_Blender.location = self.position
 
     def set_orientation(self, orientation:np.array):
+        """
+        Set orientation of the CAM instance
+
+        Args:
+            orientation : array containing quaternion expressing the orientation of the CAM
+        """
         self.orientation = orientation
         self.CAM_Blender.rotation_mode = 'QUATERNION'
         self.CAM_Blender.rotation_quaternion = self.orientation
 
     def set_film_exposure(self, film_exposure:float):
+        # TBD: film exposure seems to be a property of the renderer.
+        # as a consequence 2 cameras with different exposures cannot coexhist
         self.film_exposure = film_exposure
         bpy.context.scene.cycles.film_exposure = self.film_exposure
- 
