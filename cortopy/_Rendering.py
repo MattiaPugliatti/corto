@@ -60,18 +60,10 @@ class Rendering:
     #@overload
     def __init__(self, properties: dict) -> None:
         """
-        Description of the method
+        Constructor for the class RENDERING defining Blender rendering enginer properties
 
         Args:
-            name: name of the CAM object 
-            properties: properties of the CAM object
-
-        Raises:
-            which kind of exceptions
-
-        See also:
-            additional function and modules imported
-
+            properties: properties of the rendering engine
         """
         # Ren properties
         self.engine = properties['engine']
@@ -87,30 +79,102 @@ class Rendering:
         #def __init__(self, *args, **kwargs) -> None: # version that actually implements the different args checks and implementation
 
     # Instance methods
-    def get_engine(self):
+    def get_engine(self) -> str:
+        """
+        Get name of the RENDERING engine
+
+        Raises:
+            NameError : RENDERING instance has mismatching name
+
+        Returns:
+            name : name of the RENDERING engine
+        """
+        if bpy.context.scene.render.engine != self.engine:
+            raise NameError("Naming mismatch between workspaces.")
+
         return self.engine
     
-    def get_device(self):
+    def get_device(self) -> str:
+        """
+        Get device type set for rendering the scene
+
+        Raises:
+            NameError : mismatching device
+
+        Returns:
+            name : name of the rendering device
+        """
+        if bpy.context.scene.cycles.device != self.device:
+            raise NameError("device mismatch between workspaces.")
+
         return self.device
 
-    def get_sample(self):
+    def get_sample(self) -> int:
+        """
+        Get number of samples set to render the scene
+
+        Raises:
+            ValueError : number of samples used for rendereing has mismatching value between workspaces
+
+        Returns:
+            samples : numer of samples set to render the scene
+        """
+        if bpy.context.scene.cycles.samples != self.samples:
+            raise ValueError("samples mismatch between workspaces.")
+
         return self.samples
     
-    def get_preview_sample(self):
+    def get_preview_sample(self) -> int:
+        """
+        Get number of samples set to preview the scene
+
+        Raises:
+            ValueError : number of samples used for preview has mismatching value between workspaces
+
+        Returns:
+            samples : numer of samples set to preview the scene
+        """
+        if bpy.context.scene.cycles.preview_samples != self.preview_samples:
+            raise ValueError("samples mismatch between workspaces.")
+
         return self.preview_samples
     
-    def set_engine(self, engine):
+    def set_engine(self, engine: str) -> None:
+        """
+        Set name of the RENDERING engine
+
+        Args:
+            engine : name of the RENDERING engine
+        """
         self.engine = engine
         bpy.context.scene.render.engine = self.engine
 
-    def set_device(self, device):
+    def set_device(self, device: str) -> None:
+        """
+        Set device to run rendering
+
+        Args:
+            device : name of the RENDERING device
+        """
         self.device = device
         bpy.context.scene.cycles.device = self.device
 
-    def set_sample(self,samples):
+    def set_sample(self, samples: int) -> None:
+        """
+        Set number of samples used to render the scene
+
+        Args:
+            samples : number of samples used to render the scene
+        """
         self.samples = samples
         bpy.context.scene.cycles.samples = self.samples
     
-    def set_preview_sample(self,preview_samples):
+    def set_preview_sample(self, preview_samples: int) -> None:
+        """
+        Set number of samples used to preview the scene
+
+        Args:
+            preview_samples : number of samples used to preview the scene
+        """
         self.preview_samples = preview_samples
         bpy.context.scene.cycles.preview_samples = self.preview_samples
