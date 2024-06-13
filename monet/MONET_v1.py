@@ -1,5 +1,6 @@
 import bpy
 import random
+import shutil
 import os
 
 # This function assigns values to the main variables accordingly to the
@@ -8,7 +9,9 @@ def initialization(file_path = False):
 
     # Define the file path
     if not file_path:
-        file_path = bpy.path.abspath("//Input_file.txt")
+        current_directory = os.getcwd()
+        file_path = bpy.path.abspath(os.path.join(current_directory, "Input_file.txt"))
+        #file_path = bpy.path.abspath("//Input_file.txt")
 
     # Create empty dictionaries to store the variable assignments
     variables = {}
@@ -371,16 +374,20 @@ def loadTree(blendName):
     current_directory = os.getcwd()
     blendfile = os.path.join(current_directory, 'NodeTrees', blendName+".blend")
     #blendfile = os.path.join(bb, blendName+".blend")
-    section   = "\\NodeTree\\"
+    section   = "NodeTree"
 
     if blendName == "MaterialNodeTree" or blendName == "MaterialNodeTreeComet":
         object    = "TextureMap"
     elif blendName == "MaterialNodeTreeRocks":
         object = "RockTree"
 
-    filepath  = blendfile + section + object
-    directory = blendfile + section
-    filename  = object
+    filepath  = os.path.join(blendfile, section, object)
+    directory = os.path.join(blendfile, section)
+    filename  = os.path.join(object)
+
+    #filepath  = blendfile + section + object
+    #directory = blendfile + section
+    #filename  = object
 
     bpy.ops.wm.append(
         filepath=filepath,
@@ -433,9 +440,15 @@ def run(rock_count, rock_size, rock_count_big, rock_count_medium, rock_size_big,
     loadTree(blendName)
 
     if pathObj == False:
-        path = bpy.path.abspath("//input\\"+body_name+".obj")
+        current_directory = os.getcwd()
+        path = bpy.path.abspath(os.path.join(current_directory,"Bodies", body_name+".obj"))
+        #path = bpy.path.abspath("//input\\"+body_name+".obj")
     else:
         path = pathObj
+
+    if outputFolder == False:
+        outputFolder = "BlendFiles"
+        #path = bpy.path.abspath("//input\\"+body_name+".obj")
 
     # category = 1 --> asteroid with big boulders and a lot of them
     # category = 2 --> asteroid with rough and smooth surface
@@ -484,7 +497,7 @@ def run(rock_count, rock_size, rock_count_big, rock_count_medium, rock_size_big,
     new_file_name = body_name+".blend"
 
     # Get the directory of the current blend file
-    directory = os.path.dirname(current_file)+"\\"+outputFolder
+    directory = os.path.join(os.path.dirname(current_file), outputFolder)
 
     # Construct the new file path
     new_file_path = os.path.join(directory, new_file_name)
@@ -497,3 +510,17 @@ def run(rock_count, rock_size, rock_count_big, rock_count_medium, rock_size_big,
 if __name__ == "__main__":
     rock_count, rock_size, rock_count_big, rock_count_medium, rock_size_big, rock_size_medium, body_name, category, blendName, roughLevel, SmallCratersNum, BigCratersNum, color1, color2 = initialization()
     run(rock_count, rock_size, rock_count_big, rock_count_medium, rock_size_big, rock_size_medium, body_name, category, blendName, roughLevel, SmallCratersNum, BigCratersNum, color1, color2)
+
+    data = []
+    vec = [rock_count, rock_count_medium, rock_count_big, roughLevel, SmallCratersNum, BigCratersNum]
+    data.append(vec)
+
+    matrix_string = ""
+    for row in data:
+        row_string = ", ".join(map(str, row))
+        matrix_string += row_string + "\n"
+
+    # Write the matrix to a text file
+    file_path = 'matrix_output.txt'
+    with open(file_path, 'w') as file:
+        file.writelines(matrix_string)
