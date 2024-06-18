@@ -1,0 +1,14 @@
+body_name = sphere
+category = 1
+default = no
+rock_size_small = 0.001
+rock_size_medium = 0.008
+rock_size_large = 0.03
+rock_count_small = 0
+rock_count_medium = 0
+rock_count_large = 10
+roughLevel = 2
+SmallCratersNum = 10
+BigCratersNum = 4
+color1 = (0.007845,0.007845,0.007845,1)
+color2 = (0.023765,0.023765,0.023765,1)
