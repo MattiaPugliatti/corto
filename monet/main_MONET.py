@@ -11,7 +11,7 @@ def initialization(file_path = False):
     # Define the file path
     if not file_path:
         current_directory = os.getcwd()
-        file_path = bpy.path.abspath(os.path.join(current_directory, "Input_file.txt"))
+        file_path = bpy.path.abspath(os.path.join(current_directory, "monet","input","Input_file.txt"))
         #file_path = bpy.path.abspath("//Input_file.txt")
 
     # Create empty dictionaries to store the variable assignments
@@ -373,7 +373,7 @@ def main(category = 1):
 def loadTree(blendName):
     # Load material trees
     current_directory = os.getcwd()
-    blendfile = os.path.join(current_directory, 'NodeTrees', blendName+".blend")
+    blendfile = os.path.join(current_directory, 'monet','input','NodeTrees', blendName+".blend")
     #blendfile = os.path.join(bb, blendName+".blend")
     section   = "NodeTree"
 
@@ -442,7 +442,7 @@ def run(rock_count, rock_size, rock_count_big, rock_count_medium, rock_size_big,
 
     if pathObj == False:
         current_directory = os.getcwd()
-        path = bpy.path.abspath(os.path.join(current_directory,"Bodies", body_name+".obj"))
+        path = bpy.path.abspath(os.path.join(current_directory,"monet","input","obj", body_name+".obj"))
         #path = bpy.path.abspath("//input\\"+body_name+".obj")
     else:
         path = pathObj
