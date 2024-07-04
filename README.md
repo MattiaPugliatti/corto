@@ -10,16 +10,14 @@ https://drive.google.com/drive/folders/1K3e5MyQin6T9d_EXLG_gFywJt3I18r6H?usp=sha
 
 Once you pull the repository from GitHub and you get the data folder from Google Drive, its directory should look as follows: 
 
-- corto
-	- functions (from GitHub)
-  		- rendering
-    		- inputGeneration
-      		- gnc
-        - input (from GitHub)
-        	- ALL.txt	 
-	- data (downloaded from the above link on Google Drive)
-  		-scenarios
- 	- README.md (from GitHub)	
+-src/corto  (from GitHub)
+	- rendering
+	- gnc
+- settings (from GitHub)
+	- ALL.txt	 
+- data (downloaded from the above link on Google Drive)
+	-scenarios
+- README.md (from GitHub)	
 
 The "rendering" folder contains the main rendering Python function: RenderFromTxt.py. This function shall be run within the specific .blend of the scenario of interest (or from command), reading the setup expressed in the "All.txt" input file. The function position correctly positions the body, camera, and light in the scene for each setup defined within a geometry.txt file, which is contained in every scenario. For simplicity, a file is provided for all toy problems named "Cloud_2023_12_06_20_16_48.txt".
 
@@ -41,3 +39,28 @@ Lastly, the "scenarios" folder contains the .blend, texture, displacement, and .
 There are different ways to run a scenario. Let's say you generate your specific .txt with body-camera-Sun poses using the script within "inputGeneration". Then, you have to put your .txt in the folder of the specific scenario you want to render, and then modify the parameters of the "ALL.txt" accordingly. Lastly, you only need to specify the path of the "ALL.txt" in the rendering function.
 
 To run the scenario, open the .blend file you are interested, go to the scripting tab in Blender, and run the "RenderFromTxt.py" function. Blender will start rendering the scene you have specified with the settings in "ALL.txt" and with the poses in "Cloud_2023_12_06_20_16_48.txt". Alternatively, you can also run the .blend from command window. 
+
+# CORTO working directories structure (manual runs from Blender)
+
+-src/corto  (from GitHub)
+	- rendering
+	- gnc
+- settings (from GitHub)
+	- ALL.txt	 
+- data (downloaded from the above link on Google Drive)
+	-scenarios
+- README.md (from GitHub)	
+
+# CORTO future directories structure (automatic runs from VSC with cortopy)
+-venv
+-cortopy
+-input
+	- S01_Eros (example)
+		-scene
+		-geometry
+		-body
+-monet
+	-input 
+	-output
+-tutorials
+
