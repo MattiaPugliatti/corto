@@ -3,4 +3,4 @@
 data/*
 *.DS_Store
 *.whl
-.input/
+input/*
