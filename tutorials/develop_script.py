@@ -6,10 +6,11 @@ sys.path.append(os.getcwd())
 
 import cortopy as corto
 
+#TODO: put scene properties into State class
 # These should be read from .txt, prototyping in python ad properties dictionary
 print(os.getcwd())
 # Opening JSON file
-f = open('./tutorials/settings.json')
+f = open('./tutorials/scene.json')
 # returns JSON object as 
 # a dictionary
 settings_json = json.load(f)

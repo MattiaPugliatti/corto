@@ -91,6 +91,8 @@ class Camera:
         bpy.ops.object.camera_add(enter_editmode=False, align='VIEW', location=self.position, rotation=(0, 0, 0), scale=(1, 1, 1))
         CAM = bpy.context.object
         CAM.name = self.name
+        CAM.location = self.position
+        CAM.rotation_quaternion = self.orientation
         # Setup its properties
         CAM.data.type = 'PERSP'
         CAM.data.lens_unit = 'FOV'
