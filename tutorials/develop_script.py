@@ -6,11 +6,18 @@ sys.path.append(os.getcwd())
 
 import cortopy as corto
 
+scenario_path = os.path.join('input','S01_Eros')
+
 #TODO: put scene properties into State class
+
+scene_dir = os.path.join(scenario_path,'scene')
+geometry_dir = os.path.join(scenario_path,'geometry')
+body_dir = os.path.join(scenario_path,'body')
+
 # These should be read from .txt, prototyping in python ad properties dictionary
 print(os.getcwd())
 # Opening JSON file
-f = open('./tutorials/scene.json')
+f = open(os.path.join(scene_dir,'scene.json'))
 # returns JSON object as 
 # a dictionary
 settings_json = json.load(f)
