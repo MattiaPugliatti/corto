@@ -100,6 +100,16 @@ class Camera:
         CAM.data.clip_start = self.clip_start # [BU]
         CAM.data.clip_end = self.clip_end # [BU]
         # Setup related properties
+        self.toBlender()
+        self.CAM_Blender = CAM
+
+    # Instance methods
+    def toBlender(self) -> None:
+        """
+        Push parameters of this instance of CAM to Blender environment. 
+        Useful to load in Blender parameters of an instance of Camera class without having to reinitialize it.
+        """
+        # Setup related properties
         bpy.context.scene.cycles.film_exposure = self.film_exposure
         bpy.context.scene.view_settings.view_transform = self.viewtransform
         bpy.context.scene.render.pixel_aspect_x = 1 # TODO: generalize for different sensor aspect ratios
@@ -108,9 +118,8 @@ class Camera:
         bpy.context.scene.render.resolution_y = self.res[1]
         bpy.context.scene.render.image_settings.color_mode = self.sensor
         bpy.context.scene.render.image_settings.color_depth = self.bit_encoding
-        self.CAM_Blender = CAM
 
-    # Instance methods
+
     def get_name(self) -> str:
         """
         Get name of the CAM instance
@@ -176,13 +185,36 @@ class Camera:
         return self.fov
     
     def get_res(self) -> np.array:
-        # TBD: resolution seems to be a property of the renderer.
-        # as a consequence 2 cameras with different resolution cannot coexhist
+        """
+        Get resoultion of the CAM instance
+
+        Raises:
+            ValueError : CAM instance has mismatching resoultion
+
+        Returns:
+            resolution : vector containing the x-y resolution of the CAM
+        """
+        
+        resolution = np.array([bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y]) 
+        if not all(self.res == resolution):
+            raise ValueError("resolution mismatch between workspaces.")
+        
         return self.res
 
     def get_film_exposure(self) -> float:
-        # TBD: film exposure seems to be a property of the renderer.
-        # as a consequence 2 cameras with different exposures cannot coexhist
+        """
+        Get exposure property of the CAM instance
+
+        Raises:
+            ValueError : CAM instance has mismatching exposure property
+
+        Returns:
+            exposure : scalar containing the exposure of the CAM
+        """
+        
+        if bpy.context.scene.cycles.film_exposure != self.film_exposure:
+            raise ValueError("property mismatch between workspaces.")
+        
         return self.film_exposure
 
     def get_K(self) -> np.array:
@@ -195,8 +227,17 @@ class Camera:
         return self.K
 
     def get_sensor(self) -> str:
-        # TBD: sensor type seems to be a property of the renderer.
-        # as a consequence 2 different sensor types cannot coexhist
+        """
+        Get sensor type of the CAM instance
+
+        Raises:
+            ValueError : CAM instance has mismatching sensor type
+
+        Returns:
+            sensor : sensor type of the CAM object
+        """
+        if self.sensor != bpy.context.scene.render.image_settings.color_mode:
+            raise NameError("sensor type mismatch between workspaces.")
         return self.sensor
 
     def get_clip_start(self) -> float:
@@ -230,13 +271,33 @@ class Camera:
         return self.clip_end
 
     def get_bit_encoding(self) -> str:
-        # TBD: bit encoding seems to be a property of the renderer.
-        # as a consequence 2 cameras with different bit encoding cannot coexhist
+        """
+        Get sensor bit encording of the CAM instance
+
+        Raises:
+            ValueError : CAM instance has mismatching bit encoding
+
+        Returns:
+            bit_encoding : bit encoding of the CAM object
+        """
+        if self.bit_encoding != bpy.context.scene.render.image_settings.bit_encoding:
+            raise NameError("sensor bit encoding mismatch between workspaces.")
+        
         return self.bit_encoding
 
     def get_viewtransform(self) -> str:
-        # TBD: viewtransform seems to be a property of the environment.
-        # as a consequence 2 cameras with different viewtransform cannot coexhist
+        """
+        Get viewtransform of the CAM instance
+
+        Raises:
+            ValueError : CAM instance has mismatching viewtransform
+
+        Returns:
+            viewtransform : viewtranform of the CAM object
+        """
+        if self.viewtransform != bpy.context.scene.view_settings.view_transform:
+            raise NameError("sensor viewtransform mismatch between workspaces.")
+        
         return self.viewtransform
         
     def set_position(self, position: np.array) -> None:
@@ -261,7 +322,11 @@ class Camera:
         self.CAM_Blender.rotation_quaternion = self.orientation
 
     def set_film_exposure(self, film_exposure: float) -> None:
-        # TBD: film exposure seems to be a property of the renderer.
-        # as a consequence 2 cameras with different exposures cannot coexhist
+        """
+        Set exposure of the film
+
+        Args:
+            film_exposure : float describing film_exposure
+        """
         self.film_exposure = film_exposure
         bpy.context.scene.cycles.film_exposure = self.film_exposure

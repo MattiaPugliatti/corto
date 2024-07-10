@@ -86,7 +86,8 @@ class Body:
         BODY.scale = self.scale # [-]
         # questa proprietà non dovrebbe andare in scena? non mi sembra una cosa tipica del corpo 
         # i.e., cambiandola per uno la cambi per tutti e rimane settata quella dell'ultimo oggetto creato
-        bpy.context.scene.cycles.diffuse_bounces = self.diffuse_bounces # [-]
+        # bpy.context.scene.cycles.diffuse_bounces = self.diffuse_bounces # [-]
+        
         self.BODY_Blender = BODY
 
         #def __init__(self, *args, **kwargs) -> None: # version that actually implements the different args checks and implementation

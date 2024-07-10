@@ -57,13 +57,16 @@ class Rendering:
     # *     Constructors & Destructors
     # *************************************************************************
 
-    #@overload
     def __init__(self, properties: dict) -> None:
         """
         Constructor for the class RENDERING defining Blender rendering enginer properties
 
         Args:
-            properties: properties of the rendering engine
+            properties: properties of the rendering engine, including
+                - engine
+                - device
+                - samples
+                - preview_samples
         """
         # Ren properties
         self.engine = properties['engine']
@@ -71,14 +74,23 @@ class Rendering:
         self.samples = properties['samples']
         self.preview_samples = properties['preview_samples']
         # Generate the Blender object
+        self.toBlender()
+
+        #def __init__(self, *args, **kwargs) -> None: # version that actually implements the different args checks and implementation
+
+    # Instance methods
+    def toBlender(self) -> None:
+        """
+        Push parameters of this instance of Engine to Blender environment. 
+        Useful to load in Blender parameters of an instance of Engine class without having to reinitialize it.
+
+        """
+        # Generate the Blender object
         bpy.context.scene.render.engine = self.engine
         bpy.context.scene.cycles.device = self.device
         bpy.context.scene.cycles.samples = self.samples
         bpy.context.scene.cycles.preview_samples = self.preview_samples
 
-        #def __init__(self, *args, **kwargs) -> None: # version that actually implements the different args checks and implementation
-
-    # Instance methods
     def get_engine(self) -> str:
         """
         Get name of the RENDERING engine
