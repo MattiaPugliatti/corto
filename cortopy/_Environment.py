@@ -7,6 +7,7 @@ import mathutils
 
 from typing import (Any, List, Mapping, Optional, Tuple, Union, overload)
 import cortopy as corto
+
 class Environment:
     """
     Sun class
@@ -102,7 +103,7 @@ class Environment:
         pos_sun = self.sun.get_position()
         return pos_body, pos_cam, pos_sun
 
-    def get_orientations(self) -> Tuple[np.array, np.array]:
+    def get_orientations(self) -> Tuple[np.array, np.array] :
         """
         Get orientation of the BODY and CAM instances in the scene
 
@@ -117,16 +118,26 @@ class Environment:
         quat_cam = self.camera.get_orientation()
         return quat_body, quat_cam
     
-    def PositionAll(self, state:np.array):
+    def PositionAll(self, state: corto.State, index: int = 0) -> None :
+        """
+        Set position and orientation of BODY, CAM, and SUN instances in the scene
+
+        Args:
+            state: instance of cortopy.State class containing scene, geometry, and body settings
+            index: (optional) geometry config file may contain multiple configurations, this index selects a specific sample, by default it gathers the first one available.
+        """
         #TODO: add multi-body capability
         # Unpack relative poses from the state
-        pose_cam = state[8:15]
-        pose_body = state[1:8]
-        pos_sun = state[15:18]
+        position_cam = state.geometry['camera']['position'][index]
+        orientation_cam = state.geometry['camera']['orientation'][index]
+        position_body = state.geometry['body']['position'][index]
+        orientation_body = state.geometry['body']['orientation'][index]
+        position_sun = state.geometry['sun']['position'][index]
+
         # Set bodies positions and orientations
-        self.camera.set_position = pose_cam[0:4]
-        self.camera.set_orientation = pose_cam[4:8]
-        self.body.set_position = pose_body[0:4]
-        self.body.set_orientation = pose_body[4:8]
-        self.sun.set_position = pos_sun[0:4]
+        self.camera.set_position = position_cam
+        self.camera.set_orientation = orientation_cam
+        self.body.set_position = position_body
+        self.body.set_orientation = orientation_body
+        self.sun.set_position = position_sun
         return

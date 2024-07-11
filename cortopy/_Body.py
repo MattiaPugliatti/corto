@@ -68,16 +68,22 @@ class Body:
         """
         # BODY name
         self.name = name
-        # BODY pose
-        self.position = np.array([0,0,0])
-        self.orientation = np.array([1,0,0,0])
-        self.scale = np.array([1,1,1])
+
         # BODY properties
         self.pass_index = properties['pass_index']
         self.diffuse_bounces = properties['diffuse_bounces']
         # Generate the Blender object
 
+
+        # BODY pose
+        self.position = np.array([0,0,0])
+        self.orientation = np.array([1,0,0,0])
+        self.scale = np.array([1,1,1])
+
+        # creation of generic cube should be avoided if model is available! should be specific .blend
         bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='WORLD', location=self.position, scale=self.scale)
+        
+        # body properties:
         BODY = bpy.data.objects[self.name]
         BODY.location = self.position # [BU]
         BODY.rotation_mode = 'QUATERNION'
