@@ -113,7 +113,7 @@ class Sun:
             position : vector containing the location of the SUN
         """
 
-        if not all(self.SUN_Blender.location == self.position):
+        if not all(np.array(self.SUN_Blender.location) == self.position):
             raise ValueError("Position mismatch between workspaces.")
         
         return self.position
@@ -128,7 +128,9 @@ class Sun:
         Returns:
             orientation : vector containing the quaternion representing the orientation of the SUN
         """
-        if not all(self.SUN_Blender.rotation_quaternion == self.orientation):
+
+        print(type(self.SUN_Blender.rotation_quaternion))
+        if not all(np.array(self.SUN_Blender.rotation_quaternion) == self.orientation):
             raise ValueError("orientation mismatch between workspaces.")
         
         return self.orientation

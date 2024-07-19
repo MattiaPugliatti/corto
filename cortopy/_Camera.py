@@ -178,9 +178,10 @@ class Camera:
         Returns:
             fov : scalar containing the fov of the CAM
         """
-        print(self.CAM_Blender.data.angle)
-        print(self.fov)
-        if self.CAM_Blender.data.angle != self.fov:
+
+        five_digits_fov_Blender = "{:.5f}".format(self.CAM_Blender.data.angle)
+        five_digits_fov_corto = "{:.5f}".format(self.fov)
+        if five_digits_fov_Blender != five_digits_fov_corto:
             raise ValueError("property mismatch between workspaces.")
         
         return self.fov

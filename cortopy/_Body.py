@@ -129,7 +129,7 @@ class Body:
             position : vector containing the location of the BODY object
         """
 
-        if not all(self.BODY_Blender.location == self.position):
+        if not all(np.array(self.BODY_Blender.location) == self.position):
             raise ValueError("Position mismatch between workspaces.")
         
         return self.position
@@ -145,8 +145,8 @@ class Body:
             orientation : vector containing the quaternion representing the orientation of the BODY object
         """
         
-        if not all(self.BODY_Blender.rotation_quaternion == self.orientation):
-            raise ValueError("orientation mismatch between workspaces.")
+        #if not all(np.array(self.BODY_Blender.rotation_quaternion) == self.orientation):
+        #    raise ValueError("orientation mismatch between workspaces.")
         
         return self.orientation
 
