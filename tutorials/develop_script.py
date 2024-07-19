@@ -32,15 +32,17 @@ rendering_engine = corto.Rendering(properties_rendering)
 # Setup environmen
 ENV = corto.Environment(cam, body, sun, rendering_engine)
 
-print(State.geometry["sun"]["position"])
-print(State.geometry["body"]["position"])
-print(State.geometry["camera"]["position"])
+print('*****')
 
-state_cam = np.array([1,1,1,1,0,0,0])
-state_body = np.array([2,2,2,1,0,0,0])
-state_sun = np.array([3,3,3])
-state_env = np.concatenate((state_cam,state_body,state_sun))
+ENV.PositionAll(State,index=0)
+ENV.RenderOne('',index=0)
 
+print(ENV.get_positions())
+
+ENV.PositionAll(State,index=1)
+ENV.RenderOne('',index=0)
+
+print(ENV.get_positions())
 
 ### TEST GET and SET methods ###
 
@@ -56,16 +58,12 @@ print(cam.get_K())
 
 print('Previous position: \n')
 print(cam.get_position())
-print('Next position: \n')
-cam.set_position(np.array([1,0,0]))
-print(cam.get_position())
 
 print('---Sun--')
 print(sun.get_name())
-print(sun.get_position())
 print(sun.get_orientation())
 
-sun.set_position(np.array([10,25,0]))
+#sun.set_position(np.array([10,25,0]))
 
 print(sun.get_position())
 print(sun.get_orientation())
@@ -75,7 +73,7 @@ print(body.get_name())
 print(body.get_position())
 print(body.get_orientation())
 
-body.set_orientation(np.array([0.707107,0.707107,0,0]))
+#body.set_orientation(np.array([0.707107,0.707107,0,0]))
 
 print(body.get_orientation())
 
@@ -88,8 +86,6 @@ print(rendering_engine.get_preview_sample())
 rendering_engine.set_sample(64)
 print(rendering_engine.get_sample())
 
-print(ENV.get_positions())
-print(ENV.get_orientations())
 
 '''
 
