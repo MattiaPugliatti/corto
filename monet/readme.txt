@@ -1,11 +1,24 @@
 % -------------------------------------------How to run MONET--------------------------------------------------------------------------
 % Author: Carmine Buonagura
 
+0) Be sure that the add-on "Add Mesh: Extra Objects" is active
 1) Download the Blend files from https://drive.google.com/drive/folders/1K3e5MyQin6T9d_EXLG_gFywJt3I18r6H?usp=sharing and put them in the "monet/input/NodeTrees" folder
 2) Load the desired .obj file in the "obj" folder
 3) Change the morphological features properties in "Input_file.txt" in the input folder. Do not forget to change the "body_name" in Input_file and set it equal to the loaded obj file in 2)
 4) Run main_MONET.py
 5) Enjoy your generated model :)
+
+If you want to run from terminal, position yourself in the corto directory and then:
+
+Mac:
+Blender "directory of a blend file named blendFile.blend" -P monet/main_MONET.py
+
+Example -> Blender monet/blendFile.blend -P monet/main_MONET.py
+
+Windows:
+"Directory of blend.exe" -b "directory of a blend file named blendFile.blend" -P "directory main_MONET.py"
+
+Example --> “C:\Program Files\Blender Foundation\Blender 4.1.1\blender” -b “monet/blendFile.blend” -P  “monet/main_MONET.py”
 
 
 % -------------------------------------------Folders-----------------------------------------------------------------------------------

@@ -132,7 +132,7 @@ def particles_system(obj, count, crater_size, random_size, collection):
         # Change the parameters (number, size, orientation, etc.)
         settings = part.settings
         settings.type = 'HAIR'
-        settings.count = count
+        settings.count = int(count)
         settings.render_type = 'COLLECTION'
         settings.instance_collection = bpy.data.collections[collection]
         settings.use_rotation_instance = True
@@ -386,17 +386,13 @@ def loadTree(blendName):
     directory = os.path.join(blendfile, section)
     filename  = os.path.join(object)
 
-    #filepath  = blendfile + section + object
-    #directory = blendfile + section
-    #filename  = object
-
     bpy.ops.wm.append(
         filepath=filepath,
         filename=filename,
         directory=directory)
 
 ############################### MAIN ###########################
-############################################################
+################################################################
 def clean():
     for block in bpy.data.meshes:
         if block.users == 0:
@@ -431,7 +427,7 @@ def clean():
     for g in all_node_groups:
         if g.use_fake_user == False:
             bpy.data.node_groups.remove(g)
-#########################################################ààà
+############################################################
 ############################################################
 
 def run(rock_count, rock_size, rock_count_big, rock_count_medium, rock_size_big, rock_size_medium, body_name, category, blendName, roughLevel, SmallCratersNum, BigCratersNum, color1, color2, pathObj = False, outputFolder = False):
@@ -459,7 +455,7 @@ def run(rock_count, rock_size, rock_count_big, rock_count_medium, rock_size_big,
 
     print(path)
 
-    bpy.ops.import_scene.obj(filepath=path)
+    bpy.ops.wm.obj_import(filepath=path)
     # Changing the name of the loaded model
     bpy.context.selected_objects[0].name = 'asteroid'
     bpy.context.selected_objects[0].data.name = 'asteroid'
@@ -472,8 +468,32 @@ def run(rock_count, rock_size, rock_count_big, rock_count_medium, rock_size_big,
     # Modification of the minor body surface
     main(category)
 
-
     element_selection("asteroid")
+
+    # Ensure there is an active object
+    if bpy.context.object is not None:
+        obj = bpy.context.object
+    
+        # Ensure the active object has an active material
+        if obj.active_material is not None:
+            print(f"Renamed material")
+        else:
+            print("The active object does not have an active material.")
+            # Create a new material
+            new_material = bpy.data.materials.new(name="prova")
+        
+            # Assign the new material to the active object
+            if len(obj.data.materials):
+                # If the object has material slots, replace the first one
+                obj.data.materials[0] = new_material
+            else:
+                # If the object has no material slots, add a new one
+                obj.data.materials.append(new_material)
+
+            # Enable 'Use nodes'
+        new_material.use_nodes = True
+    else:
+        print("There is no active object.")
 
     astMaterial(roughLevel, SmallCratersNum, BigCratersNum, color1, color2)
 
@@ -481,14 +501,15 @@ def run(rock_count, rock_size, rock_count_big, rock_count_medium, rock_size_big,
     rock_generation(rock_count, rock_size, rock_random_size, 'Rocks_small')
     rock_generation(rock_count_big, rock_size_big, rock_random_size, 'Rocks_big')
     rock_generation(rock_count_medium, rock_size_medium, rock_random_size, 'Rocks_medium')
+    
     # Exclution of the Rocks collection to avoid their rendering
-    bpy.context.layer_collection.children['Rocks_small'].exclude = True
-    bpy.context.layer_collection.children['Rocks_big'].exclude = True
-    bpy.context.layer_collection.children['Rocks_medium'].exclude = True
+    bpy.data.collections['Rocks_small'].hide_render = True
+    bpy.data.collections['Rocks_big'].hide_render = True
+    bpy.data.collections['Rocks_medium'].hide_render = True   
 
     # Get the current blend file path
     current_file =os.getcwd() # bpy.data.filepath
-    current_file = os.path.join(current_file, 'blendFile.blend')
+    current_file = os.path.join(current_file,'monet', 'blendFile.blend')
 
     print(40*"#")
     print(current_file)
