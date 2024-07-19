@@ -147,7 +147,7 @@ class Camera:
             position : vector containing the location of the CAM
         """
 
-        if not all(self.CAM_Blender.location == self.position):
+        if not all(np.array(self.CAM_Blender.location) == self.position):
             raise ValueError("Position mismatch between workspaces.")
         
         return self.position
@@ -163,7 +163,7 @@ class Camera:
             orientation : vector containing the quaternion representing the orientation of the CAM
         """
         
-        if not all(self.CAM_Blender.rotation_quaternion == self.orientation):
+        if not all(np.array(self.CAM_Blender.rotation_quaternion) == self.orientation):
             raise ValueError("orientation mismatch between workspaces.")
         
         return self.orientation
@@ -178,7 +178,8 @@ class Camera:
         Returns:
             fov : scalar containing the fov of the CAM
         """
-        
+        print(self.CAM_Blender.data.angle)
+        print(self.fov)
         if self.CAM_Blender.data.angle != self.fov:
             raise ValueError("property mismatch between workspaces.")
         
