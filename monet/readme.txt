@@ -6,7 +6,7 @@
 2) Load the desired .obj file in the "obj" folder
 3) Change the morphological features properties in "Input_file.txt" in the input folder. Do not forget to change the "body_name" in Input_file and set it equal to the loaded obj file in 2)
 4) Run main_MONET.py
-5) Enjoy your generated model :)
+5) Enjoy your generated model :) To see the changes in the .blend, remember to connect the NodeTrees in the shading tab to a scattering a shading output nodes
 
 If you want to run from terminal, position yourself in the corto directory and then:
 
