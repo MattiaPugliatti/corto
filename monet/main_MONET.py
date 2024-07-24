@@ -444,7 +444,7 @@ def run(rock_count, rock_size, rock_count_big, rock_count_medium, rock_size_big,
         path = pathObj
 
     if outputFolder == False:
-        outputFolder = "BlendFiles"
+        outputFolder = "output"
         #path = bpy.path.abspath("//input\\"+body_name+".obj")
 
     # category = 1 --> asteroid with big boulders and a lot of them
@@ -498,9 +498,10 @@ def run(rock_count, rock_size, rock_count_big, rock_count_medium, rock_size_big,
     astMaterial(roughLevel, SmallCratersNum, BigCratersNum, color1, color2)
 
     # Generation of boulders thanks to the particle system
-    rock_generation(rock_count, rock_size, rock_random_size, 'Rocks_small')
-    rock_generation(rock_count_big, rock_size_big, rock_random_size, 'Rocks_big')
-    rock_generation(rock_count_medium, rock_size_medium, rock_random_size, 'Rocks_medium')
+    #TODO: fix this bug
+    #rock_generation(rock_count, rock_size, rock_random_size, 'Rocks_small')
+    #rock_generation(rock_count_big, rock_size_big, rock_random_size, 'Rocks_big')
+    #rock_generation(rock_count_medium, rock_size_medium, rock_random_size, 'Rocks_medium')
     
     # Exclution of the Rocks collection to avoid their rendering
     bpy.data.collections['Rocks_small'].hide_render = True
@@ -509,7 +510,7 @@ def run(rock_count, rock_size, rock_count_big, rock_count_medium, rock_size_big,
 
     # Get the current blend file path
     current_file =os.getcwd() # bpy.data.filepath
-    current_file = os.path.join(current_file,'monet', 'blendFile.blend')
+    current_file = os.path.join(current_file,'monet','blendFile.blend')
 
     print(40*"#")
     print(current_file)
@@ -543,6 +544,6 @@ if __name__ == "__main__":
         matrix_string += row_string + "\n"
 
     # Write the matrix to a text file
-    file_path = 'matrix_output.txt'
+    file_path = os.path.join('monet','output','matrix_output.txt')
     with open(file_path, 'w') as file:
         file.writelines(matrix_string)
