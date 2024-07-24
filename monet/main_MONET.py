@@ -1,11 +1,21 @@
 import bpy
+import addon_utils
 import random
-import shutil
 import os
+
 #v 1.0
 #  
 # This function assigns values to the main variables accordingly to the
 # model's dimension.
+
+def install_addon(name):
+    # Check if the add-on is installed
+    installed_addons = {mod.module for mod in bpy.context.preferences.addons}
+    is_enabled, is_loaded = addon_utils.check(name)
+    if not is_enabled:
+        bpy.ops.preferences.addon_enable(module=name)
+    print(f"Add-on '{name}' is installed and {'enabled' if is_enabled or not is_enabled and bpy.ops.preferences.addon_enable(module=name) else 'not enabled'}")
+
 def initialization(file_path = False):
 
     # Define the file path
@@ -499,9 +509,9 @@ def run(rock_count, rock_size, rock_count_big, rock_count_medium, rock_size_big,
 
     # Generation of boulders thanks to the particle system
     #TODO: fix this bug
-    #rock_generation(rock_count, rock_size, rock_random_size, 'Rocks_small')
-    #rock_generation(rock_count_big, rock_size_big, rock_random_size, 'Rocks_big')
-    #rock_generation(rock_count_medium, rock_size_medium, rock_random_size, 'Rocks_medium')
+    rock_generation(rock_count, rock_size, rock_random_size, 'Rocks_small')
+    rock_generation(rock_count_big, rock_size_big, rock_random_size, 'Rocks_big')
+    rock_generation(rock_count_medium, rock_size_medium, rock_random_size, 'Rocks_medium')
     
     # Exclution of the Rocks collection to avoid their rendering
     bpy.data.collections['Rocks_small'].hide_render = True
@@ -531,6 +541,7 @@ def run(rock_count, rock_size, rock_count_big, rock_count_medium, rock_size_big,
 
 # Parameters initialization
 if __name__ == "__main__":
+    install_addon('add_mesh_extra_objects')
     rock_count, rock_size, rock_count_big, rock_count_medium, rock_size_big, rock_size_medium, body_name, category, blendName, roughLevel, SmallCratersNum, BigCratersNum, color1, color2 = initialization()
     run(rock_count, rock_size, rock_count_big, rock_count_medium, rock_size_big, rock_size_medium, body_name, category, blendName, roughLevel, SmallCratersNum, BigCratersNum, color1, color2)
 
