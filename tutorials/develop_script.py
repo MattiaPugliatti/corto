@@ -32,16 +32,14 @@ rendering_engine = corto.Rendering(properties_rendering)
 # Setup environmen
 ENV = corto.Environment(cam, body, sun, rendering_engine)
 
-print('*****')
-
-ENV.PositionAll(State,index=0)
-ENV.RenderOne('',index=0)
-
+idx = 0 
+ENV.PositionAll(State,index=idx)
+ENV.RenderOne(os.path.join('output'), index=idx)
 print(ENV.get_positions())
 
-ENV.PositionAll(State,index=1)
-ENV.RenderOne('',index=0)
-
+idx = 1 
+ENV.PositionAll(State,index=idx)
+ENV.RenderOne(os.path.join('output'), index=idx)
 print(ENV.get_positions())
 
 ### TEST GET and SET methods ###
@@ -85,22 +83,3 @@ print(rendering_engine.get_preview_sample())
 
 rendering_engine.set_sample(64)
 print(rendering_engine.get_sample())
-
-
-'''
-
-### SHADING AND COMPOSITING ###
-
-corto.shading
-corto.compositing
-
-### GENERATE DATASET ###
-
-for ii in range(0,len(states.n_images)):
-    ENV.Position_all(states[0])
-    ENV.render()
-
-# or 
-    
-ENV.generate_ds(states)       
-'''

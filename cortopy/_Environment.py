@@ -83,7 +83,8 @@ class Environment:
         self.sun = SUN
         self.rendering = RENDERING
         # Set background to black (default)
-        bpy.data.worlds["World"].node_tree.nodes["Background"].inputs[0].default_value = (0, 0, 0, 1)
+        #TODO: temporarily set to white background for debugging witouith shading
+        bpy.data.worlds["World"].node_tree.nodes["Background"].inputs[0].default_value = (1, 1, 1, 1)
 
 
     # Instance methods
@@ -102,6 +103,9 @@ class Environment:
         pos_body = self.body.get_position()
         pos_cam = self.camera.get_position()
         pos_sun = self.sun.get_position()
+        print(self.body.get_position())
+        print(self.camera.get_position())
+        print(self.sun.get_position())
         return pos_body, pos_cam, pos_sun
 
     def get_orientations(self) -> Tuple[np.array, np.array] :
@@ -141,7 +145,7 @@ class Environment:
         self.body.set_position = position_body
         self.body.set_orientation = orientation_body
         self.sun.set_position = position_sun
-        return
+        return self
 
     def RenderOne(self, img_filepath:str, index: int = 0) -> None :
         """
