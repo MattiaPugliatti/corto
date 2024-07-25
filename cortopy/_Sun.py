@@ -174,7 +174,7 @@ class Sun:
         Args:
             position : array containing incoming direction of the light source
         """
-        direction = mathutils.Vector(position/np.linalg.norm(position))
+        direction = mathutils.Vector(-position/np.linalg.norm(position))
         rot_quat = direction.to_track_quat('-Z', 'Y')
         self.position = position
         self.orientation = rot_quat

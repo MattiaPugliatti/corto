@@ -1,7 +1,8 @@
 import json
 import numpy as np
 from typing import (Any, List, Mapping, Optional, Tuple, Union, overload)
-
+import bpy
+import os
 class State:
     """
     State class: manages scene settings such as environment properties, geometry, and input models.
@@ -111,11 +112,23 @@ class State:
             self.properties_body = {}
             self.properties_rendering = {}
 
-    def import_body(self, body: str) -> None:
-        print('wip?')
+    def import_body(self, body_filepath: str, load_mode:str = 'obj') -> None:
+        """Import body 
 
+        Args:
+            body_filepath (str): filepath of the body
+            load_mode (str, optional): loading mode flag. Defaults to 'obj'.
+        """
+        if load_mode =='obj':
+            bpy.ops.wm.obj_import(filepath=body_filepath)
+            print(f"Imported .obj file from {body_filepath}")        
+        elif load_mode == '.blend':
+            print('Not implemented')
+        
+    def save_blend(name:str):
+        """Method to save a .blend file
 
-
-
-
-
+        Args:
+            name (str): name of the .blend file
+        """
+        bpy.ops.wm.save_as_mainfile(filepath=os.path.join('output', name + '.blend'))

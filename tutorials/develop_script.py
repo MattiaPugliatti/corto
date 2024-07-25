@@ -6,80 +6,53 @@ sys.path.append(os.getcwd())
 
 import cortopy as corto
 
+import bpy
+
+## CLEAN all existing/Default objects in the scene 
+#TODO: think this through with the body class
+
+# Deselect all objects
+bpy.ops.object.select_all(action='DESELECT')
+# Select all objects
+bpy.ops.object.select_all(action='SELECT')
+# Delete all selected objects
+bpy.ops.object.delete()
+
 # INPUT 
 scenario_path = os.path.join('input','S01_Eros')
 scene_file = os.path.join(scenario_path,'scene','scene.json')
 geometry_file = os.path.join(scenario_path,'geometry','geometry.json')
-body_file = os.path.join(scenario_path,'body')
+body_file = os.path.join(scenario_path,'body','Shape','433_Eros_512ICQ.obj')
 
 # Load inputs and settings into the State object
-State = corto.State(scene = scene_file, geometry = geometry_file, body = 'TBD')
-
-# check lenght of input data, if less than 4 not all structures were initialized.
-properties_cam = State.properties_cam
-#properties_cam["K"] = eval(properties_cam["K"])
-properties_sun = State.properties_sun
-properties_body = State.properties_body
-properties_rendering = State.properties_rendering
+State = corto.State(scene = scene_file, geometry = geometry_file, body = body_file)
 
 ### SETUP THE SCENE ###
 # Setup bodies
-cam = corto.Camera('WFOV_Camera', properties_cam)
-sun = corto.Sun('Sun',properties_sun)
-body = corto.Body('Cube',properties_body)
+cam = corto.Camera('WFOV_Camera', State.properties_cam)
+sun = corto.Sun('Sun',State.properties_sun)
+body = corto.Body('433_Eros_512ICQ',State.properties_body)
+
 # Setup rendering engine
-rendering_engine = corto.Rendering(properties_rendering)
+rendering_engine = corto.Rendering(State.properties_rendering)
 # Setup environmen
 ENV = corto.Environment(cam, body, sun, rendering_engine)
 
-idx = 0 
-ENV.PositionAll(State,index=idx)
-ENV.RenderOne(os.path.join('output'), index=idx)
-print(ENV.get_positions())
+# Setup shading 
+material = corto.Shading.create_new_material('corto shading test')
+corto.Shading.create_simple_diffuse_BSDF(material, color_RGB = np.array([np.random.rand(),np.random.rand(),np.random.rand()]))
+corto.Shading.assign_material_to_object(material, body)
 
-idx = 1 
-ENV.PositionAll(State,index=idx)
-ENV.RenderOne(os.path.join('output'), index=idx)
-print(ENV.get_positions())
+# Setup compositing
+tree = corto.Compositing.create_compositing()
+corto.Compositing.create_simple_compositing(tree)
 
-### TEST GET and SET methods ###
+body.set_scale(np.array([0.1, 0.1, 0.1])) # adjust body scale for better test renderings
+sun.set_energy = 0.1
 
-print('---Camera--')
-print(cam.get_name())
-print(cam.get_position())
-print(cam.get_orientation())
-print(cam.get_fov())
-print(cam.get_res())
-print(cam.get_film_exposure())
-print(cam.get_sensor())
-print(cam.get_K())
+# Render the first 10 images
+for idx in range(0,10):
+    ENV.PositionAll(State,index=idx)
+    ENV.RenderOne(cam, os.path.join('output','ìmg'), index=idx)
 
-print('Previous position: \n')
-print(cam.get_position())
-
-print('---Sun--')
-print(sun.get_name())
-print(sun.get_orientation())
-
-#sun.set_position(np.array([10,25,0]))
-
-print(sun.get_position())
-print(sun.get_orientation())
-
-print('---Body--')
-print(body.get_name())
-print(body.get_position())
-print(body.get_orientation())
-
-#body.set_orientation(np.array([0.707107,0.707107,0,0]))
-
-print(body.get_orientation())
-
-print('---Rendering engine--')
-print(rendering_engine.get_engine())
-print(rendering_engine.get_device())
-print(rendering_engine.get_sample())
-print(rendering_engine.get_preview_sample())
-
-rendering_engine.set_sample(64)
-print(rendering_engine.get_sample())
+corto.State.save_blend(os.path.join('blend','debug'))

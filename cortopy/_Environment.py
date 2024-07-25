@@ -84,7 +84,7 @@ class Environment:
         self.rendering = RENDERING
         # Set background to black (default)
         #TODO: temporarily set to white background for debugging witouith shading
-        bpy.data.worlds["World"].node_tree.nodes["Background"].inputs[0].default_value = (1, 1, 1, 1)
+        bpy.data.worlds["World"].node_tree.nodes["Background"].inputs[0].default_value = (0, 0, 0, 1)
 
 
     # Instance methods
@@ -103,9 +103,6 @@ class Environment:
         pos_body = self.body.get_position()
         pos_cam = self.camera.get_position()
         pos_sun = self.sun.get_position()
-        print(self.body.get_position())
-        print(self.camera.get_position())
-        print(self.sun.get_position())
         return pos_body, pos_cam, pos_sun
 
     def get_orientations(self) -> Tuple[np.array, np.array] :
@@ -140,14 +137,14 @@ class Environment:
         position_sun = state.geometry['sun']['position'][index]
 
         # Set bodies positions and orientations
-        self.camera.set_position = position_cam
-        self.camera.set_orientation = orientation_cam
-        self.body.set_position = position_body
-        self.body.set_orientation = orientation_body
-        self.sun.set_position = position_sun
+        self.camera.set_position(position_cam)
+        self.camera.set_orientation(orientation_cam)
+        self.body.set_position(position_body)
+        self.body.set_orientation(orientation_body)
+        self.sun.set_position(position_sun)
         return self
 
-    def RenderOne(self, img_filepath:str, index: int = 0) -> None :
+    def RenderOne(self, camera, img_filepath:str, index: int = 0) -> None :
         """
         Render the scene given a state and an index 
         
@@ -155,9 +152,10 @@ class Environment:
             state: instance of cortopy.State class containing scene, geometry, and body settings
             index: (optional) geometry config file may contain multiple configurations, this index selects a specific sample, by default it gathers the first one available.
         """
+        corto.Camera.select_camera(camera.name)
 
         rendering_name = '{}.png'.format(str(int(index)).zfill(6))
         bpy.context.scene.render.filepath = os.path.join(img_filepath,rendering_name)
-        bpy.ops.render.render(write_still = 1)    
+        bpy.ops.render.render(write_still = True)    
 
         return

@@ -332,3 +332,27 @@ class Camera:
         """
         self.film_exposure = film_exposure
         bpy.context.scene.cycles.film_exposure = self.film_exposure
+
+    def select_camera(name:str):
+        """Select a camera based on name (necessary step for rendering)
+
+        Args:
+            name (str): Name of the camera
+
+        """
+        # Deselect all objects
+        bpy.ops.object.select_all(action='DESELECT')
+        
+        # Find the first camera in the scene
+        for obj in bpy.context.scene.objects:
+            if obj.type == 'CAMERA':
+                if obj.name == name:
+                    # Select the camera
+                    obj.select_set(True)
+                    # Set the camera as the active object
+                    bpy.context.view_layer.objects.active = obj
+                    # Set the scene's active camera to this camera
+                    bpy.context.scene.camera = obj
+                    print(f"Selected and set active camera: {obj.name}")
+                    return obj
+        print("No camera found in the scene.")

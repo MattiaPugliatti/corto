@@ -81,7 +81,8 @@ class Body:
         self.scale = np.array([1,1,1])
 
         # creation of generic cube should be avoided if model is available! should be specific .blend
-        bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='WORLD', location=self.position, scale=self.scale)
+        # TODO: DO this as default if an an object is not detected
+        #bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='WORLD', location=self.position, scale=self.scale)
         
         # body properties:
         BODY = bpy.data.objects[self.name]

@@ -22,6 +22,8 @@ __all__ = (
     "Environment",
     "Rendering"
     "PostPro",
+    "Shading",
+    "Compositing"
 )
 
 from ._version import __version__
@@ -32,3 +34,5 @@ from ._State import State
 from ._Environment import Environment
 from ._Rendering import Rendering
 from ._PostPro import PostPro
+from ._Shading import Shading
+from ._Compositing import Compositing
