@@ -89,10 +89,8 @@ class Compositing:
         # Optional: Add a Gamma node to adjust gamma (example of additional node)
         gamma_node = tree.nodes.new(type='CompositorNodeGamma')
         gamma_node.location = (200, 0)
-        gamma_node.inputs['Gamma'].default_value = 1.2  # Adjust gamma value
+        gamma_node.inputs['Gamma'].default_value = 1.0  # Adjust gamma value
         # Link Gamma node between Render Layers and Composite nodes
         tree.links.new(render_layers_node.outputs['Image'], gamma_node.inputs['Image'])
         tree.links.new(gamma_node.outputs['Image'], composite_node.inputs['Image'])
         tree.links.new(gamma_node.outputs['Image'], viewer_node.inputs['Image'])
-        # Set the render output path
-        bpy.context.scene.render.filepath = '/output/composited_image.png'

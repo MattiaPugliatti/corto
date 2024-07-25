@@ -80,7 +80,7 @@ class Shading:
         nodes.clear()
         return material
     
-    def create_simple_diffuse_BSDF(material, color_RGB = np.array([1,0,0])):
+    def create_simple_diffuse_BSDF(material, BSDF_color_RGB = np.array([1,0,0])):
         """Generate a simple diffuse BSDF shader.
 
         Args:
@@ -89,16 +89,48 @@ class Shading:
         """
         nodes = material.node_tree.nodes
         # Create diffuse node
-        diffuse_node = nodes.new(type='ShaderNodeBsdfDiffuse')
-        diffuse_node.location = (0, 0)
+        shader = nodes.new(type='ShaderNodeBsdfDiffuse')
+        shader.location = (0, 0)
         # Create material output node
         output_node = nodes.new(type='ShaderNodeOutputMaterial')
         output_node.location = (200, 0)
         # Connect the Diffuse BSDF node to the Material Output node
-        material.node_tree.links.new(diffuse_node.outputs['BSDF'], output_node.inputs['Surface'])
+        material.node_tree.links.new(shader.outputs['BSDF'], output_node.inputs['Surface'])
         # Set the diffuse color
-        diffuse_node.inputs['Color'].default_value = (color_RGB[0], color_RGB[1], color_RGB[2], 1)  # RGBA
+        shader.inputs['Color'].default_value = (BSDF_color_RGB[0], BSDF_color_RGB[1], BSDF_color_RGB[2], 1)  # RGBA
 
+    def create_simple_principled_BSDF(material, 
+                                      PBSDF_color_RGB = np.array([1, 0, 0]),
+                                      PBSDF_roughness = 1, 
+                                      PBSDF_ior = 180,
+                                      PBSDF_coat_weight = 0.4, 
+                                      PBSDF_coat_roughness = 1, 
+                                      PBSDF_coat_tint = np.array([1, 0, 0])
+                                      ):
+        """Generate a simple Principled BSDF shader.
+
+        Args:
+            material (bpy.data.materials): Material 
+            PBSDF_color_RGB (np.array(3,), optional): . Defaults to np.array([1, 0, 0]).
+        """
+        nodes = material.node_tree.nodes
+        # Create Principled BSDF node
+        shader = nodes.new(type='ShaderNodeBsdfPrincipled')
+        shader.location = (0, 0)
+        # Create material output node
+        output_node = nodes.new(type='ShaderNodeOutputMaterial')
+        output_node.location = (200, 0)
+        # Connect the Principled BSDF node to the Material Output node
+        material.node_tree.links.new(shader.outputs['BSDF'], output_node.inputs['Surface'])
+        # Set the base color
+        shader.inputs['Base Color'].default_value = (PBSDF_color_RGB[0], PBSDF_color_RGB[1], PBSDF_color_RGB[2], 1) # RGBA
+        # Set other PBSDF properties
+        shader.inputs['Roughness'].default_value = PBSDF_roughness
+        shader.inputs['IOR'].default_value = PBSDF_ior
+        shader.inputs['Coat Weight'].default_value = PBSDF_coat_weight
+        shader.inputs['Coat Roughness'].default_value = PBSDF_coat_roughness
+        shader.inputs['Coat Tint'].default_value = (PBSDF_coat_tint[0], PBSDF_coat_tint[1], PBSDF_coat_tint[2], 1) # RGBA
+    
     def assign_material_to_object(material, body):
         """Assign a material to a body object
 
