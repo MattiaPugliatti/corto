@@ -6,16 +6,8 @@ sys.path.append(os.getcwd())
 
 import cortopy as corto
 
-import bpy
-
 ## CLEAN all existing/Default objects in the scene 
-#TODO: think this through with the body class
-# Deselect all objects
-bpy.ops.object.select_all(action='DESELECT')
-# Select all objects
-bpy.ops.object.select_all(action='SELECT')
-# Delete all selected objects
-bpy.ops.object.delete()
+corto.Utils.clean_scene()
 
 # I/O 
 scenario_path = os.path.join('input','S01_Eros')

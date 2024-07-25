@@ -103,7 +103,7 @@ class Shading:
                                       PBSDF_color_RGB = np.array([1, 0, 0]),
                                       PBSDF_roughness = 1, 
                                       PBSDF_ior = 180,
-                                      PBSDF_coat_weight = 0.4, 
+                                      PBSDF_coat_weight = 0, 
                                       PBSDF_coat_roughness = 1, 
                                       PBSDF_coat_tint = np.array([1, 0, 0])
                                       ):
