@@ -6,7 +6,7 @@ import bpy
 import mathutils
 
 from typing import (Any, List, Mapping, Optional, Tuple, Union, overload)
-
+from cortopy import Rendering
 class Compositing:
     """
     Compositing class
@@ -106,9 +106,53 @@ class Compositing:
         """Create viewer node"""
         return Compositing.create_node('CompositorNodeViewer', tree, location)
     
+    def gamma_node(tree,location, settings = None):
+        """Create a gamma-node"""
+        return Compositing.create_node('CompositorNodeGamma', tree, location)
+
+    def file_output_node(tree, location, settings = None):
+        """Create a file-output node"""
+        node = Compositing.create_node('CompositorNodeOutputFile', tree, location)
+        
+        '''
+        Debug this
+        n_paths = 3 #TODO: move this into settings
+        for ii in range(0,n_paths):
+            node.output_file_add_socket()
+            node.base_path = str(ii)
+        '''
+        return Compositing.create_node('CompositorNodeOutputFile', tree, location)
+
+    # Recquires activation of denoise data 
     def denoise_node(tree,location):
         """Create denoise node"""
+        # Rendering.activate_denoise_data(active = True)
         return Compositing.create_node('CompositorNodeDenoise', tree, location)
+    
+    # Require activation of ID-mask
+    def maskID_node(tree, location): 
+        """Create a mask-ID node"""
+        Rendering.activate_id_mask(active = True)
+        Rendering.activate_pass_shadow(active = True)
+        return Compositing.create_node('CompositorNodeIDMask', tree, location)
+
+    # Requires activation of depth-pass
+    def depth_node(tree, location):
+       """Create a depth-saving node"""
+       Rendering.activate_depth_pass(active = True)
+       return Compositing.create_node('CompositorNodeViewer', tree, location)
+
+    # Requires activation of normal-pass
+    def normal_node(tree,location):
+        """Create a depth-saving node"""
+        Rendering.activate_pass_normal(active = True)
+        return Compositing.create_node('CompositorNodeViewer', tree, location)
+
+    '''
+    bpy.ops.node.add_node(use_transform=True, type="CompositorNodeIDMask")
+    bpy.data.scenes["Scene"].node_tree.nodes["ID Mask"].inputs[0].default_value = 1
+    bpy.data.scenes["Scene"].node_tree.nodes["ID Mask"].index = 1
+    '''
     
     def create_node(name:str, tree, location = (0,0)):
         """Create node"""

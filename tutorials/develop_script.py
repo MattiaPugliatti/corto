@@ -37,7 +37,35 @@ corto.Shading.assign_material_to_object(material, body)
 
 # Setup compositing
 tree = corto.Compositing.create_compositing()
-corto.Compositing.create_simple_compositing(tree)
+corto.Compositing.create_simple_compositing(tree) # automatic-build of node-tree
+
+'''
+Manual build of node tree
+
+# Create Render  node
+render_node = corto.Compositing.rendering_node(tree, (0,0))
+# Create Composite node
+composite_node = corto.Compositing.composite_node(tree, (400,0))
+# Create a viewer node
+viewer_node = corto.Compositing.viewer_node(tree,(600,0))
+# Create a IDmask node
+mask_id_node = corto.Compositing.maskID_node(tree,(800,0))
+# Create a depth node
+depth_node = corto.Compositing.depth_node(tree,(1000,0))
+# Create a denoise node
+denoise_node = corto.Compositing.denoise_node(tree,(1200,0))
+# Create a gamma node
+gamma_node = corto.Compositing.gamma_node(tree,(1400,0))
+# Create an output node
+gamma_node = corto.Compositing.file_output_node(tree,(1600,0))
+
+corto.Compositing.link_nodes(tree, render_node.outputs["Image"], composite_node.inputs["Image"])
+corto.Compositing.link_nodes(tree, render_node.outputs["Image"], viewer_node.inputs["Image"])
+corto.Compositing.link_nodes(tree, render_node.outputs["Image"], viewer_node.inputs["Image"])
+
+corto.State.save_blend(os.path.join('blend','debug'))
+
+'''
 
 body.set_scale(np.array([0.1, 0.1, 0.1])) # adjust body scale for better test renderings
 sun.set_energy = 0.1 #TODO: THis one is not working

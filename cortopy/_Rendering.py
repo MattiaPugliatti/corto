@@ -190,3 +190,30 @@ class Rendering:
         """
         self.preview_samples = preview_samples
         bpy.context.scene.cycles.preview_samples = self.preview_samples
+
+    def activate_depth_pass(active:bool = False) -> None:
+        # TODO: loop back with connection with Compositing class
+        #self.use_pass_z = active
+        bpy.context.scene.view_layers["ViewLayer"].use_pass_z = active
+
+    def activate_id_mask(active:bool = False) -> None:
+        # TODO: loop back with connection with Compositing class
+        #self.use_id_mask = active
+        bpy.context.scene.view_layers["ViewLayer"].use_pass_object_index = active
+
+    def activate_pass_shadow(active:bool = False) -> None:
+        # TODO: loop back with connection with Compositing class
+        #self.use_id_mask = active
+        bpy.context.scene.view_layers["ViewLayer"].use_pass_shadow = active
+
+    def activate_pass_normal(active:bool = False) -> None:
+        # TODO: loop back with connection with Compositing class
+        #self.use_pass_normal = active
+        bpy.context.scene.view_layers["ViewLayer"].use_pass_normal = active
+    '''    
+    def activate_denoise_data(active:bool = False) -> None:
+        # TODO: loop back with connection with Compositing class
+        #self.use_denoise_data = active
+        # TODO: debug this one not working
+        # bpy.context.scene.view_layers["ViewLayer"].use_pass_denoising_data = active
+    '''
