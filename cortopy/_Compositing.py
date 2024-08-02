@@ -59,7 +59,7 @@ class Compositing:
 
     def __init__(self) -> None:
         """
-        Constructor for the shading class
+        Constructor for the compositing class
         """
 
     # Istance methods
@@ -74,23 +74,48 @@ class Compositing:
         return tree
     
     def create_simple_compositing(tree):
-        # Create Render Layers node
-        render_layers_node = tree.nodes.new(type='CompositorNodeRLayers')
-        render_layers_node.location = (0, 0)
+        # Create Render  node
+        render_node = Compositing.rendering_node(tree, (0,0))
         # Create Composite node
-        composite_node = tree.nodes.new(type='CompositorNodeComposite')
-        composite_node.location = (400, 0)
-        # Link Render Layers node to Composite node
-        tree.links.new(render_layers_node.outputs['Image'], composite_node.inputs['Image'])
-        # Optional: Create and link a Viewer node for preview
-        viewer_node = tree.nodes.new(type='CompositorNodeViewer')
-        viewer_node.location = (400, -200)
-        tree.links.new(render_layers_node.outputs['Image'], viewer_node.inputs['Image'])
+        composite_node = Compositing.composite_node(tree, (400,0))
+        # Create a viewer node
+        viewer_node = Compositing.viewer_node(tree,(400,-200))
+        # Link nodes toghether
+        Compositing.link_nodes(tree, render_node.outputs["Image"], composite_node.inputs["Image"])
+        Compositing.link_nodes(tree, render_node.outputs["Image"], viewer_node.inputs["Image"])
+        '''
         # Optional: Add a Gamma node to adjust gamma (example of additional node)
         gamma_node = tree.nodes.new(type='CompositorNodeGamma')
         gamma_node.location = (200, 0)
         gamma_node.inputs['Gamma'].default_value = 1.0  # Adjust gamma value
         # Link Gamma node between Render Layers and Composite nodes
-        tree.links.new(render_layers_node.outputs['Image'], gamma_node.inputs['Image'])
+        tree.links.new(render_node.outputs['Image'], gamma_node.inputs['Image'])
         tree.links.new(gamma_node.outputs['Image'], composite_node.inputs['Image'])
         tree.links.new(gamma_node.outputs['Image'], viewer_node.inputs['Image'])
+        '''
+
+    def composite_node(tree, location):
+        """Create composite node"""
+        return Compositing.create_node('CompositorNodeComposite', tree, location)
+    
+    def rendering_node(tree, location):
+        """Create rendering node"""
+        return Compositing.create_node('CompositorNodeRLayers', tree, location)
+
+    def viewer_node(tree, location):
+        """Create viewer node"""
+        return Compositing.create_node('CompositorNodeViewer', tree, location)
+    
+    def denoise_node(tree,location):
+        """Create denoise node"""
+        return Compositing.create_node('CompositorNodeDenoise', tree, location)
+    
+    def create_node(name:str, tree, location = (0,0)):
+        """Create node"""
+        node = tree.nodes.new(type=name)
+        node.location = (location)
+        return node
+
+    def link_nodes(tree,node_output,node_input):
+        """Link output from node a to input to node b"""
+        tree.links.new(node_output,node_input)
