@@ -63,6 +63,8 @@ class Utils:
         """
 
     # Istance methods
+    # imo this should be static method of Environment class
+    @staticmethod
     def clean_scene():
         """
         Delete all existing objects from a scene

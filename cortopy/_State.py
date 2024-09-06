@@ -124,8 +124,9 @@ class State:
             print(f"Imported .obj file from {body_filepath}")        
         elif load_mode == '.blend':
             print('Not implemented')
-        
-    def save_blend(name:str):
+
+    @staticmethod
+    def save_blend(name: str) -> None:
         """Method to save a .blend file
 
         Args:

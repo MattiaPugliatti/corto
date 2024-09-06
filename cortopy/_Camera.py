@@ -64,6 +64,9 @@ class Camera:
         Args:
             name: name of the CAM object 
             properties: properties of the CAM object
+
+        Raises:
+            TypeError : resolution of the camera must be expressed with integer values
         """
         # CAM name
         self.name = name
@@ -72,9 +75,13 @@ class Camera:
         self.orientation = np.array([1,0,0,0])
         # CAM properties
         self.fov = properties['fov']*np.pi/180# [rad]
+
         self.res_x = properties['res_x'] # [-]
         self.res_y = properties['res_y'] # [-]
+        if type(self.res_x) != int or type(self.res_y) != int :
+            raise TypeError("Resolution of the camera must have integer values.")
         self.res = np.array([self.res_x, self.res_y]) #[-]
+
         self.film_exposure = properties['film_exposure'] # [s]
         self.sensor = properties['sensor'] # (str)
         self.K = properties['K'] # [px]
@@ -147,7 +154,8 @@ class Camera:
             position : vector containing the location of the CAM
         """
 
-        if not all(np.array(self.CAM_Blender.location) == self.position):
+        # check made in single precision because apparently is what Blender uses.
+        if not all(np.float32(np.array(self.CAM_Blender.location)) == np.float32(self.position)):
             raise ValueError("Position mismatch between workspaces.")
         
         return self.position
@@ -163,7 +171,7 @@ class Camera:
             orientation : vector containing the quaternion representing the orientation of the CAM
         """
         
-        if not all(np.array(self.CAM_Blender.rotation_quaternion) == self.orientation):
+        if not all(np.float32(np.array(self.CAM_Blender.rotation_quaternion)) == np.float32(self.orientation)):
             raise ValueError("orientation mismatch between workspaces.")
         
         return self.orientation
@@ -179,9 +187,7 @@ class Camera:
             fov : scalar containing the fov of the CAM
         """
 
-        five_digits_fov_Blender = "{:.5f}".format(self.CAM_Blender.data.angle)
-        five_digits_fov_corto = "{:.5f}".format(self.fov)
-        if five_digits_fov_Blender != five_digits_fov_corto:
+        if np.float32(self.CAM_Blender.data.angle) != np.float32(self.fov):
             raise ValueError("property mismatch between workspaces.")
         
         return self.fov
@@ -214,7 +220,7 @@ class Camera:
             exposure : scalar containing the exposure of the CAM
         """
         
-        if bpy.context.scene.cycles.film_exposure != self.film_exposure:
+        if np.float32(bpy.context.scene.cycles.film_exposure) != np.float32(self.film_exposure):
             raise ValueError("property mismatch between workspaces.")
         
         return self.film_exposure
@@ -252,7 +258,7 @@ class Camera:
         Returns:
             clip_start : scalar containing the clip_start of the CAM
         """
-        if self.CAM_Blender.data.clip_start != self.clip_start:
+        if np.float32(self.CAM_Blender.data.clip_start) != np.float32(self.clip_start):
             raise ValueError("property mismatch between workspaces.")
         
         return self.clip_start
@@ -267,7 +273,7 @@ class Camera:
         Returns:
             clip_end : scalar containing the clip_end of the CAM
         """
-        if self.CAM_Blender.data.clip_end != self.clip_end:
+        if np.float32(self.CAM_Blender.data.clip_end) != np.float32(self.clip_end):
             raise ValueError("property mismatch between workspaces.")
         
         return self.clip_end
@@ -318,7 +324,14 @@ class Camera:
 
         Args:
             orientation : array containing quaternion expressing the orientation of the CAM
+
+        Raises:
+            ValueError : Provided quaternion is not a unit vector, it does not represent a rotation
         """
+
+        if np.linalg.norm(orientation) != 1.0 :
+            raise ValueError("Provided quaternion is not a unit vector")
+        
         self.orientation = orientation
         self.CAM_Blender.rotation_mode = 'QUATERNION'
         self.CAM_Blender.rotation_quaternion = self.orientation
@@ -333,12 +346,14 @@ class Camera:
         self.film_exposure = film_exposure
         bpy.context.scene.cycles.film_exposure = self.film_exposure
 
-    def select_camera(name:str):
-        """Select a camera based on name (necessary step for rendering)
+    # imo this should be a static method of the rendering class 
+    @staticmethod
+    def select_camera(name:str) -> None:
+        """
+        Select a camera based on name (necessary step for rendering)
 
         Args:
             name (str): Name of the camera
-
         """
         # Deselect all objects
         bpy.ops.object.select_all(action='DESELECT')

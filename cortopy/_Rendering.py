@@ -67,12 +67,20 @@ class Rendering:
                 - device
                 - samples
                 - preview_samples
+
+        Raises:
+            TypeError: number of preview samples must be integer
+            TypeError: number of rendering samples must be integer
         """
         # Ren properties
         self.engine = properties['engine']
         self.device = properties['device']
         self.samples = properties['samples']
         self.preview_samples = properties['preview_samples']
+        if type(self.preview_samples) != int :
+            raise TypeError("Number of preview samples must be integer.")
+        if type(self.samples) != int :
+            raise TypeError("Number of rendering samples must be integer.")
         # Generate the Blender object
         self.toBlender()
 
@@ -177,7 +185,13 @@ class Rendering:
 
         Args:
             samples : number of samples used to render the scene
+
+        Raises:
+            TypeError: number of rendering samples must be integer
         """
+
+        if type(samples) != int :
+            raise TypeError("Number of rendering samples must be integer.")
         self.samples = samples
         bpy.context.scene.cycles.samples = self.samples
     
@@ -187,7 +201,12 @@ class Rendering:
 
         Args:
             preview_samples : number of samples used to preview the scene
+        
+        Raises:
+            TypeError: number of preview samples must be integer
         """
+        if type(preview_samples) != int :
+            raise TypeError("Number of preview samples must be integer.")
         self.preview_samples = preview_samples
         bpy.context.scene.cycles.preview_samples = self.preview_samples
 

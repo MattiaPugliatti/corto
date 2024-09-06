@@ -65,13 +65,22 @@ class Body:
             name: name of the BODY object 
             properties: properties of the BODY object
 
+        Raises:
+            TypeError : object pass index must be expressed with integer values
+            TypeError : number of bounces must have integer values
+
         """
         # BODY name
         self.name = name
 
         # BODY properties
         self.pass_index = properties['pass_index']
+        if type(self.pass_index) != int :
+            raise TypeError("Pass index must have integer values.")
+    
         self.diffuse_bounces = properties['diffuse_bounces']
+        if type(self.diffuse_bounces) != int :
+            raise TypeError("Number of bounces must have integer values.")
         # Generate the Blender object
 
 
@@ -91,9 +100,9 @@ class Body:
         BODY.rotation_quaternion = self.orientation # [-]
         BODY.pass_index = self.pass_index # [-]
         BODY.scale = self.scale # [-]
-        # questa proprietà non dovrebbe andare in scena? non mi sembra una cosa tipica del corpo 
+        # imo questa proprietà non dovrebbe andare in scena? non mi sembra una cosa tipica del corpo
         # i.e., cambiandola per uno la cambi per tutti e rimane settata quella dell'ultimo oggetto creato
-        # bpy.context.scene.cycles.diffuse_bounces = self.diffuse_bounces # [-]
+        bpy.context.scene.cycles.diffuse_bounces = self.diffuse_bounces # [-]
         
         self.BODY_Blender = BODY
 
@@ -130,7 +139,7 @@ class Body:
             position : vector containing the location of the BODY object
         """
 
-        if not all(np.array(self.BODY_Blender.location) == self.position):
+        if not all(np.float32(np.array(self.BODY_Blender.location)) == np.float32(self.position)):
             raise ValueError("Position mismatch between workspaces.")
         
         return self.position
@@ -146,8 +155,8 @@ class Body:
             orientation : vector containing the quaternion representing the orientation of the BODY object
         """
         
-        #if not all(np.array(self.BODY_Blender.rotation_quaternion) == self.orientation):
-        #    raise ValueError("orientation mismatch between workspaces.")
+        if not all(np.float32(np.array(self.BODY_Blender.rotation_quaternion)) == np.float32(self.orientation)):
+            raise ValueError("orientation mismatch between workspaces.")
         
         return self.orientation
 
@@ -161,7 +170,7 @@ class Body:
         Returns:
             scale : scale of the BODY object
         """
-        if not all(self.BODY_Blender.scale == self.scale):
+        if not all(np.float32(self.BODY_Blender.scale) == np.float32(self.scale)):
             raise ValueError("scale mismatch between workspaces.")
 
         return self.scale
@@ -172,6 +181,7 @@ class Body:
 
         Raises:
             ValueError : BODY instance has mismatching pass index
+
         Returns:
             pass index : pass index of the BODY object
         """
@@ -212,7 +222,14 @@ class Body:
 
         Args:
             orientation : array containing quaternion expressing the orientation of the BODY object
+        
+        Raises:
+            ValueError : Provided quaternion is not a unit vector, it does not represent a rotation
         """
+
+        if np.linalg.norm(orientation) != 1.0 :
+            raise ValueError("Provided quaternion is not a unit vector")
+        
         self.orientation = orientation
         self.BODY_Blender.rotation_mode = 'QUATERNION'
         self.BODY_Blender.rotation_quaternion = self.orientation
@@ -233,17 +250,30 @@ class Body:
 
         Args:
             ID : scalar pass index value for the BODY object
+        
+        Raises:
+            TypeError : object pass index must be expressed with integer values
         """
+
+        if type(ID) != int :
+            raise TypeError("Pass index must have integer values.")
+        
         self.pass_index = ID
         self.BODY_Blender.pass_index = self.pass_index
 
-# anche questa funzione da vedere imho
+# imo anche questa funzione da vedere
     def set_diffuse_bounces(self, par: int) -> None:
         """
         Set diffuse bounces property for the BODY instance
 
         Args:
             par : scalar value for diffuse bounces property
+
+        Raises:
+            TypeError : number of bounces must have integer values
         """
+
+        if type(par) != int :
+            raise TypeError("Number of bounces must have integer values.")
         self.diffuse_bounces = par
         bpy.context.scene.cycles.diffuse_bounces = self.diffuse_bounces # [-]
