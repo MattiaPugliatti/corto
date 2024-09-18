@@ -5,9 +5,9 @@ import numpy as np
 import bpy 
 import mathutils
 import os
+import cortopy as corto
 
 from typing import (Any, List, Mapping, Optional, Tuple, Union, overload)
-import cortopy as corto
 
 class Environment:
     """
@@ -144,7 +144,7 @@ class Environment:
         self.sun.set_position(position_sun)
         return self
 
-    def RenderOne(self, camera, img_filepath:str, index: int = 0) -> None :
+    def RenderOne(self, camera, state:corto.State, index: int = 0) -> None :
         """
         Render the scene given a state and an index 
         
@@ -153,9 +153,9 @@ class Environment:
             index: (optional) geometry config file may contain multiple configurations, this index selects a specific sample, by default it gathers the first one available.
         """
         corto.Camera.select_camera(camera.name)
-
         rendering_name = '{}.png'.format(str(int(index)).zfill(6))
-        bpy.context.scene.render.filepath = os.path.join(img_filepath,rendering_name)
+        bpy.context.scene.render.filepath = os.path.join(state.output_path,'img',rendering_name)
+        bpy.context.scene.frame_current = index
         bpy.ops.render.render(write_still = True)    
 
         return

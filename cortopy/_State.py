@@ -124,3 +124,6 @@ class State:
             print(f"Imported .obj file from {body_filepath}")        
         elif load_mode == '.blend':
             print('Not implemented')
+
+    def output_path(self,output_filepath:str) -> None:
+        self.output_path = output_filepath

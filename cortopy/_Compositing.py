@@ -4,9 +4,12 @@ from __future__ import annotations
 import numpy as np
 import bpy 
 import mathutils
+import os
 
 from typing import (Any, List, Mapping, Optional, Tuple, Union, overload)
 from cortopy import Rendering
+from cortopy import State
+
 class Compositing:
     """
     Compositing class
@@ -77,22 +80,15 @@ class Compositing:
         # Create Render  node
         render_node = Compositing.rendering_node(tree, (0,0))
         # Create Composite node
-        composite_node = Compositing.composite_node(tree, (400,0))
+        composite_node = Compositing.composite_node(tree, (800,0))
         # Create a viewer node
         viewer_node = Compositing.viewer_node(tree,(400,-200))
+        # Create gamma  node
+        gamma_node = Compositing.gamma_node(tree,(400,0))
         # Link nodes toghether
-        Compositing.link_nodes(tree, render_node.outputs["Image"], composite_node.inputs["Image"])
+        Compositing.link_nodes(tree, render_node.outputs["Image"], gamma_node.inputs["Image"])
+        Compositing.link_nodes(tree, gamma_node.outputs["Image"], composite_node.inputs["Image"])
         Compositing.link_nodes(tree, render_node.outputs["Image"], viewer_node.inputs["Image"])
-        '''
-        # Optional: Add a Gamma node to adjust gamma (example of additional node)
-        gamma_node = tree.nodes.new(type='CompositorNodeGamma')
-        gamma_node.location = (200, 0)
-        gamma_node.inputs['Gamma'].default_value = 1.0  # Adjust gamma value
-        # Link Gamma node between Render Layers and Composite nodes
-        tree.links.new(render_node.outputs['Image'], gamma_node.inputs['Image'])
-        tree.links.new(gamma_node.outputs['Image'], composite_node.inputs['Image'])
-        tree.links.new(gamma_node.outputs['Image'], viewer_node.inputs['Image'])
-        '''
 
     def composite_node(tree, location):
         """Create composite node"""
@@ -113,9 +109,7 @@ class Compositing:
     def file_output_node(tree, location, settings = None):
         """Create a file-output node"""
         node = Compositing.create_node('CompositorNodeOutputFile', tree, location)
-        
         '''
-        Debug this
         n_paths = 3 #TODO: move this into settings
         for ii in range(0,n_paths):
             node.output_file_add_socket()
@@ -126,7 +120,7 @@ class Compositing:
     # Recquires activation of denoise data 
     def denoise_node(tree,location):
         """Create denoise node"""
-        # Rendering.activate_denoise_data(active = True)
+        Rendering.activate_pass_normal(active = True)
         return Compositing.create_node('CompositorNodeDenoise', tree, location)
     
     # Require activation of ID-mask
@@ -163,3 +157,34 @@ class Compositing:
     def link_nodes(tree,node_output,node_input):
         """Link output from node a to input to node b"""
         tree.links.new(node_output,node_input)
+
+    def create_img_denoise_branch(tree,render_node,state:State):
+        """Create branch for image denoise"""
+        # Create a denoise node
+        denoise_node = Compositing.denoise_node(tree,(400,0))
+        # Create a gamma node
+        gamma_node = Compositing.gamma_node(tree,(800,0))
+        # Create Composite node
+        composite_node = Compositing.composite_node(tree,(1200,0))
+        # Denoised image branch
+        Compositing.link_nodes(tree, render_node.outputs["Noisy Image"], denoise_node.inputs["Image"])
+        Compositing.link_nodes(tree, render_node.outputs["Normal"], denoise_node.inputs["Normal"])
+        Compositing.link_nodes(tree, denoise_node.outputs["Image"], gamma_node.inputs["Image"])
+        Compositing.link_nodes(tree, gamma_node.outputs["Image"], composite_node.inputs["Image"])
+
+    def create_depth_branch(tree,render_node,state:State):
+        """Create branch for depth label"""
+        # Create a depth node
+        depth_node = Compositing.depth_node(tree,(1000,0))
+        # Depth branch
+        Compositing.link_nodes(tree, render_node.outputs["Depth"], depth_node.inputs["Image"])
+
+    def create_slopes_branch(tree,render_node,state:State):
+        """Create branch for slopes label"""
+        # Create an output node
+        output_node = Compositing.file_output_node(tree,(1600,0))
+        output_node.format.color_depth = '16'
+        output_node.base_path = os.path.join(state.output_path)
+        output_node.file_slots[0].path = "\slopes\######"
+        # Normal branch 
+        Compositing.link_nodes(tree, render_node.outputs["Normal"], output_node.inputs["Image"])

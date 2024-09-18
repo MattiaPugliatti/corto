@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import bpy 
 import os
+import cortopy as corto
 
 from typing import (Any, List, Mapping, Optional, Tuple, Union, overload)
-
+from datetime import datetime
 class Utils:
     """
     Utils class
@@ -76,11 +77,22 @@ class Utils:
         bpy.ops.object.delete()
 
     @staticmethod
-    def save_blend(name: str) -> None:
+    def GenerateTimestamp() -> None:
+        timestamp = datetime.now()
+        formatted_timestamp = timestamp.strftime("%Y_%m_%d_%H_%M_%S")
+        return formatted_timestamp
+    
+    @staticmethod
+    def save_blend(state:corto.State) -> None:
         """Method to save a .blend file
 
         Args:
-            name (str): name of the .blend file
+            state (corto.St): name of the .blend file
         """
-        bpy.ops.wm.save_as_mainfile(filepath=os.path.join('output', name + '.blend'))
+        # Disable the creation of backup files
+        bpy.context.preferences.filepaths.save_version = 0
+        blend_dir = os.path.join(state.output_path,'blend')
+        if not os.path.exists(blend_dir):
+            os.makedirs(blend_dir)
+        bpy.ops.wm.save_as_mainfile(filepath=os.path.join(blend_dir,'debug.blend'))
         
