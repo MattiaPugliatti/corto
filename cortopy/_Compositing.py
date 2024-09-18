@@ -108,7 +108,6 @@ class Compositing:
 
     def file_output_node(tree, location, settings = None):
         """Create a file-output node"""
-        node = Compositing.create_node('CompositorNodeOutputFile', tree, location)
         '''
         n_paths = 3 #TODO: move this into settings
         for ii in range(0,n_paths):
@@ -120,7 +119,7 @@ class Compositing:
     # Recquires activation of denoise data 
     def denoise_node(tree,location):
         """Create denoise node"""
-        Rendering.activate_pass_normal(active = True)
+        Rendering.activate_denoise_data(active = True)
         return Compositing.create_node('CompositorNodeDenoise', tree, location)
     
     # Require activation of ID-mask
@@ -163,9 +162,9 @@ class Compositing:
         # Create a denoise node
         denoise_node = Compositing.denoise_node(tree,(400,0))
         # Create a gamma node
-        gamma_node = Compositing.gamma_node(tree,(800,0))
+        gamma_node = Compositing.gamma_node(tree,(600,0))
         # Create Composite node
-        composite_node = Compositing.composite_node(tree,(1200,0))
+        composite_node = Compositing.composite_node(tree,(800,0))
         # Denoised image branch
         Compositing.link_nodes(tree, render_node.outputs["Noisy Image"], denoise_node.inputs["Image"])
         Compositing.link_nodes(tree, render_node.outputs["Normal"], denoise_node.inputs["Normal"])
@@ -175,14 +174,15 @@ class Compositing:
     def create_depth_branch(tree,render_node,state:State):
         """Create branch for depth label"""
         # Create a depth node
-        depth_node = Compositing.depth_node(tree,(1000,0))
+        depth_node = Compositing.depth_node(tree,(400,200))
+        depth_node.name = 'Viewer Depth'
         # Depth branch
         Compositing.link_nodes(tree, render_node.outputs["Depth"], depth_node.inputs["Image"])
 
     def create_slopes_branch(tree,render_node,state:State):
         """Create branch for slopes label"""
         # Create an output node
-        output_node = Compositing.file_output_node(tree,(1600,0))
+        output_node = Compositing.file_output_node(tree,(400,-200))
         output_node.format.color_depth = '16'
         output_node.base_path = os.path.join(state.output_path)
         output_node.file_slots[0].path = "\slopes\######"

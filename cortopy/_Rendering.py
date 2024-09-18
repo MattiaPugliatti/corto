@@ -230,6 +230,13 @@ class Rendering:
         #self.use_pass_normal = active
         bpy.context.scene.view_layers["ViewLayer"].use_pass_normal = active
 
+    def activate_denoise_data(active:bool = False) -> None:
+        # TODO: loop back with connection with Compositing class
+        #self.use_pass_normal = active
+        bpy.context.scene.cycles.use_denoising = True #TODO: add check between cycles and evee here
+        # Enable denoising passes in the render layers
+        bpy.context.scene.view_layers["ViewLayer"].use_pass_denoising_data = True # TODO: not working
+        bpy.context.scene.view_layers["ViewLayer"].use_pass_noisy = True #TODO: not working
     '''    
     def activate_denoise_data(active:bool = False) -> None:
         # TODO: loop back with connection with Compositing class
