@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import numpy as np
 import bpy 
+import math
 
 from typing import (Any, List, Mapping, Optional, Tuple, Union, overload)
 
@@ -328,8 +329,7 @@ class Camera:
         Raises:
             ValueError : Provided quaternion is not a unit vector, it does not represent a rotation
         """
-
-        if np.linalg.norm(orientation) != 1.0 :
+        if not math.isclose(np.linalg.norm(orientation), 1.0, rel_tol = 1e-9) :
             raise ValueError("Provided quaternion is not a unit vector")
         
         self.orientation = orientation
