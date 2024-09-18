@@ -1,9 +1,8 @@
 
 from __future__ import annotations
 
-import numpy as np
 import bpy 
-import mathutils
+import os
 
 from typing import (Any, List, Mapping, Optional, Tuple, Union, overload)
 
@@ -75,4 +74,13 @@ class Utils:
         bpy.ops.object.select_all(action='SELECT')
         # Delete all selected objects
         bpy.ops.object.delete()
+
+    @staticmethod
+    def save_blend(name: str) -> None:
+        """Method to save a .blend file
+
+        Args:
+            name (str): name of the .blend file
+        """
+        bpy.ops.wm.save_as_mainfile(filepath=os.path.join('output', name + '.blend'))
         
