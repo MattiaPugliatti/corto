@@ -73,6 +73,6 @@ sun.set_energy = 0.1 #TODO: THis one is not working
 # Render the first 10 images
 for idx in range(0,10):
     ENV.PositionAll(State,index=idx)
-    ENV.RenderOne(cam, os.path.join('output','ìmg'), index=idx)
+    ENV.RenderOne(cam, os.path.join('output','img'), index=idx)
 
 corto.State.save_blend(os.path.join('blend','debug'))
