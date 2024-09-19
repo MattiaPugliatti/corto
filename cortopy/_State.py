@@ -67,6 +67,7 @@ class State:
         self.import_scene(scene)
         self.import_geometry(geometry)
         self.import_body(body)
+        self.path = {}
 
         
     def import_geometry(self, geometry: str) -> None:
@@ -125,5 +126,10 @@ class State:
         elif load_mode == '.blend':
             print('Not implemented')
 
-    def output_path(self,output_filepath:str) -> None:
-        self.output_path = output_filepath
+    def add_path(self, name: str, path: str) -> None:
+        if self.path:
+            # Update the dictionary with the new name and path
+            self.path.update({name: path})
+        else:
+            # Initialize the dictionary with the new name and path
+            self.path = {name: path}

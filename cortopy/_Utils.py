@@ -91,7 +91,7 @@ class Utils:
         """
         # Disable the creation of backup files
         bpy.context.preferences.filepaths.save_version = 0
-        blend_dir = os.path.join(state.output_path,'blend')
+        blend_dir = os.path.join(state.path["output_path"],'blend')
         if not os.path.exists(blend_dir):
             os.makedirs(blend_dir)
         bpy.ops.wm.save_as_mainfile(filepath=os.path.join(blend_dir,'debug.blend'))

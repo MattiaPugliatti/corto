@@ -9,7 +9,6 @@ import os
 from typing import (Any, List, Mapping, Optional, Tuple, Union, overload)
 from cortopy import Rendering
 from cortopy import State
-
 class Compositing:
     """
     Compositing class
@@ -119,27 +118,31 @@ class Compositing:
     # Recquires activation of denoise data 
     def denoise_node(tree,location):
         """Create denoise node"""
-        Rendering.activate_denoise_data(active = True)
+        Rendering.activate_denoise_data()
         return Compositing.create_node('CompositorNodeDenoise', tree, location)
     
     # Require activation of ID-mask
     def maskID_node(tree, location): 
         """Create a mask-ID node"""
-        Rendering.activate_id_mask(active = True)
-        Rendering.activate_pass_shadow(active = True)
+        Rendering.activate_id_mask()
+        Rendering.activate_pass_shadow()
+        Rendering.activate_pass_diffuse_direct()
         return Compositing.create_node('CompositorNodeIDMask', tree, location)
 
     # Requires activation of depth-pass
     def depth_node(tree, location):
        """Create a depth-saving node"""
-       Rendering.activate_depth_pass(active = True)
+       Rendering.activate_depth_pass()
        return Compositing.create_node('CompositorNodeViewer', tree, location)
 
-    # Requires activation of normal-pass
     def normal_node(tree,location):
         """Create a depth-saving node"""
-        Rendering.activate_pass_normal(active = True)
-        return Compositing.create_node('CompositorNodeViewer', tree, location)
+        Rendering.activate_pass_normal()
+        return Compositing.create_node('CompositorNodeOutputFile', tree, location)
+
+    def math_node(tree,location):
+        """Create a math node"""
+        return Compositing.create_node('CompositorNodeMath', tree, location)
 
     '''
     bpy.ops.node.add_node(use_transform=True, type="CompositorNodeIDMask")
@@ -167,7 +170,7 @@ class Compositing:
         composite_node = Compositing.composite_node(tree,(800,0))
         # Denoised image branch
         Compositing.link_nodes(tree, render_node.outputs["Noisy Image"], denoise_node.inputs["Image"])
-        Compositing.link_nodes(tree, render_node.outputs["Normal"], denoise_node.inputs["Normal"])
+        #Compositing.link_nodes(tree, render_node.outputs["Normal"], denoise_node.inputs["Normal"])
         Compositing.link_nodes(tree, denoise_node.outputs["Image"], gamma_node.inputs["Image"])
         Compositing.link_nodes(tree, gamma_node.outputs["Image"], composite_node.inputs["Image"])
 
@@ -182,9 +185,32 @@ class Compositing:
     def create_slopes_branch(tree,render_node,state:State):
         """Create branch for slopes label"""
         # Create an output node
-        output_node = Compositing.file_output_node(tree,(400,-200))
-        output_node.format.color_depth = '16'
-        output_node.base_path = os.path.join(state.output_path)
-        output_node.file_slots[0].path = "\slopes\######"
+        normal_node = Compositing.normal_node(tree,(400,-200))
+        normal_node.format.color_depth = '16'
+        normal_node.base_path = os.path.join(state.path["output_path"])
+        normal_node.file_slots[0].path = "\slopes\######"
         # Normal branch 
-        Compositing.link_nodes(tree, render_node.outputs["Normal"], output_node.inputs["Image"])
+        Compositing.link_nodes(tree, render_node.outputs["Normal"], normal_node.inputs["Image"])
+
+    def create_maskID_branch(tree,render_node,state:State):
+        """Create branch for mask_ID label"""    
+        maskID_node = Compositing.maskID_node(tree,(200,-400))
+        index = 1
+        maskID_node.index = index #TODO: This is hard-coded now
+        math_node = Compositing.math_node(tree,(400,-400))
+        math_node.operation = 'SIGN'
+        output_node_1 = Compositing.file_output_node(tree,(600,-400))
+        output_node_1.format.color_mode = 'BW'
+        output_node_1.format.color_depth = '8'
+        output_node_1.base_path = os.path.join(state.path["output_path"])
+        output_node_1.file_slots[0].path = "\mask_ID_shadow_" + str(index) + "\######"
+        output_node_2 = Compositing.file_output_node(tree,(600,-400))
+        output_node_2.format.color_mode = 'BW'
+        output_node_2.format.color_depth = '8'
+        output_node_2.base_path = os.path.join(state.path["output_path"])
+        output_node_2.file_slots[0].path = "\mask_ID_" + str(index) + "\######"
+        Compositing.link_nodes(tree, render_node.outputs["DiffDir"], math_node.inputs[0])
+        Compositing.link_nodes(tree, math_node.outputs["Value"], output_node_1.inputs[0])
+        Compositing.link_nodes(tree, render_node.outputs["IndexOB"], maskID_node.inputs["ID value"])
+        Compositing.link_nodes(tree, maskID_node.outputs["Alpha"], output_node_2.inputs[0])
+

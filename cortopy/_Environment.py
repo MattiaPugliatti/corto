@@ -154,7 +154,7 @@ class Environment:
         """
         corto.Camera.select_camera(camera.name)
         rendering_name = '{}.png'.format(str(int(index)).zfill(6))
-        bpy.context.scene.render.filepath = os.path.join(state.output_path,'img',rendering_name)
+        bpy.context.scene.render.filepath = os.path.join(state.path["output_path"],'img',rendering_name)
         bpy.context.scene.frame_current = index
         bpy.ops.render.render(write_still = True)
         
@@ -164,14 +164,13 @@ class Environment:
             time.sleep(2)
             z = bpy.data.images['Viewer Node']#TODO does this work with multipel viewer nodes?
             w, h = z.size
-            print(z.pixels[:])
             dmap = np.array(z.pixels[:], dtype=np.float16) # convert to numpy array
             dmap = np.reshape(dmap, (h, w, 4))[:,:,0]
             dmap = np.rot90(dmap, k=2)
             dmap = np.fliplr(dmap)
             txtname = '{num:06d}'
-            depth_dir = os.path.join(state.output_path,'depth')
+            depth_dir = os.path.join(state.path["output_path"],'depth')
             if not os.path.exists(depth_dir):
                 os.makedirs(depth_dir)
-            np.savetxt(os.path.join(state.output_path,'depth', txtname.format(num=(index+0)) + '.txt'), dmap, delimiter=' ',fmt='%.5f')    
+            np.savetxt(os.path.join(state.path["output_path"],'depth', txtname.format(num=(index+0)) + '.txt'), dmap, delimiter=' ',fmt='%.5f')    
         return

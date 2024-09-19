@@ -4,8 +4,10 @@ from __future__ import annotations
 import numpy as np
 import bpy 
 import mathutils
+import os
 
 from typing import (Any, List, Mapping, Optional, Tuple, Union, overload)
+from cortopy import State
 
 class Shading:
     """
@@ -147,3 +149,44 @@ class Shading:
                 # Create a new material slot and assign
                 obj.data.materials.append(material)
         print("Material created and assigned to the active object.")
+
+    def create_node(name:str, material, location = (0,0)):
+        """Create node"""
+        node = material.node_tree.nodes.new(type=name)
+        node.location = (location)
+        return node
+
+    def link_nodes(material,node_output,node_input):
+        """Link output from node a to input to node b"""
+        material.node_tree.links.new(node_output,node_input)
+
+    def texture_node(material, location):
+        return Shading.create_node('ShaderNodeTexImage', material, location)
+
+    def mix_node(material, location):
+        return Shading.create_node('ShaderNodeMixShader', material, location)
+
+    def diffuse_BSDF(material, location):
+        return Shading.create_node('ShaderNodeBsdfDiffuse', material, location)
+    
+    def principled_BSDF(material, location):
+        return Shading.create_node('ShaderNodeBsdfPrincipled', material, location)
+    
+    def material_output(material, location):
+        return Shading.create_node('ShaderNodeOutputMaterial', material, location)
+    
+    def create_branch_texture_mix(material,state:State):
+        texture_node = Shading.texture_node(material,(-400,0))
+        texture_node.image = bpy.data.images.load(os.path.join(state.path['input_path'],'body','Texture',state.path['texture_name']))
+        mix_node = Shading.mix_node(material,(400,0))
+        mix_node.inputs[0].default_value = 0.95
+        diffuse_BSDF_node = Shading.diffuse_BSDF(material,(0,200))
+        principled_BSDF_node = Shading.principled_BSDF(material,(0,0))
+        material_node = Shading.material_output(material,(600,0))
+
+        Shading.link_nodes(material, texture_node.outputs["Color"], principled_BSDF_node.inputs["Base Color"])
+        Shading.link_nodes(material, diffuse_BSDF_node.outputs["BSDF"], mix_node.inputs[1])
+        Shading.link_nodes(material, principled_BSDF_node.outputs["BSDF"], mix_node.inputs[2])
+        Shading.link_nodes(material, mix_node.outputs["Shader"], material_node.inputs["Surface"])
+
+        Shading.assign_material_to_object(material, body)
