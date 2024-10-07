@@ -15,7 +15,7 @@ corto.Utils.clean_scene()
 scenario_path = os.path.join('input','S01_Eros')
 scene_file = os.path.join(scenario_path,'scene','scene.json')
 geometry_file = os.path.join(scenario_path,'geometry','geometry.json')
-body_file = os.path.join(scenario_path,'body','Shape','433_Eros_512ICQ.obj')
+body_file = os.path.join(scenario_path,'body','shape','433_Eros_512ICQ.obj')
 
 # Load inputs and settings into the State object
 State = corto.State(scene = scene_file, geometry = geometry_file, body = body_file)
@@ -36,9 +36,22 @@ rendering_engine = corto.Rendering(State.properties_rendering)
 ENV = corto.Environment(cam, body, sun, rendering_engine)
 
 # Setup shading 
-material = corto.Shading.create_new_material('corto shading test')
+#UV unwrap 
+#corto.Shading.uv_unwrap(uv_unwrap_method = 2, direction = 'VIEW_ON_EQUATOR', align = 'POLAR_ZX')
+#corto.Shading.uv_unwrap(uv_unwrap_method = 2, direction = 'VIEW_ON_EQUATOR', align = 'POLAR_ZY')
+#corto.Shading.uv_unwrap(uv_unwrap_method = 2, direction = 'VIEW_ON_POLES', align = 'POLAR_ZY')
+#corto.Shading.uv_unwrap(uv_unwrap_method = 2, direction = 'VIEW_ON_POLES', align = 'POLAR_ZX')
+#corto.Shading.uv_unwrap(uv_unwrap_method = 2, direction = 'ALIGN_TO_OBJECT', align = 'POLAR_ZX')
+#corto.Shading.uv_unwrap(uv_unwrap_method = 2, direction = 'ALIGN_TO_OBJECT', align = 'POLAR_ZY')
+
+# If an existing material is detected
+material = corto.Shading.load_material('corto shading test')
+# Else, generate your own
+#material = corto.Shading.create_new_material('corto shading test')
 #corto.Shading.create_simple_diffuse_BSDF(material, BSDF_color_RGB= np.array([np.random.rand(),np.random.rand(),np.random.rand()]))
-corto.Shading.create_simple_principled_BSDF(material, PBSDF_color_RGB= np.array([np.random.rand(),np.random.rand(),np.random.rand()]))
+#corto.Shading.create_simple_principled_BSDF(material, PBSDF_color_RGB= np.array([np.random.rand(),np.random.rand(),np.random.rand()]))
+#corto.Shading.create_branch_texture_mix(material, State)
+
 corto.Shading.assign_material_to_object(material, body)
 
 
@@ -71,7 +84,7 @@ body.set_scale(np.array([0.1, 0.1, 0.1])) # adjust body scale for better test re
 sun.set_energy = 0.1 #TODO: This one is not working
 
 # Render the first 10 images
-for idx in range(0,5):
+for idx in range(0,1):
     ENV.PositionAll(State,index=idx)
     ENV.RenderOne(cam, State, index=idx, depth_flag = True)
 

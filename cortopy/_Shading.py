@@ -5,6 +5,7 @@ import numpy as np
 import bpy 
 import mathutils
 import os
+import json
 
 from typing import (Any, List, Mapping, Optional, Tuple, Union, overload)
 from cortopy import State
@@ -96,10 +97,21 @@ class Shading:
         # Create material output node
         output_node = nodes.new(type='ShaderNodeOutputMaterial')
         output_node.location = (200, 0)
+        # Create texture node
+        texture_node = nodes.new(type = 'ShaderNodeTexImage')
+        texture_node.location(-200,0)
+
+        texture_path = "/Users/mattia/develop - CORTO/corto/input/S01_Eros/body/Texture/Eros Grayscale.jpg"
+        try:
+            img = bpy.data.images.load(texture_path)
+        except:
+            raise Exception(f"Failed to load image from {texture_path}")
+        texture_node.image = img
         # Connect the Diffuse BSDF node to the Material Output node
         material.node_tree.links.new(shader.outputs['BSDF'], output_node.inputs['Surface'])
+        material.node_tree.links.new(texture_node.outputs['Color'], output_node.inputs['Color'])
         # Set the diffuse color
-        shader.inputs['Color'].default_value = (BSDF_color_RGB[0], BSDF_color_RGB[1], BSDF_color_RGB[2], 1)  # RGBA
+        #shader.inputs['Color'].default_value = (BSDF_color_RGB[0], BSDF_color_RGB[1], BSDF_color_RGB[2], 1)  # RGBA
 
     def create_simple_principled_BSDF(material, 
                                       PBSDF_color_RGB = np.array([1, 0, 0]),
@@ -175,18 +187,140 @@ class Shading:
     def material_output(material, location):
         return Shading.create_node('ShaderNodeOutputMaterial', material, location)
     
+    def uv_map(material, location):
+        return Shading.create_node('ShaderNodeUVMap', material, location)
+
     def create_branch_texture_mix(material,state:State):
         texture_node = Shading.texture_node(material,(-400,0))
-        texture_node.image = bpy.data.images.load(os.path.join(state.path['input_path'],'body','Texture',state.path['texture_name']))
+        #texture_path = os.path.join(state.path['input_path'],'body','Texture',state.path['texture_name'])
+        texture_path = "/Users/mattia/develop - CORTO/corto/input/S01_Eros/body/Texture/Eros grayscale.jpg"
+        try:
+            texture_node.image = bpy.data.images.load(texture_path)
+        except:
+            raise Exception(f"Failed to load image from {texture_path}")
         mix_node = Shading.mix_node(material,(400,0))
         mix_node.inputs[0].default_value = 0.95
         diffuse_BSDF_node = Shading.diffuse_BSDF(material,(0,200))
         principled_BSDF_node = Shading.principled_BSDF(material,(0,0))
         material_node = Shading.material_output(material,(600,0))
+        uv_map_node = Shading.uv_map(material,(-600,0))
+        #uv_map_node.uv_map = obj.data.uv_layers.active.name
 
         Shading.link_nodes(material, texture_node.outputs["Color"], principled_BSDF_node.inputs["Base Color"])
         Shading.link_nodes(material, diffuse_BSDF_node.outputs["BSDF"], mix_node.inputs[1])
         Shading.link_nodes(material, principled_BSDF_node.outputs["BSDF"], mix_node.inputs[2])
         Shading.link_nodes(material, mix_node.outputs["Shader"], material_node.inputs["Surface"])
+        Shading.link_nodes(material, uv_map_node.outputs["UV"], texture_node.inputs["Vector"])
 
-        Shading.assign_material_to_object(material, body)
+    def uv_unwrap(uv_unwrap_method : int, direction: str, align: str):
+        # Only "work" with one body
+        '''
+        direction
+        'VIEW_ON_EQUATOR': Projects the UVs based on the view angle, aligning the cylindrical projection with the object’s equator.
+        'VIEW_ON_POLES': Projects the UVs based on the view angle, aligning the cylindrical projection with the object’s poles.
+        'ALIGN_TO_OBJECT': Aligns the cylindrical projection with the object’s local coordinate system (based on its orientation in 3D space).
+
+        align
+        'POLAR_ZX': Aligns the projection with the Z and X axes of the object (useful for objects like pipes that run along the Z-axis).
+        'POLAR_ZY': Aligns the projection with the Z and Y axes.
+        '''
+
+        # The name of the object we want to UV unwrap and apply texture to.
+        object_name = "433_Eros_512ICQ"
+        # Path to the texture image
+        texture_path = "/Users/mattia/develop - CORTO/corto/input/S01_Eros/body/Texture/Eros grayscale.jpg"
+
+        # Ensure the object exists in the scene
+        if object_name not in bpy.data.objects:
+            raise Exception(f"Object '{object_name}' not found in the scene.")
+
+        # Select the object
+        obj = bpy.data.objects[object_name]
+
+        # Make the object active
+        bpy.context.view_layer.objects.active = obj
+
+        # Apply scale, rotation, and location transformations
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+
+        # Ensure we are in Object mode
+        if bpy.context.object.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+
+        # Switch to Edit mode to UV unwrap
+        bpy.ops.object.mode_set(mode='EDIT')
+        # Select all the mesh's faces in Edit mode
+        bpy.ops.mesh.select_all(action='SELECT')
+        if uv_unwrap_method == 1:
+            # Unwrap the object with a better unwrapping method (standard unwrap)
+            bpy.ops.uv.unwrap(method='ANGLE_BASED', margin=0.1)
+        elif uv_unwrap_method == 2:
+            # For objects like cylinders, use this instead:
+            bpy.ops.uv.cylinder_project(direction=direction, align=align)
+        elif uv_unwrap_method == 3:
+            bpy.ops.uv.project_from_view(camera_bounds=False, scale_to_bounds=True)
+
+        # Pack UV Islands to minimize texture stretching
+        bpy.ops.uv.pack_islands(margin=0.1)
+        # Switch back to Object mode
+        bpy.ops.object.mode_set(mode='OBJECT')
+        print("UV Unwrapping and texture application completed!")
+
+    def load_material(material_name:str):
+        """ This function load a shading tree saved in a .json format and stores it into a new material
+        Args:
+            material_name (str): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        # Path to the JSON file that contains the node group data
+        json_path = "//Users/mattia/develop - CORTO/corto/output/blend/shading_D1_S5_Didymos.json"
+
+        # Load the JSON data
+        with open(json_path, 'r') as json_file:
+            node_data = json.load(json_file)
+
+        # Create a new material (or use an existing one)
+        if material_name not in bpy.data.materials:
+            material = bpy.data.materials.new(name=material_name)
+        else:
+            material = bpy.data.materials[material_name]
+
+        material.use_nodes = True
+        node_tree = material.node_tree
+
+        # Clear any existing nodes (if any)
+        nodes = node_tree.nodes
+        nodes.clear()
+        # Dictionary to hold the created nodes by their names for linking purposes
+        node_map = {}
+        # Function to recreate nodes from JSON data
+        def create_node(node_info):
+            # Create a new node in the node tree
+            new_node = node_tree.nodes.new(type=node_info["type"])
+            new_node.name = node_info["name"]
+            new_node.location = node_info["location"]
+            # Restore inputs
+            for input_name, input_value in node_info["inputs"].items():
+                if input_name in new_node.inputs and input_value is not None:
+                    new_node.inputs[input_name].default_value = input_value
+            # Add the node to the node_map for future linking
+            node_map[new_node.name] = new_node
+        # Recreate all nodes from the JSON data
+        for node_info in node_data["nodes"]:
+            create_node(node_info)
+        # Function to recreate links between nodes
+        def create_link(link_info):
+            from_node = node_map[link_info["from_node"]]
+            to_node = node_map[link_info["to_node"]]
+            from_socket = from_node.outputs.get(link_info["from_socket"])
+            to_socket = to_node.inputs.get(link_info["to_socket"])
+            if from_socket and to_socket:
+                node_tree.links.new(from_socket, to_socket)
+        # Recreate all links from the JSON data
+        for link_info in node_data["links"]:
+            create_link(link_info)
+    
+        print(f"Shading tree successfully imported into the material '{material_name}'.")
+        return material
