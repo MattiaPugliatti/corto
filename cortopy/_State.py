@@ -2,7 +2,7 @@ import json
 import numpy as np
 from typing import (Any, List, Mapping, Optional, Tuple, Union, overload)
 import bpy
-
+import os
 class State:
     """
     State class: manages scene settings such as environment properties, geometry, and input models.
@@ -54,7 +54,7 @@ class State:
     # *************************************************************************
 
     #@overload
-    def __init__(self, scene: str = None, geometry: str = None, body: str = None) -> None:
+    def __init__(self, scene: str = None, geometry: str = None, body: str = None, scenario: str = None) -> None:
         """
         Constructor for the class STATE defining scene parameters
 
@@ -63,12 +63,18 @@ class State:
             geometry: path to json file with geometry settings 
             body: path to file with body .blend model? 
         """
-        # deal with scene first
-        self.import_scene(scene)
-        self.import_geometry(geometry)
-        self.import_body(body)
-        self.path = {}
 
+        scene_file = os.path.join('input',scenario,'scene', scene)
+        geometry_file = os.path.join('input',scenario,'geometry', geometry)
+        body_file = os.path.join('input',scenario,'body','shape', body)
+
+        # deal with scene first
+        self.import_scene(scene_file)
+        self.import_geometry(geometry_file)
+        self.import_body(body_file)
+        self.path = {}
+        self.add_path("input_path",os.path.join('input',scenario))
+        self.add_path("output_path",os.path.join('output',scenario))
         
     def import_geometry(self, geometry: str) -> None:
         """

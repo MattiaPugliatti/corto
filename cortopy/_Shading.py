@@ -266,7 +266,7 @@ class Shading:
         bpy.ops.object.mode_set(mode='OBJECT')
         print("UV Unwrapping and texture application completed!")
 
-    def load_material(material_name:str):
+    def load_material(material_name:str, state: State):
         """ This function load a shading tree saved in a .json format and stores it into a new material
         Args:
             material_name (str): _description_
@@ -275,8 +275,7 @@ class Shading:
             _type_: _description_
         """
         # Path to the JSON file that contains the node group data
-        json_path = "//Users/mattia/develop - CORTO/corto/output/blend/shading_D1_S5_Didymos.json"
-
+        json_path = state.path["material_name"]
         # Load the JSON data
         with open(json_path, 'r') as json_file:
             node_data = json.load(json_file)
