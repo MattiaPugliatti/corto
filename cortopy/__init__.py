@@ -14,7 +14,7 @@ Copyright (c) 2023 Mattia Pugliatti
 __all__ = (
     # should contain name of things that you can import from the module
     # just some dummy examples are provided here
-    "__0.1.1__",
+    "version",
     "Camera",
     "Body",
     "Sun",
