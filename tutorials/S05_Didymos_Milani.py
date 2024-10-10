@@ -1,11 +1,12 @@
-import sys, os
+import sys
+import os
 sys.path.append(os.getcwd())
 import cortopy as corto
 
 ## Clean all existing/Default objects in the scene 
 corto.Utils.clean_scene()
 
-### DEFINE INPUT ### 
+### (1) DEFINE INPUT ### 
 scenario_name = "S05_Didymos_Milani" # Name of the scenario folder
 scene_name = "scene.json" # name of the scene input
 geometry_name = "geometry.json" # name of the geometry input

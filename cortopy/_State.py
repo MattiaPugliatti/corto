@@ -3,6 +3,7 @@ import numpy as np
 from typing import (Any, List, Mapping, Optional, Tuple, Union, overload)
 import bpy
 import os
+from pathlib import Path
 class State:
     """
     State class: manages scene settings such as environment properties, geometry, and input models.
@@ -64,6 +65,11 @@ class State:
             body: path to file with body .blend model? 
         """
 
+        # Get the directory where the script is located
+        corto_path = Path("__file__").resolve().parent
+        print(f"Script is running in: {corto_path}")
+
+
         scene_file = os.path.join('input',scenario,'scene', scene)
         geometry_file = os.path.join('input',scenario,'geometry', geometry)
         body_file = os.path.join('input',scenario,'body','shape', body)
@@ -73,9 +79,10 @@ class State:
         self.import_geometry(geometry_file)
         self.import_body(body_file)
         self.path = {}
-        self.add_path("input_path",os.path.join('input',scenario))
-        self.add_path("output_path",os.path.join('output',scenario))
-        
+        self.add_path("corto_path",corto_path)
+        self.add_path("input_path",os.path.join(corto_path,'input',scenario))
+        self.add_path("output_path",os.path.join(corto_path,'output',scenario))
+
     def import_geometry(self, geometry: str) -> None:
         """
         Import scene geometry configuration

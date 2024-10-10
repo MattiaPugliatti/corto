@@ -1,21 +1,23 @@
 import sys
 import os
 sys.path.append(os.getcwd())
+
 import cortopy as corto
 
 ## Clean all existing/Default objects in the scene 
 corto.Utils.clean_scene()
 
 ### (1) DEFINE INPUT ### 
-scenario_name = "S05_Didymos" # Name of the scenario folder
+scenario_name = "S06_Moon" # Name of the scenario folder
 scene_name = "scene.json" # name of the scene input
 geometry_name = "geometry.json" # name of the geometry input
-body_name = "didymos_g_2329mm_spc_obj_0000n00000_v003.obj" # name of the body input
+body_name = "Moon.obj" # name of the body input
 
 # Load inputs and settings into the State object
 State = corto.State(scene = scene_name, geometry = geometry_name, body = body_name, scenario = scenario_name)
-# Define extra input
-State.add_path("material_name", os.path.join('input',scenario_name, 'body','material','shading_D1_S5_Didymos.json')) # Define path for extra input (material)
+# Add extra inputs 
+State.add_path('texture_path',os.path.join(State.path["input_path"],'body','texture','lroc_color_poles_2k.tif'))
+State.add_path('displace_path',os.path.join(State.path["input_path"],'body','displacement','ldem_4.tif'))
 
 ### (2) SETUP THE SCENE ###
 # Setup bodies
@@ -29,7 +31,8 @@ rendering_engine = corto.Rendering(State.properties_rendering)
 ENV = corto.Environment(cam, body, sun, rendering_engine)
 
 ### (3) MATERIAL PROPERTIES ###
-material = corto.Shading.load_material('S05_Didymos_Milani_material', State)
+material = corto.Shading.create_new_material('S06_Moon_material')
+corto.Shading.create_branch_texture_and_displace_mix(material, State)
 corto.Shading.assign_material_to_object(material, body)
 
 ### (4) COMPOSITING PROPERTIES ###
