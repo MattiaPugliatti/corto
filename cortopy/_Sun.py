@@ -1,58 +1,14 @@
-
 from __future__ import annotations
+from typing import (Any, List, Mapping, Optional, Tuple, Union, overload)
 
 import numpy as np
 import bpy 
 import mathutils
 
-from typing import (Any, List, Mapping, Optional, Tuple, Union, overload)
-
 class Sun:
     """
     Sun class
     """
-    @classmethod
-    def exampleClass(cls, arg1: int, arg2: int) -> Tuple[int, int]: # type hinting
-        """
-        Description of the method
-
-        Args:
-            arg 1: description
-            arg 2: description
-
-        Raises:
-            which kind of exceptions
-        
-        Returns:
-            arg 1: descritpion
-            arg 2: description
-
-        See also:
-            additional function and modules imported
-
-        """
-
-    @staticmethod # decorator for static methods
-    def exampleStatic(arg1: int, arg2: int) -> Tuple[int, int]: # type hinting
-        """
-        Description of the method
-
-        Args:
-            arg 1: description
-            arg 2: description
-
-        Raises:
-            which kind of exceptions
-        
-        Returns:
-            arg 1: descritpion
-            arg 2: description
-
-        See also:
-            additional function and modules imported
-
-        """
-
     # *************************************************************************
     # *     Constructors & Destructors
     # *************************************************************************
@@ -63,8 +19,8 @@ class Sun:
         Constructor for the class SUN defining Blender light source
 
         Args:
-            name: name of the SUN object 
-            properties: properties of the SUN object
+            name (str): name of the SUN object 
+            properties (dict): properties of the SUN object
         """
         # SUN name
         self.name = name
@@ -84,9 +40,8 @@ class Sun:
         SUN.location = self.position # [BU]
         SUN.rotation_mode = 'QUATERNION'
         SUN.rotation_quaternion = self.orientation # [-]
+        # Link the corto and blender objects
         self.SUN_Blender = SUN
-
-        #def __init__(self, *args, **kwargs) -> None: # version that actually implements the different args checks and implementation
 
     # Instance methods
     def get_name(self) -> str:
@@ -171,7 +126,7 @@ class Sun:
         Set position of the SUN instance
 
         Args:
-            position : array containing incoming direction of the light source
+            position (np.array) : array containing incoming direction of the light source
         """
         direction = mathutils.Vector(-position/np.linalg.norm(position))
         rot_quat = direction.to_track_quat('-Z', 'Y')
@@ -186,7 +141,7 @@ class Sun:
         Set energy of the SUN instance
 
         Args:
-            energy : float describing intensity of the light source
+            energy (float): float describing intensity of the light source
         """
         self.sun_energy = energy
         self.SUN_Blender.data.energy = self.sun_energy
@@ -196,8 +151,7 @@ class Sun:
         Set angle of the SUN instance
 
         Args:
-            angle : float describing angle of the light source
+            angle (float): float describing angle of the light source
         """
         self.sun_angle = angle
         self.SUN_Blender.data.angle = self.sun_angle
-

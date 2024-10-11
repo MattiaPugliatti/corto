@@ -1,58 +1,16 @@
-
 from __future__ import annotations
+from typing import Any, List, Mapping, Optional, Tuple, Union, overload
 
-import bpy 
+import bpy
 import os
 import cortopy as corto
-
-from typing import (Any, List, Mapping, Optional, Tuple, Union, overload)
 from datetime import datetime
+
+
 class Utils:
     """
     Utils class
     """
-    @classmethod
-    def exampleClass(cls, arg1: int, arg2: int) -> Tuple[int, int]: # type hinting
-        """
-        Description of the method
-
-        Args:
-            arg 1: description
-            arg 2: description
-
-        Raises:
-            which kind of exceptions
-        
-        Returns:
-            arg 1: descritpion
-            arg 2: description
-
-        See also:
-            additional function and modules imported
-
-        """
-
-    @staticmethod # decorator for static methods
-    def exampleStatic(arg1: int, arg2: int) -> Tuple[int, int]: # type hinting
-        """
-        Description of the method
-
-        Args:
-            arg 1: description
-            arg 2: description
-
-        Raises:
-            which kind of exceptions
-        
-        Returns:
-            arg 1: descritpion
-            arg 2: description
-
-        See also:
-            additional function and modules imported
-
-        """
-
     # *************************************************************************
     # *     Constructors & Destructors
     # *************************************************************************
@@ -63,36 +21,40 @@ class Utils:
         """
 
     # Istance methods
-    # imo this should be static method of Environment class
     @staticmethod
-    def clean_scene():
+    def clean_scene(): #TODO: workout if this should be a static method of Environment class
         """
         Delete all existing objects from a scene
         """
         # Deselect all objects
-        bpy.ops.object.select_all(action='DESELECT')
+        bpy.ops.object.select_all(action="DESELECT")
         # Select all objects
-        bpy.ops.object.select_all(action='SELECT')
+        bpy.ops.object.select_all(action="SELECT")
         # Delete all selected objects
         bpy.ops.object.delete()
 
     @staticmethod
     def GenerateTimestamp() -> None:
+        """Generate a timestamp string as Year-Month-Day-HH-MM-SS, for random saving purposes
+
+        Returns:
+            str: timestamp string
+        """        
         timestamp = datetime.now()
         formatted_timestamp = timestamp.strftime("%Y_%m_%d_%H_%M_%S")
         return formatted_timestamp
-    
+
     @staticmethod
-    def save_blend(state:corto.State) -> None:
+    def save_blend(state: corto.State, blend_name = 'debug') -> None:
         """Method to save a .blend file
 
         Args:
-            state (corto.St): name of the .blend file
+            state (corto.State): name of the .blend file
+            name (str, optional): name of the .blend file to save. Defaults to 'debug'.
         """
-        # Disable the creation of backup files
+        #TODO: Add the automatic disabling of the backup .blend1 files
         bpy.context.preferences.filepaths.save_version = 0
-        blend_dir = os.path.join(state.path["output_path"],'blend')
+        blend_dir = os.path.join(state.path["output_path"], "blend")
         if not os.path.exists(blend_dir):
             os.makedirs(blend_dir)
-        bpy.ops.wm.save_as_mainfile(filepath=os.path.join(blend_dir,'debug.blend'))
-        
+        bpy.ops.wm.save_as_mainfile(filepath=os.path.join(blend_dir, blend_name + ".blend"))

@@ -1,4 +1,7 @@
+"""
+Script to serialize and save UV data as a .json file
 
+"""
 import bpy
 import json
 
@@ -32,6 +35,8 @@ def export_uv(obj_name, file_path):
 export_uv('SourceObjectName', '/path/to/your/uv_data.json')
 
 
+'''
+# Load 
 import bpy
 import json
 
@@ -61,3 +66,4 @@ def import_uv(obj_name, file_path):
 
 # Example usage:
 import_uv('TargetObjectName', '/path/to/your/uv_data.json')
+'''

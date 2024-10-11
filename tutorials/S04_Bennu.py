@@ -1,3 +1,12 @@
+"""
+Tutorial script to render images of the S04_Bennu scenario. 
+To run this tutorial, you first need to put data in the input folder. 
+You can download the tutorial data from:
+
+https://drive.google.com/drive/folders/1K3e5MyQin6T9d_EXLG_gFywJt3I18r6H?usp=sharing
+
+"""
+
 import sys
 import os
 sys.path.append(os.getcwd())

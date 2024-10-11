@@ -1,60 +1,16 @@
 
 from __future__ import annotations
+from typing import (Any, List, Mapping, Optional, Tuple, Union, overload)
 
 import numpy as np
 import bpy 
-import mathutils
 import os
 import cortopy as corto
-
-from typing import (Any, List, Mapping, Optional, Tuple, Union, overload)
 
 class Environment:
     """
     Sun class
     """
-    @classmethod
-    def exampleClass(cls, arg1: int, arg2: int) -> Tuple[int, int]: # type hinting
-        """
-        Description of the method
-
-        Args:
-            arg 1: description
-            arg 2: description
-
-        Raises:
-            which kind of exceptions
-        
-        Returns:
-            arg 1: descritpion
-            arg 2: description
-
-        See also:
-            additional function and modules imported
-
-        """
-
-    @staticmethod # decorator for static methods
-    def exampleStatic(arg1: int, arg2: int) -> Tuple[int, int]: # type hinting
-        """
-        Description of the method
-
-        Args:
-            arg 1: description
-            arg 2: description
-
-        Raises:
-            which kind of exceptions
-        
-        Returns:
-            arg 1: descritpion
-            arg 2: description
-
-        See also:
-            additional function and modules imported
-
-        """
-
     # *************************************************************************
     # *     Constructors & Destructors
     # *************************************************************************
@@ -144,27 +100,25 @@ class Environment:
         self.sun.set_position(position_sun)
         return self
 
-    def RenderOne(self, camera, state:corto.State, index: int = 0, depth_flag: bool =False) -> None :
-        """
-        Render the scene given a state and an index 
-        
+    def RenderOne(self, camera:corto.Camera, state:corto.State, index: int = 0, depth_flag: bool =False) -> None :
+        """_summary_
+
         Args:
-            state: instance of cortopy.State class containing scene, geometry, and body settings
-            index: (optional) geometry config file may contain multiple configurations, this index selects a specific sample, by default it gathers the first one available.
-        """
+            camera (corto.Camera): camera object
+            state (corto.State): state object
+            index (int, optional): index of the geometry to render. Defaults to 0.
+            depth_flag (bool, optional): flag to enable depth label generation. Defaults to False.
+        """        
         corto.Camera.select_camera(camera.name)
         rendering_name = '{}.png'.format(str(int(index)).zfill(6))
         bpy.context.scene.render.filepath = os.path.join(state.path["output_path"],'img',rendering_name)
         bpy.context.scene.frame_current = index
         bpy.ops.render.render(write_still = True)
         
-        import time
-
-        if depth_flag: 
-            time.sleep(2)
-            z = bpy.data.images['Viewer Node']#TODO does this work with multipel viewer nodes?
+        if depth_flag: # TODO: debug while its not saving anything in output
+            z = bpy.data.images['Viewer Node']#TODO: does this work with multiple viewer nodes?
             w, h = z.size
-            dmap = np.array(z.pixels[:], dtype=np.float16) # convert to numpy array
+            dmap = np.array(z.pixels[:], dtype=np.float16)
             dmap = np.reshape(dmap, (h, w, 4))[:,:,0]
             dmap = np.rot90(dmap, k=2)
             dmap = np.fliplr(dmap)

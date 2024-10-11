@@ -1,5 +1,6 @@
+# WIP 
 # This script is used to render the Didymos scene from input transmitted by the milani-gnc prototype.
-# This CORTO interface works by transmitting directly the image vector to Simulink as seen from the Viewer.
+# This CORTO interface works by transmitting directly the image vector to Simulink as loaded from the output_path folder.
 # Because the input image is sent to Simulink as seen from the viewer node of the composite, the image is encoded in linear space
 # A gamma-correction is applied on Simulink. This model works with the NAVCAM_HF_1_b model, the actual image is transmitted from Blender to Simulink,
 # but it is transmitted encoded in linear space.
@@ -20,7 +21,7 @@ FOV_x = 21 # [deg], Horizontal FOV of the NAVCAM
 FOV_y = 16 # [deg], Vertical FOV of the NAVCAM
 sensor_size_x = 2048 #[pxl], Horizontal resolution of the images
 sensor_size_y = 1536 #[pxl], Vertical resolution of the images
-n_channels = 1 #[-], Number of channels of the images
+n_channels = 3 #[-], Number of channels of the images
 bit_encoding = 8 #[-], Number of bit per pixel
 compression = 15 #[-], Compression factor
 
@@ -146,13 +147,13 @@ while receiving_flag:
     print('SC:    POS ' +  str(PQ_SC[0:3]) + ' - Q ' + str(PQ_SC[3:7]))
     for jj in np.arange(0,n_bodies):
         print('BODY (' + str(jj) + '):   POS: ' +  str(PQ_Bodies[int(jj),0:3]) + ' - Q ' + str(PQ_Bodies[int(jj),3:7]))
-    # Position all bodies in the scene
+    #Position all bodies in the scene
     PositionAll(PQ_SC,PQ_Bodies,PQ_Sun)
-    # Take a picture
+    #Take a picture
     Render(ii)
-    # Read the pixels from the viewer node
-    pixels = bpy.data.images['Viewer Node'].pixels
-    img_reshaped_vec = pixels[:]
+    # Read the pixels from the saved image
+    img_read = bpy.data.images.load(filepath = output_path + '/' + '\{}.png'.format(str(int(ii)).zfill(6)))
+    img_reshaped_vec = img_read.pixels[:]
     # Pack the RGBA image as vector and transmit over TCP
     format_pack = '@' + str(len(img_reshaped_vec)) + 'd'
     img_pack = struct.pack(format_pack,*img_reshaped_vec);

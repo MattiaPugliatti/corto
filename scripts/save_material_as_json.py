@@ -1,6 +1,8 @@
 """
-Example on how to save a shading node tree as a .json serialized output
+Script to serialize and save a shading tree as a .json file
+
 """
+
 import bpy
 import json
 

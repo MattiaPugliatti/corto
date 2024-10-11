@@ -1,8 +1,8 @@
+# WIP 
 # This script is used to render the Didymos scene from input transmitted by the milani-gnc prototype.
-# This CORTO interface works by transmitting directly the image vector to Simulink as loaded from the output_path folder.
-# Because the input image is sent to Simulink as seen from the viewer node of the composite, the image is encoded in linear space
-# A gamma-correction is applied on Simulink. This model works with the NAVCAM_HF_1_b model, the actual image is transmitted from Blender to Simulink,
-# but it is transmitted encoded in linear space.
+# This CORTO interface works by saving the rendered scene from the composite in the "output_path" and sending a ping
+# by TCP to Simulink to close the loop. This model works with the NAVCAM_HF_1_a model, the actual image is not transmitted from Blender to Simulink,
+# instead, it is saved in Blender and read in Simulink.
 
 import socket
 import struct
@@ -12,6 +12,7 @@ import bpy
 import mathutils
 import sys
 import pickle
+import os
 
 #### (1) STATIC PARAMETERS ####
 
@@ -20,7 +21,7 @@ FOV_x = 21 # [deg], Horizontal FOV of the NAVCAM
 FOV_y = 16 # [deg], Vertical FOV of the NAVCAM
 sensor_size_x = 2048 #[pxl], Horizontal resolution of the images
 sensor_size_y = 1536 #[pxl], Vertical resolution of the images
-n_channels = 3 #[-], Number of channels of the images
+n_channels = 1 #[-], Number of channels of the images
 bit_encoding = 8 #[-], Number of bit per pixel
 compression = 15 #[-], Compression factor
 
@@ -33,8 +34,9 @@ bpy.context.scene.render.tile_x = 64 # tile size(x)
 bpy.context.scene.render.tile_y = 64 # tile size(y)
 
 #OTHERS
-
+#Path where the image get saved
 output_path = 'C:\\Users\\Pugliatti Mattia\\Documents\\milaniGNC_BUFFER'
+
 
 n_zfills = 6 #Number of digits used in the image name
 model_name_1 = 'D1'
@@ -147,15 +149,12 @@ while receiving_flag:
     for jj in np.arange(0,n_bodies):
         print('BODY (' + str(jj) + '):   POS: ' +  str(PQ_Bodies[int(jj),0:3]) + ' - Q ' + str(PQ_Bodies[int(jj),3:7]))
     #Position all bodies in the scene
+    #PQ_SC = [PQ_SC[0],PQ_SC[1],PQ_SC[2],1,0,0,0]
     PositionAll(PQ_SC,PQ_Bodies,PQ_Sun)
     #Take a picture
     Render(ii)
-    # Read the pixels from the saved image
-    img_read = bpy.data.images.load(filepath = output_path + '/' + '\{}.png'.format(str(int(ii)).zfill(6)))
-    img_reshaped_vec = img_read.pixels[:]
-    # Pack the RGBA image as vector and transmit over TCP
-    format_pack = '@' + str(len(img_reshaped_vec)) + 'd'
-    img_pack = struct.pack(format_pack,*img_reshaped_vec);
-    clientsocket.send(img_pack)
-    #continue on the iteration
+    #Send an aknowledgement signal to cuborg
+    a = np.double(ii)
+    data_string = pickle.dumps(a)
+    clientsocket.send(data_string)
     ii = ii + 1

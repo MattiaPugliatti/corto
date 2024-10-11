@@ -1,3 +1,4 @@
+# WIP 
 # This script is used to render the Didymos scene from input transmitted by the milani-gnc prototype.
 # This CORTO interface works by transmitting directly the image vector to Simulink as loaded from the output_path folder.
 # Because the input image is sent to Simulink as seen from the viewer node of the composite, the image is encoded in linear space
