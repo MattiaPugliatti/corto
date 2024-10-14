@@ -1,0 +1,10 @@
+**/__pycache__
+.venv/
+data/*
+*.DS_Store
+*.whl
+input/*
+output/*
+monet/input/*
+monet/output/*
+cortopy.egg-info

@@ -1,3 +1,8 @@
+"""
+Original "RenderFromTxt" script
+
+"""
+
 import bpy
 import mathutils
 import numpy as np
