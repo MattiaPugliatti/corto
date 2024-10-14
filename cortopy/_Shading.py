@@ -486,3 +486,29 @@ class Shading:
             f"Shading tree successfully imported into the material '{material_name}'."
         )
         return material
+
+    def load_uv_data(body: Body, state: State):
+        """This method load a shading tree serialized in a .json format and stores it into a new material
+        Args:
+            material_name (str): name of the material 
+            state (corto.State): State object, for path handling
+
+        Returns:
+            _type_: _description_
+        """
+        obj = bpy.data.objects[body.name]
+        # Ensure the object has UV data
+        if obj.data.uv_layers.active is None:
+            obj.data.uv_layers.new(name='ImportedUV')
+        uv_layer = obj.data.uv_layers.active.data
+        # Load the UV data from the file
+        with open(state.path["uv_data_path"], 'r') as file:
+            uv_data = json.load(file)
+        # Ensure the number of faces matches
+        if len(uv_data) != len(obj.data.polygons):
+            raise Exception("The number of polygons in the target object does not match the source UV data.")
+        # Apply UV data
+        for poly, poly_uvs in zip(obj.data.polygons, uv_data):
+            for loop_index, uv in zip(poly.loop_indices, poly_uvs):
+                uv_layer[loop_index].uv = (uv[0], uv[1])
+        print(f"UV data imported to {body.name}")

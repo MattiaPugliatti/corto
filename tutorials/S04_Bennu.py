@@ -11,6 +11,7 @@ import sys
 import os
 sys.path.append(os.getcwd())
 import cortopy as corto
+import numpy as np
 
 ## Clean all existing/Default objects in the scene 
 corto.Utils.clean_scene()
@@ -25,6 +26,7 @@ body_name = "Bennu.obj" # name of the body input
 State = corto.State(scene = scene_name, geometry = geometry_name, body = body_name, scenario = scenario_name)
 # Add extra inputs 
 State.add_path('texture_path',os.path.join(State.path["input_path"],'body','texture','Bennu_global_FB34_FB56_ShapeV28_GndControl_MinnaertPhase30_PAN_8bit.tif'))
+State.add_path('uv_data_path',os.path.join(State.path["input_path"],'body','uv data','uv_data.json'))
 
 ### (2) SETUP THE SCENE ###
 # Setup bodies
@@ -38,28 +40,22 @@ rendering_engine = corto.Rendering(State.properties_rendering)
 ENV = corto.Environment(cam, body, sun, rendering_engine)
 
 ### (3) MATERIAL PROPERTIES ###
-import numpy as np
-body.set_orientation(np.array([1,0,0,0]))
-corto.Shading.uv_unwrap(uv_unwrap_method = 3, aux_input = [True, False, 'VIEW_ON_POLES','POLAR_ZX'], body = body)
-
 material = corto.Shading.create_new_material('corto shading test')
 corto.Shading.create_branch_texture_mix(material, State)
+corto.Shading.load_uv_data(body,State)
 corto.Shading.assign_material_to_object(material, body)
 
 ### (4) COMPOSITING PROPERTIES ###
 # Build image-label pairs pipeline
 tree = corto.Compositing.create_compositing()
 render_node = corto.Compositing.rendering_node(tree, (0,0)) # Create Render node
-corto.Compositing.create_img_denoise_branch(tree,render_node,State) # Create img_denoise branch
-corto.Compositing.create_depth_branch(tree,render_node,State) # Create depth branch
+corto.Compositing.create_img_denoise_branch(tree,render_node) # Create img_denoise branch
+corto.Compositing.create_depth_branch(tree,render_node) # Create depth branch
 corto.Compositing.create_slopes_branch(tree,render_node,State) # Create slopes branch
 corto.Compositing.create_maskID_branch(tree,render_node,State) # Create ID mask branch
 
-# 'VIEW_ON_EQUATOR': Project from the view along the equator.
-# 'VIEW_ON_POLES': Project from the view along the poles.
 ### (5) GENERATION OF IMG-LBL PAIRS ###
-
-body.set_scale(np.array([0.1, 0.1, 0.1])) # adjust body scale for better test renderings
+body.set_scale(np.array([1, 1, 1])) # adjust body scale for better test renderings
 
 n_img = 1 # Render the first "n_img" images
 for idx in range(0,n_img):

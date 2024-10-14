@@ -44,8 +44,8 @@ corto.Shading.assign_material_to_object(material, body)
 # Build image-label pairs pipeline
 tree = corto.Compositing.create_compositing()
 render_node = corto.Compositing.rendering_node(tree, (0,0)) # Create Render node
-corto.Compositing.create_img_denoise_branch(tree,render_node,State) # Create img_denoise branch
-corto.Compositing.create_depth_branch(tree,render_node,State) # Create depth branch
+corto.Compositing.create_img_denoise_branch(tree,render_node) # Create img_denoise branch
+corto.Compositing.create_depth_branch(tree,render_node) # Create depth branch
 corto.Compositing.create_slopes_branch(tree,render_node,State) # Create slopes branch
 
 ### (5) GENERATION OF IMG-LBL PAIRS ###

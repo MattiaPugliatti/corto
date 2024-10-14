@@ -11,6 +11,7 @@ import os
 sys.path.append(os.getcwd())
 
 import cortopy as corto
+import numpy as np 
 
 ## Clean all existing/Default objects in the scene 
 corto.Utils.clean_scene()
@@ -47,11 +48,12 @@ corto.Shading.assign_material_to_object(material, body)
 # Build image-label pairs pipeline
 tree = corto.Compositing.create_compositing()
 render_node = corto.Compositing.rendering_node(tree, (0,0)) # Create Render node
-corto.Compositing.create_img_denoise_branch(tree,render_node,State) # Create img_denoise branch
-corto.Compositing.create_depth_branch(tree,render_node,State) # Create depth branch
+corto.Compositing.create_img_denoise_branch(tree,render_node) # Create img_denoise branch
+corto.Compositing.create_depth_branch(tree,render_node) # Create depth branch
 corto.Compositing.create_slopes_branch(tree,render_node,State) # Create slopes branch
 
 ### (5) GENERATION OF IMG-LBL PAIRS ###
+body.set_scale(np.array([0.25, 0.25, 0.25])) # adjust body scale for better test renderings
 
 n_img = 1 # Render the first "n_img" images
 for idx in range(0,n_img):
