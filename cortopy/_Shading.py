@@ -4,6 +4,7 @@ from typing import Any, List, Mapping, Optional, Tuple, Union, overload
 import numpy as np
 import bpy
 import json
+import os
 from cortopy import State
 from cortopy import Body
 
@@ -292,7 +293,7 @@ class Shading:
             material, uv_map_node.outputs["UV"], texture_node.inputs["Vector"]
         )
 
-    def create_branch_texture_and_displace_mix(material, state: State):
+    def create_branch_texture_and_displace_mix(material, state: State, settings):
         """method to create a complex shading tree with texture, mix shaders, and displacement nodes
 
         Args:
@@ -312,17 +313,18 @@ class Shading:
 
         try:
             displace_texture.image = bpy.data.images.load(state.path["displace_path"])
+            bpy.data.images[os.path.basename(state.path["displace_path"])].colorspace_settings.name = settings['displacement']['colorspace_name']
         except:
             raise Exception(f"Failed to load image from {state.path['displace_path']}")
-        # TODO: adjust scale, midlevel, and Color space
+        
         mix_node = Shading.mix_node(material, (400, 0))
-        mix_node.inputs[0].default_value = 0.95
+        mix_node.inputs[0].default_value = settings['shading']['mix']
         diffuse_BSDF_node = Shading.diffuse_BSDF(material, (0, 200))
         principled_BSDF_node = Shading.principled_BSDF(material, (0, 0))
         material_node = Shading.material_output(material, (600, 0))
-        uv_map_node = Shading.uv_map(material, (-600, 0))
         displace_node = Shading.displace_node(material, (700, -200))
-        # uv_map_node.uv_map = obj.data.uv_layers.active.name
+        displace_node.inputs[2].default_value = settings['displacement']['scale']
+        displace_node.inputs[1].default_value =  settings['displacement']['mid_level'] 
 
         Shading.link_nodes(
             material,
@@ -345,9 +347,6 @@ class Shading:
             material,
             displace_node.outputs["Displacement"],
             material_node.inputs["Displacement"],
-        )
-        Shading.link_nodes(
-            material, uv_map_node.outputs["UV"], texture_node.inputs["Vector"]
         )
 
     def uv_unwrap(uv_unwrap_method: int, aux_input: list, body: Body):

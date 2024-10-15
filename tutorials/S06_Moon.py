@@ -41,7 +41,13 @@ ENV = corto.Environment(cam, body, sun, rendering_engine)
 
 ### (3) MATERIAL PROPERTIES ###
 material = corto.Shading.create_new_material('S06_Moon_material')
-corto.Shading.create_branch_texture_and_displace_mix(material, State)
+
+# Add extra settings for displacement on the Moon TODO: generalize and or consider putting it into the scene input
+displacement = {'scale': 0.001, 'mid_level': 0, 'colorspace_name': 'Linear CIE-XYZ D65'}
+shading = {'mix': 0.95}
+settings = {'displacement': displacement, 'shading': shading}
+
+corto.Shading.create_branch_texture_and_displace_mix(material, State, settings=settings)
 corto.Shading.assign_material_to_object(material, body)
 
 ### (4) COMPOSITING PROPERTIES ###
