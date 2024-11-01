@@ -44,8 +44,8 @@ material = corto.Shading.create_new_material('S06_Moon_material')
 
 # Add extra settings for displacement on the Moon TODO: generalize and or consider putting it into the scene input
 displacement = {'scale': 0.001, 'mid_level': 0, 'colorspace_name': 'Linear CIE-XYZ D65'}
-shading = {'mix': 0.95}
-settings = {'displacement': displacement, 'shading': shading}
+albedo = {'weight_diffuse': 0.95}
+settings = {'displacement': displacement, 'albedo': albedo}
 
 corto.Shading.create_branch_texture_and_displace_mix(material, State, settings=settings)
 corto.Shading.assign_material_to_object(material, body)
