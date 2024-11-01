@@ -12,10 +12,11 @@ The data structure of the pointcloud is:
 import json
 import numpy as np
 
+txt_filename = "insert/path/to/txt/filename"
+json_filename = txt_filename[0:-3] + "json"
+
 ## Load data ##
-data = np.loadtxt(
-    "input/S01_Eros/geometry/Cloud_2023_12_06_20_16_48.txt", delimiter=" "
-).tolist()
+data = np.loadtxt(txt_filename, delimiter=" ").tolist()
 
 # Generate GEOM dictionary
 GEOM = {
@@ -23,11 +24,11 @@ GEOM = {
         "position": [row[15:18] for row in data]},
     "camera": {
         "position": [row[8:11] for row in data],
-        "orientation": [row[11:15] for row in data],
+        "orientation": [(row[11:15]/np.linalg.norm(row[11:15])).tolist() for row in data],
     },
     "body": {
         "position": [row[1:4] for row in data],
-        "orientation": [row[4:8] for row in data],
+        "orientation": [(row[4:8]/np.linalg.norm(row[4:8])).tolist() for row in data],
     },
 }
 
@@ -35,13 +36,13 @@ GEOM = {
 json_data = json.dumps(GEOM, indent=4)
 
 # Write the JSON string to a file
-with open("input/S01_Eros/geometry/geometry.json", "w") as json_file:
+with open(json_filename, "w") as json_file:
     json_file.write(json_data)
 
 print("JSON file successfully generated!")
 
 # Try reading the file and access it
-f = open("input/S01_Eros/geometry/geometry.json")
+f = open(json_filename)
 settings_json = json.load(f)
 
 for row in settings_json["sun"]["position"]:
