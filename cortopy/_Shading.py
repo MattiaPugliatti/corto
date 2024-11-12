@@ -169,7 +169,7 @@ class Shading:
         material.node_tree.links.new(node_output, node_input)
 
 
-    def texture_node(material, texture_path, colorspace_name='Linear CIE-XYZ D65', location=(0, 0)):
+    def texture_node(material, texture_path, colorspace_name='sRGB', location=(0, 0)):
         """method to create a texture node
 
         Args:
