@@ -113,6 +113,7 @@ class State:
         """
         if load_mode == "obj":
             bpy.ops.wm.obj_import(filepath=body_filepath)
+            bpy.ops.object.shade_smooth() # Default setup smooth property of the mesh
             print(f"Imported .obj file from {body_filepath}")
         elif load_mode == ".blend":
             print("Not implemented")
