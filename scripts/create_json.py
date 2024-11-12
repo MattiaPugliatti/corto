@@ -12,13 +12,13 @@ The data structure of the pointcloud is:
 import json
 import numpy as np
 
-txt_filename = "insert/path/to/txt/filename"
+txt_filename = "/Users/mapu7335/Repos/corto/corto/input/S01_Eros/geometry/Cloud_2023_12_06_20_16_48.txt"
 json_filename = txt_filename[0:-3] + "json"
 
 ## Load data ##
 data = np.loadtxt(txt_filename, delimiter=" ").tolist()
 
-# Generate GEOM dictionary
+# Generate GEOM dictionary (CASE with 1 body)
 GEOM = {
     "sun": {
         "position": [row[15:18] for row in data]},
@@ -32,6 +32,29 @@ GEOM = {
     },
 }
 
+# Generate GEOM dictionary (CASE with multiple bodies) #TEST 
+"""
+GEOM = {
+    "sun": {
+        "position": [row[15:18] for row in data]},
+    "camera": {
+        "position": [row[8:11] for row in data],
+        "orientation": [(row[11:15]/np.linalg.norm(row[11:15])).tolist() for row in data],
+    },
+    "body_1": {
+        "position": [row[1:4] for row in data],
+        "orientation": [(row[4:8]/np.linalg.norm(row[4:8])).tolist() for row in data],
+    },
+    "body_2": {
+        "position": [[row[1],row[2],row[3]+2] for row in data],
+        "orientation": [(row[4:8]/np.linalg.norm(row[4:8])).tolist() for row in data],
+    },
+    "body_3": {
+        "position": [[row[1],row[2],row[3]-2] for row in data],
+        "orientation": [(row[4:8]/np.linalg.norm(row[4:8])).tolist() for row in data],
+    },
+}
+"""
 # Convert the GEOM dictionary to a JSON string
 json_data = json.dumps(GEOM, indent=4)
 

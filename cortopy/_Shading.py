@@ -326,24 +326,30 @@ class Shading:
         )
 
 
-    def create_branch_texture_mix(material, state: State):
+    def create_branch_texture_mix(material, state: State, id_body: int = None):
         """method to create a complex shading tree with albedo texture and mix shaders
 
         Args:
             material (bpy.data.materials): material in which the node is generated
             state (corto.State): State object, used for paths handling
+            id_body (int): extra input for multiple bodies case
 
         Returns:
             node: node in the shading tree
-        """        
-        albedo_texture = Shading.texture_node(material, state.path["texture_path"], location=(-400, 0))
+        """
+        if id_body is not None:
+            # Convert id_body to string to concatenate with the path key
+            texture_key = f"texture_path_{id_body}"
+        else:
+            # Default texture key if id_body is not provided
+            texture_key = "texture_path"
+        albedo_texture = Shading.texture_node(material, state.path[texture_key], location=(-400, 0))
         mix_node = Shading.mix_node(material, (400, 0))
         mix_node.inputs[0].default_value = 0.95
         diffuse_BSDF_node = Shading.diffuse_BSDF(material, (0, 200))
         principled_BSDF_node = Shading.principled_BSDF(material, (0, 0))
         material_node = Shading.material_output(material, (600, 0))
         uv_map_node = Shading.uv_map(material, (-600, 0))
-        # uv_map_node.uv_map = obj.data.uv_layers.active.name
 
         Shading.link_nodes(
             material,
@@ -546,22 +552,30 @@ class Shading:
         )
         return material
 
-    def load_uv_data(body: Body, state: State):
+    def load_uv_data(body: Body, state: State, id_body: int = None):
         """This method load a shading tree serialized in a .json format and stores it into a new material
         Args:
             material_name (str): name of the material 
             state (corto.State): State object, for path handling
+            id_body (int): extra input for multiple bodies case
 
         Returns:
             _type_: _description_
         """
+        if id_body is not None:
+            # Convert id_body to string to concatenate with the path key
+            uv_key = f"uv_data_path_{id_body}"
+        else:
+            # Default uv key if id_body is not provided
+            uv_key = "uv_data_path"
+
         obj = bpy.data.objects[body.name]
         # Ensure the object has UV data
         if obj.data.uv_layers.active is None:
             obj.data.uv_layers.new(name='ImportedUV')
         uv_layer = obj.data.uv_layers.active.data
         # Load the UV data from the file
-        with open(state.path["uv_data_path"], 'r') as file:
+        with open(state.path[uv_key], 'r') as file:
             uv_data = json.load(file)
         # Ensure the number of faces matches
         if len(uv_data) != len(obj.data.polygons):
