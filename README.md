@@ -36,7 +36,34 @@ Download the scenario of interest, and then locate it into the input folder. The
 - .gitignore
 - LICENSE
 - requirements.txt
-- README.md (from GitHub)	
+- README.md (from GitHub)
+
+## Experimental Installation Fix (Not Recommended)
+
+For certain combinations of OS and hardware (e.g., macOS 14.3 on first-generation Apple Silicon), the standard installation of `bpy` may fail due to missing distributions on PyPI. **This is only a workaround and is not the recommended approach. Your mileage may vary.**
+
+To proceed with this workaround, first ensure the following compatibility requirements are met for the `bpy` release:
+
+1. **Python Version** - Confirm compatibility with your Python version.
+2. **Operating System** - Verify that your OS is supported.
+3. **Architecture** - Check that your system’s architecture matches the package requirements.
+
+These details can be confirmed by running the command below in the terminal with the correct Python version and checking compatibility tags:
+
+```bash
+python -m pip debug --verbose
+```
+
+If compatibility checks pass but `pip install bpy` still returns an error (e.g., `ERROR: No matching distribution found for bpy`), you may try the following steps:
+
+1. Download the latest compatible `<version>.whl` distribution of `bpy` from PyPI.
+2. Rename the downloaded `.whl` file to match one of the compatible tags shown in the compatibility check (e.g., `<compatible>.whl`).
+3. Install the renamed `.whl` file by running:
+
+   ```bash
+   pip install <compatible>.whl
+   ```
+This should allow the installation to complete if all compatibility requirements are satisfied. 
 
 # Folders descriptions
 (cortopy) all classes of the corto library are included in this folder
@@ -64,5 +91,4 @@ Download the scenario of interest, and then locate it into the input folder. The
 6) You should see images and labels generated in an output folder
 
 # How to run your own script 
-
-To shape your own scenario, you can imitate the ones provided in the tutorials. In case you are happy with one of the scenarios, you can always change the inputs and or the tutorial script. Otherwise, if you want to use this library for a different target, you can also imitate how the tutorials script build on it. 
+To shape your own scenario, you can imitate the ones provided in the tutorials. In case you are happy with one of the scenarios, you can always change the inputs and or the tutorial script. Otherwise, if you want to use this library for a different target, you can also imitate how the tutorials script build on it.
