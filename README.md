@@ -53,19 +53,20 @@ Download the scenario of interest, and then locate it in the input folder. Then 
 
 1) Install/clone the repository 
 
-2) Install the bpy module in Visual Studio Code
+2) Install the bpy extension in Visual Studio Code
 
-3) Make sure to have Blender 4.0 installed (https://download.blender.org/release/Blender4.0/) 
-
-4) Create a virtual environment in VSC using the requirements.txt (Use Python 3.11.0)
+3) Create a virtual environment in VSC using the requirements.txt (Use Python 3.11.0)
    
-5) Download the input data for a specific tutorial from https://drive.google.com/drive/folders/1K3e5MyQin6T9d_EXLG_gFywJt3I18r6H?usp=sharing (For example, download the folder S05_Didymos)
+4) Download the input data for a specific tutorial from https://drive.google.com/drive/folders/1K3e5MyQin6T9d_EXLG_gFywJt3I18r6H?usp=sharing (For example, download the folder S05_Didymos)
 
-6) Run the script from the "tutorial" folder (For example, the S05_Didymos.py)
+5) Run the script from the "tutorial" folder (For example, the S05_Didymos.py)
 
-7) You should see images and labels generated in an output folder
+6) You should see images and labels generated in an output folder
+
+
+The installation of Blender is optional and facilitates opening the final .blend file generated with corto for visual and debugging purposes. If you want to install Blender, please use Blender 4.0, which you can download here (https://download.blender.org/release/Blender4.0/) 
+
 
 # How to run your own script 
 
-To shape your own scenario, you can imitate the ones provided in the tutorials. In case you are happy with one of the scenarios, you can always change the inputs and or the tutorial script. Otherwise, if you want to use this library for a different target, you can also imitate how the tutorial script builds on it. 
-
+To shape your own scenario, you can imitate the ones provided in the tutorials. If you are happy with one of the scenarios, you can always change the inputs and/or the tutorial script. Otherwise, if you want to use this library for a different target, you can also imitate how the tutorial script builds on it. 
