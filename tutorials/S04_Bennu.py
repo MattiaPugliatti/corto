@@ -25,7 +25,7 @@ body_name = "Bennu.obj" # name of the body input
 # Load inputs and settings into the State object
 State = corto.State(scene = scene_name, geometry = geometry_name, body = body_name, scenario = scenario_name)
 # Add extra inputs 
-State.add_path('texture_path',os.path.join(State.path["input_path"],'body','texture','Bennu_global_FB34_FB56_ShapeV28_GndControl_MinnaertPhase30_PAN_8bit.tif'))
+State.add_path('albedo_path',os.path.join(State.path["input_path"],'body','albedo','Bennu_global_FB34_FB56_ShapeV28_GndControl_MinnaertPhase30_PAN_8bit.tif'))
 State.add_path('uv_data_path',os.path.join(State.path["input_path"],'body','uv data','uv_data.json'))
 
 ### (2) SETUP THE SCENE ###
@@ -41,7 +41,7 @@ ENV = corto.Environment(cam, body, sun, rendering_engine)
 
 ### (3) MATERIAL PROPERTIES ###
 material = corto.Shading.create_new_material('corto shading test')
-corto.Shading.create_branch_texture_mix(material, State)
+corto.Shading.create_branch_albedo_mix(material, State)
 corto.Shading.load_uv_data(body,State)
 corto.Shading.assign_material_to_object(material, body)
 

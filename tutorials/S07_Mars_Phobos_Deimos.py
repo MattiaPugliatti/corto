@@ -26,11 +26,11 @@ body_name = ["g_phobos_287m_spc_0000n00000_v002.obj",
 # Load inputs and settings into the State object
 State = corto.State(scene = scene_name, geometry = geometry_name, body = body_name, scenario = scenario_name)
 # Add extra inputs 
-State.add_path('texture_path_1',os.path.join(State.path["input_path"],'body','texture','Phobos grayscale.jpg'))
+State.add_path('albedo_path_1',os.path.join(State.path["input_path"],'body','albedo','Phobos grayscale.jpg'))
 State.add_path('uv_data_path_1',os.path.join(State.path["input_path"],'body','uv data','g_phobos_287m_spc_0000n00000_v002.json'))
-State.add_path('texture_path_2',os.path.join(State.path["input_path"],'body','texture','Deimos grayscale.jpg'))
+State.add_path('albedo_path_2',os.path.join(State.path["input_path"],'body','albedo','Deimos grayscale.jpg'))
 State.add_path('uv_data_path_2',os.path.join(State.path["input_path"],'body','uv data','g_deimos_162m_spc_0000n00000_v001.json'))
-State.add_path('texture_path_3',os.path.join(State.path["input_path"],'body','texture','Deimos grayscale.jpg'))
+State.add_path('albedo_path_3',os.path.join(State.path["input_path"],'body','albedo','Deimos grayscale.jpg'))
 State.add_path('uv_data_path_3',os.path.join(State.path["input_path"],'body','uv data','g_deimos_081m_spc_0000n00000_v001.json'))
 
 ### (2) SETUP THE SCENE ###
@@ -54,9 +54,9 @@ material_1 = corto.Shading.create_new_material('properties body 1')
 material_2 = corto.Shading.create_new_material('properties body 2')
 material_3 = corto.Shading.create_new_material('properties body 3')
 
-corto.Shading.create_branch_texture_mix(material_1, State,1)
-corto.Shading.create_branch_texture_mix(material_2, State,2)
-corto.Shading.create_branch_texture_mix(material_3, State,3)
+corto.Shading.create_branch_albedo_mix(material_1, State,1)
+corto.Shading.create_branch_albedo_mix(material_2, State,2)
+corto.Shading.create_branch_albedo_mix(material_3, State,3)
 
 corto.Shading.load_uv_data(body_1,State,1)
 corto.Shading.assign_material_to_object(material_1, body_1)

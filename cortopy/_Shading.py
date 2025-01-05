@@ -192,7 +192,7 @@ class Shading:
         return node
 
 
-    def displace_node(material, location=(0, 0)):
+    def displacement_node(material, location=(0, 0)):
         """method to create a displacement node
 
         Args:
@@ -265,7 +265,7 @@ class Shading:
         return Shading.create_node("ShaderNodeUVMap", material, location)
         
 
-    def lambert(material, state: State, settings):
+    def lambert(material, state: State, settings, id_body: int = None):
         """method to create an Oren-Nayar shading tree with optional albedo and displacement textures
 
         Args:
@@ -278,10 +278,10 @@ class Shading:
         
         # Use an Oren-Nayar model with 0 roughness
         settings['albedo']['roughness'] = 0
-        material = Shading.oren(material, state, settings)
+        material = Shading.oren(material, state, settings, id_body)
         
 
-    def oren(material, state: State, settings):
+    def oren(material, state: State, settings, id_body: int = None):
         """method to create an Oren-Nayar shading tree with optional albedo and displacement textures
 
         Args:
@@ -292,41 +292,55 @@ class Shading:
             node: node in the shading tree
         """     
 
-        # Texture nodes
-        albedo_texture = Shading.texture_node(material, state.path["albedo_path"], settings['albedo']['colorspace_name'], (-400, 0))
-        displace_texture =  Shading.texture_node(material, state.path["displacement_path"], settings['displacement']['colorspace_name'], (500, -200))
-        displace_node = Shading.displace_node(material, (700, -200))
-        displace_node.inputs[2].default_value = settings['displacement']['scale']
-        displace_node.inputs[1].default_value =  settings['displacement']['mid_level'] 
+        if id_body is not None:
+            # Convert id_body to string to concatenate with the path key
+            albedo_path_key = f"albedo_path_{id_body}"
+            displacement_path_key = f"displacement_path_{id_body}"
+        else:
+            # Default texture key if id_body is not provided
+            albedo_path_key = "albedo_path"
+            displacement_path_key = "displacement_path"
+
         # BSDF Node
         diffuse_BSDF_node = Shading.diffuse_BSDF(material, (0, 200))
         diffuse_BSDF_node.inputs[1].default_value = settings['albedo']['roughness']
         # Output node
         material_node = Shading.material_output(material, (600, 0))
 
-        # From albedo texture to color
-        Shading.link_nodes(material,
-            albedo_texture.outputs["Color"],
-            diffuse_BSDF_node.inputs["Color"],
-        )
         # From color to output
         Shading.link_nodes(material, 
             diffuse_BSDF_node.outputs["BSDF"], 
             material_node.inputs["Surface"]
         )
-        # From displacement texture to displacement
-        Shading.link_nodes(material, 
-            displace_texture.outputs["Color"],
-            displace_node.inputs["Height"]
-        )
-        # From displacement to output
-        Shading.link_nodes(material,
-            displace_node.outputs["Displacement"],
-            material_node.inputs["Displacement"],
-        )
+
+        if albedo_path_key in state.path:
+            # Albedo texture node
+            albedo_texture = Shading.texture_node(material, state.path["albedo_path"], settings['albedo']['colorspace_name'], (-400, 0))
+            # From albedo texture to color
+            Shading.link_nodes(material,
+                albedo_texture.outputs["Color"],
+                diffuse_BSDF_node.inputs["Color"],
+            )
+
+        if displacement_path_key in state.path:
+            # Displacement texture node
+            displacement_texture =  Shading.texture_node(material, state.path["displacement_path"], settings['displacement']['colorspace_name'], (500, -200))
+            displacement_node = Shading.displacement_node(material, (700, -200))
+            displacement_node.inputs[2].default_value = settings['displacement']['scale']
+            displacement_node.inputs[1].default_value =  settings['displacement']['mid_level'] 
+            # From displacement texture to displacement
+            Shading.link_nodes(material, 
+                displacement_texture.outputs["Color"],
+                displacement_node.inputs["Height"]
+            )
+            # From displacement to output
+            Shading.link_nodes(material,
+                displacement_node.outputs["Displacement"],
+                material_node.inputs["Displacement"],
+            )
 
 
-    def create_branch_texture_mix(material, state: State, id_body: int = None):
+    def create_branch_albedo_mix(material, state: State, id_body: int = None):
         """method to create a complex shading tree with albedo texture and mix shaders
 
         Args:
@@ -339,11 +353,13 @@ class Shading:
         """
         if id_body is not None:
             # Convert id_body to string to concatenate with the path key
-            texture_key = f"texture_path_{id_body}"
+            albedo_path_key = f"albedo_path_{id_body}"
         else:
             # Default texture key if id_body is not provided
-            texture_key = "texture_path"
-        albedo_texture = Shading.texture_node(material, state.path[texture_key], location=(-400, 0))
+            albedo_path_key = "albedo_path"
+        if albedo_path_key not in state.path:
+            raise Exception('No albedo texture found at the specified path')
+        albedo_texture = Shading.texture_node(material, state.path[albedo_path_key], location=(-400, 0))
         mix_node = Shading.mix_node(material, (400, 0))
         mix_node.inputs[0].default_value = 0.95
         diffuse_BSDF_node = Shading.diffuse_BSDF(material, (0, 200))
@@ -369,7 +385,7 @@ class Shading:
             material, uv_map_node.outputs["UV"], albedo_texture.inputs["Vector"]
         )
 
-    def create_branch_texture_and_displace_mix(material, state: State, settings):
+    def create_branch_albedo_and_displacement_mix(material, state: State, settings, id_body: int = None):
         """method to create a complex shading tree with albedo texture, displacement texture and mix shaders
 
         Args:
@@ -377,20 +393,34 @@ class Shading:
             state (corto.State): State object, used for paths handling
 
         Raises:
-            Exception: failure to load albedo image
-            Exception: failure to load displacement map 
+            Exception: failure to load albedo texture
+            Exception: failure to load displacement texture 
         """
-        albedo_texture = Shading.texture_node(material, state.path["texture_path"], location=(-400, 0))
-        displace_texture = Shading.texture_node(material, state.path["displace_path"], settings['displacement']['colorspace_name'], location=(500, -200))
+        if id_body is not None:
+            # Convert id_body to string to concatenate with the path key
+            albedo_path_key = f"albedo_path_{id_body}"
+            displacement_path_key = f"displacement_path_{id_body}"
+        else:
+            # Default texture key if id_body is not provided
+            albedo_path_key = "albedo_path"
+            displacement_path_key = "displacement_path"
+        
+        if albedo_path_key not in state.path:
+            raise Exception('No albedo texture found at the specified path')
+        if displacement_path_key not in state.path:
+            raise Exception('No displacement texture found at the specified path')
+        
+        albedo_texture = Shading.texture_node(material, state.path[albedo_path_key], location=(-400, 0))
+        displacement_texture = Shading.texture_node(material, state.path[displacement_path_key], settings['displacement']['colorspace_name'], location=(500, -200))
         
         mix_node = Shading.mix_node(material, (400, 0))
         mix_node.inputs[0].default_value = settings['albedo']['weight_diffuse']
         diffuse_BSDF_node = Shading.diffuse_BSDF(material, (0, 200))
         principled_BSDF_node = Shading.principled_BSDF(material, (0, 0))
         material_node = Shading.material_output(material, (600, 0))
-        displace_node = Shading.displace_node(material, (700, -200))
-        displace_node.inputs[2].default_value = settings['displacement']['scale']
-        displace_node.inputs[1].default_value =  settings['displacement']['mid_level'] 
+        displacement_node = Shading.displacement_node(material, (700, -200))
+        displacement_node.inputs[2].default_value = settings['displacement']['scale']
+        displacement_node.inputs[1].default_value =  settings['displacement']['mid_level'] 
 
         Shading.link_nodes(
             material,
@@ -407,11 +437,11 @@ class Shading:
             material, mix_node.outputs["Shader"], material_node.inputs["Surface"]
         )
         Shading.link_nodes(
-            material, displace_texture.outputs["Color"], displace_node.inputs["Height"]
+            material, displacement_texture.outputs["Color"], displacement_node.inputs["Height"]
         )
         Shading.link_nodes(
             material,
-            displace_node.outputs["Displacement"],
+            displacement_node.outputs["Displacement"],
             material_node.inputs["Displacement"],
         )
 

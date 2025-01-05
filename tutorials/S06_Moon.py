@@ -25,8 +25,8 @@ body_name = "Moon.obj" # name of the body input
 # Load inputs and settings into the State object
 State = corto.State(scene = scene_name, geometry = geometry_name, body = body_name, scenario = scenario_name)
 # Add extra inputs 
-State.add_path('texture_path',os.path.join(State.path["input_path"],'body','texture','lroc_color_poles_2k.tif'))
-State.add_path('displace_path',os.path.join(State.path["input_path"],'body','displacement','ldem_4.tif'))
+State.add_path('albedo_path',os.path.join(State.path["input_path"],'body','albedo','lroc_color_poles_2k.tif'))
+State.add_path('displacement_path',os.path.join(State.path["input_path"],'body','displacement','ldem_4.tif'))
 
 ### (2) SETUP THE SCENE ###
 # Setup bodies
@@ -47,7 +47,7 @@ displacement = {'scale': 0.001, 'mid_level': 0, 'colorspace_name': 'Linear CIE-X
 albedo = {'weight_diffuse': 0.95}
 settings = {'displacement': displacement, 'albedo': albedo}
 
-corto.Shading.create_branch_texture_and_displace_mix(material, State, settings=settings)
+corto.Shading.create_branch_albedo_and_displacement_mix(material, State, settings=settings)
 corto.Shading.assign_material_to_object(material, body)
 
 ### (4) COMPOSITING PROPERTIES ###
@@ -62,7 +62,9 @@ corto.Compositing.create_slopes_branch(tree,render_node,State) # Create slopes b
 body.set_scale(np.array([0.25, 0.25, 0.25])) # adjust body scale for better test renderings
 
 n_img = 1 # Render the first "n_img" images
+
 for idx in range(0,n_img):
+
     ENV.PositionAll(State,index=idx)
     ENV.RenderOne(cam, State, index=idx, depth_flag = True)
 
