@@ -17,21 +17,21 @@ corto.Utils.clean_scene()
 
 ### (1) DEFINE INPUT ### 
 scenario_name = "S07_Mars_Phobos_Deimos" # Name of the scenario folder
-scene_name = "scene.json" # name of the scene input
-geometry_name = "geometry_3.json" # name of the geometry input
+scene_name = "scene_mmx.json" # name of the scene input
+geometry_name = "geometry_mmx.json" # name of the geometry input
 body_name = ["g_phobos_287m_spc_0000n00000_v002.obj",
-             "g_deimos_162m_spc_0000n00000_v001.obj",
-             "g_deimos_081m_spc_0000n00000_v001.obj"] # name of the body input
+             "Mars_65k.obj",
+             "g_deimos_162m_spc_0000n00000_v001.obj"] # name of the body input
 
 # Load inputs and settings into the State object
 State = corto.State(scene = scene_name, geometry = geometry_name, body = body_name, scenario = scenario_name)
 # Add extra inputs 
 State.add_path('albedo_path_1',os.path.join(State.path["input_path"],'body','albedo','Phobos grayscale.jpg'))
 State.add_path('uv_data_path_1',os.path.join(State.path["input_path"],'body','uv data','g_phobos_287m_spc_0000n00000_v002.json'))
-State.add_path('albedo_path_2',os.path.join(State.path["input_path"],'body','albedo','Deimos grayscale.jpg'))
-State.add_path('uv_data_path_2',os.path.join(State.path["input_path"],'body','uv data','g_deimos_162m_spc_0000n00000_v001.json'))
+State.add_path('albedo_path_2',os.path.join(State.path["input_path"],'body','albedo','mars_1k_color.jpg'))
+State.add_path('uv_data_path_2',os.path.join(State.path["input_path"],'body','uv data','Mars_65k.json'))
 State.add_path('albedo_path_3',os.path.join(State.path["input_path"],'body','albedo','Deimos grayscale.jpg'))
-State.add_path('uv_data_path_3',os.path.join(State.path["input_path"],'body','uv data','g_deimos_081m_spc_0000n00000_v001.json'))
+State.add_path('uv_data_path_3',os.path.join(State.path["input_path"],'body','uv data','g_deimos_162m_spc_0000n00000_v001.json'))
 
 ### (2) SETUP THE SCENE ###
 # Setup bodies
@@ -75,9 +75,9 @@ corto.Compositing.create_slopes_branch(tree,render_node,State) # Create slopes b
 corto.Compositing.create_maskID_branch(tree,render_node,State) # Create ID mask branch
 
 ### (5) GENERATION OF IMG-LBL PAIRS ###
-body_1.set_scale(np.array([0.1, 0.1, 0.1])) # adjust body scale for better test renderings
-body_2.set_scale(np.array([0.1, 0.1, 0.1])) # adjust body scale for better test renderings
-body_3.set_scale(np.array([0.1, 0.1, 0.1])) # adjust body scale for better test renderings
+body_1.set_scale(np.array([1, 1, 1])) # adjust body scale for better test renderings
+body_2.set_scale(np.array([1e3, 1e3, 1e3])) # adjust body scale for better test renderings
+body_3.set_scale(np.array([1, 1, 1])) # adjust body scale for better test renderings
 
 n_img = 1 # Render the first "n_img" images
 for idx in range(0,n_img):
