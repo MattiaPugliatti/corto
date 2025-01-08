@@ -1,4 +1,4 @@
-# corto v.1.0
+# corto v.1.1
 The Celestial Object Rendering TOol (CORTO) is a library that can be used to generate synthetic images-label pairs of celestial and artificial bodies.
 
 At the current stage, the tool is made available with some toy-problem or tutorials for rendering image-label pairs of Eros, Itokawa, Bennu, Didymos, and The Moon. The scenarios are set with the possibility to generate both images and labels. In the current version, corto uses Blender 4.0 and Python 3.11.7
@@ -92,3 +92,11 @@ This should allow the installation to complete if all compatibility requirements
 
 # How to run your own script 
 To shape your own scenario, you can imitate the ones provided in the tutorials. In case you are happy with one of the scenarios, you can always change the inputs and or the tutorial script. Otherwise, if you want to use this library for a different target, you can also imitate how the tutorials script build on it.
+
+# Changelog
+
+| Version | Changelog |
+| ------ | ------ |
+|    v1.1    |Added Lambert and Oren-Nayar; Added multi-body capability; Added scenario script for Mars-Phobos-Deimos; Fix bugs|
+
+

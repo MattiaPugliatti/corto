@@ -16,7 +16,7 @@ class Environment:
     # *************************************************************************
 
     #@overload
-    def __init__(self, CAM: corto.Camera, BODY: corto.Body, SUN: corto.Sun, RENDERING: corto.Rendering) -> None:
+    def __init__(self, CAM: corto.Camera, BODY: Union[list, corto.Body], SUN: corto.Sun, RENDERING: corto.Rendering) -> None:
         """
         Constructor for the class CAM defining Blender camera
 
@@ -33,9 +33,19 @@ class Environment:
         corto.Rendering
 
         """
+        # Generate a n_bodies flag
+        if isinstance(BODY, corto.Body):
+            n_bodies = 1
+        elif isinstance(BODY, list):
+            n_bodies = len(BODY)
+
         # ENV setup 
         self.camera = CAM
-        self.body = BODY
+        if n_bodies == 1:
+            self.body = BODY
+        else: 
+            for ii, body in enumerate(BODY, start=1):
+                setattr(self, f"body_{ii}", body)
         self.sun = SUN
         self.rendering = RENDERING
         # Set background to black (default)
@@ -84,19 +94,31 @@ class Environment:
             state: instance of cortopy.State class containing scene, geometry, and body settings
             index: (optional) geometry config file may contain multiple configurations, this index selects a specific sample, by default it gathers the first one available.
         """
-        #TODO: add multi-body capability
         # Unpack relative poses from the state
         position_cam = state.geometry['camera']['position'][index]
         orientation_cam = state.geometry['camera']['orientation'][index]
-        position_body = state.geometry['body']['position'][index]
-        orientation_body = state.geometry['body']['orientation'][index]
+        if state.n_bodies==1:
+            position_body = state.geometry['body']['position'][index]
+            orientation_body = state.geometry['body']['orientation'][index]
+        else:
+            position_body = []
+            orientation_body = []
+            for ii in range(0,state.n_bodies):
+                position_body.append(state.geometry[f"body_{ii+1}"]['position'][index])
+                orientation_body.append(state.geometry[f"body_{ii+1}"]['orientation'][index])     
         position_sun = state.geometry['sun']['position'][index]
 
         # Set bodies positions and orientations
         self.camera.set_position(position_cam)
         self.camera.set_orientation(orientation_cam)
-        self.body.set_position(position_body)
-        self.body.set_orientation(orientation_body)
+        if state.n_bodies==1:
+            self.body.set_position(position_body)
+            self.body.set_orientation(orientation_body)
+        else:
+            for ii in range(state.n_bodies):
+                body_attr = getattr(self, f"body_{ii + 1}")  # Get the body dynamically (e.g., body_1, body_2, ...)
+                body_attr.set_position(position_body[ii])    # Set position for each body
+                body_attr.set_orientation(orientation_body[ii])  # Set orientation for each body
         self.sun.set_position(position_sun)
         return self
 

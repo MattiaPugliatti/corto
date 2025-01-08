@@ -23,7 +23,7 @@ body_name = "Didymos.obj" # name of the body input
 # Load inputs and settings into the State object
 State = corto.State(scene = scene_name, geometry = geometry_name, body = body_name, scenario = scenario_name)
 # Define extra input
-State.add_path("material_name", os.path.join('input',scenario_name, 'body','material','shading_D1_S5_Didymos_Milani.json')) # Define path for extra input (material)
+State.add_path("material_name", os.path.join('input',scenario_name, 'body','material','shading_D1_S05_Didymos_Milani.json')) # Define path for extra input (material)
 
 ### (2) SETUP THE SCENE ###
 # Setup bodies

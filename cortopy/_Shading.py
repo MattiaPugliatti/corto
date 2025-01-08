@@ -168,19 +168,31 @@ class Shading:
         """        
         material.node_tree.links.new(node_output, node_input)
 
-    def texture_node(material, location=(0, 0)):
+
+    def texture_node(material, texture_path, colorspace_name='sRGB', location=(0, 0)):
         """method to create a texture node
 
         Args:
             material (bpy.data.materials): material in which the node is generated
+            texture_path (string): filepath of the texture file
+            colorspace_name (string, optional): colorspace of the texture map
             location (tuple, optional): location in the node tree. Defaults to (0, 0).
 
         Returns:
             node: node in the shading tree
         """        
-        return Shading.create_node("ShaderNodeTexImage", material, location)
 
-    def displace_node(material, location=(0, 0)):
+        node = Shading.create_node("ShaderNodeTexImage", material, location)
+        try:
+            node.image = bpy.data.images.load(texture_path)
+            bpy.data.images[os.path.basename(texture_path)].colorspace_settings.name = colorspace_name
+        except:
+            raise NameError(f"Failed to load image from {texture_path}")
+       
+        return node
+
+
+    def displacement_node(material, location=(0, 0)):
         """method to create a displacement node
 
         Args:
@@ -251,9 +263,10 @@ class Shading:
             node: node in the shading tree
         """        
         return Shading.create_node("ShaderNodeUVMap", material, location)
+        
 
-    def create_branch_texture_mix(material, state: State):
-        """method to create a complex shading tree with texture and mix shaders
+    def lambert(material, state: State, settings, id_body: int = None):
+        """method to create an Oren-Nayar shading tree with optional albedo and displacement textures
 
         Args:
             material (bpy.data.materials): material in which the node is generated
@@ -261,23 +274,102 @@ class Shading:
 
         Returns:
             node: node in the shading tree
-        """        
-        texture_node = Shading.texture_node(material, (-400, 0))
-        try:
-            texture_node.image = bpy.data.images.load(state.path["texture_path"])
-        except:
-            raise Exception(f"Failed to load image from {state.path['texture_path']}")
+        """     
+        
+        # Use an Oren-Nayar model with 0 roughness
+        settings['albedo']['roughness'] = 0
+        material = Shading.oren(material, state, settings, id_body)
+        
+
+    def oren(material, state: State, settings, id_body: int = None):
+        """method to create an Oren-Nayar shading tree with optional albedo and displacement textures
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            state (corto.State): State object, used for paths handling
+
+        Returns:
+            node: node in the shading tree
+        """     
+
+        if id_body is not None:
+            # Convert id_body to string to concatenate with the path key
+            albedo_path_key = f"albedo_path_{id_body}"
+            displacement_path_key = f"displacement_path_{id_body}"
+        else:
+            # Default texture key if id_body is not provided
+            albedo_path_key = "albedo_path"
+            displacement_path_key = "displacement_path"
+
+        # BSDF Node
+        diffuse_BSDF_node = Shading.diffuse_BSDF(material, (0, 200))
+        diffuse_BSDF_node.inputs[1].default_value = settings['albedo']['roughness']
+        # Output node
+        material_node = Shading.material_output(material, (600, 0))
+
+        # From color to output
+        Shading.link_nodes(material, 
+            diffuse_BSDF_node.outputs["BSDF"], 
+            material_node.inputs["Surface"]
+        )
+
+        if albedo_path_key in state.path:
+            # Albedo texture node
+            albedo_texture = Shading.texture_node(material, state.path["albedo_path"], settings['albedo']['colorspace_name'], (-400, 0))
+            # From albedo texture to color
+            Shading.link_nodes(material,
+                albedo_texture.outputs["Color"],
+                diffuse_BSDF_node.inputs["Color"],
+            )
+
+        if displacement_path_key in state.path:
+            # Displacement texture node
+            displacement_texture =  Shading.texture_node(material, state.path["displacement_path"], settings['displacement']['colorspace_name'], (500, -200))
+            displacement_node = Shading.displacement_node(material, (700, -200))
+            displacement_node.inputs[2].default_value = settings['displacement']['scale']
+            displacement_node.inputs[1].default_value =  settings['displacement']['mid_level'] 
+            # From displacement texture to displacement
+            Shading.link_nodes(material, 
+                displacement_texture.outputs["Color"],
+                displacement_node.inputs["Height"]
+            )
+            # From displacement to output
+            Shading.link_nodes(material,
+                displacement_node.outputs["Displacement"],
+                material_node.inputs["Displacement"],
+            )
+
+
+    def create_branch_albedo_mix(material, state: State, id_body: int = None):
+        """method to create a complex shading tree with albedo texture and mix shaders
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            state (corto.State): State object, used for paths handling
+            id_body (int): extra input for multiple bodies case
+
+        Returns:
+            node: node in the shading tree
+        """
+        if id_body is not None:
+            # Convert id_body to string to concatenate with the path key
+            albedo_path_key = f"albedo_path_{id_body}"
+        else:
+            # Default texture key if id_body is not provided
+            albedo_path_key = "albedo_path"
+        if albedo_path_key not in state.path:
+            raise Exception('No albedo texture found at the specified path')
+        albedo_texture = Shading.texture_node(material, state.path[albedo_path_key], location=(-400, 0))
         mix_node = Shading.mix_node(material, (400, 0))
         mix_node.inputs[0].default_value = 0.95
         diffuse_BSDF_node = Shading.diffuse_BSDF(material, (0, 200))
         principled_BSDF_node = Shading.principled_BSDF(material, (0, 0))
         material_node = Shading.material_output(material, (600, 0))
         uv_map_node = Shading.uv_map(material, (-600, 0))
-        # uv_map_node.uv_map = obj.data.uv_layers.active.name
 
         Shading.link_nodes(
             material,
-            texture_node.outputs["Color"],
+            albedo_texture.outputs["Color"],
             principled_BSDF_node.inputs["Base Color"],
         )
         Shading.link_nodes(
@@ -290,45 +382,49 @@ class Shading:
             material, mix_node.outputs["Shader"], material_node.inputs["Surface"]
         )
         Shading.link_nodes(
-            material, uv_map_node.outputs["UV"], texture_node.inputs["Vector"]
+            material, uv_map_node.outputs["UV"], albedo_texture.inputs["Vector"]
         )
 
-    def create_branch_texture_and_displace_mix(material, state: State, settings):
-        """method to create a complex shading tree with texture, mix shaders, and displacement nodes
+    def create_branch_albedo_and_displacement_mix(material, state: State, settings, id_body: int = None):
+        """method to create a complex shading tree with albedo texture, displacement texture and mix shaders
 
         Args:
             material (bpy.data.materials): material in which the node is generated
             state (corto.State): State object, used for paths handling
 
         Raises:
-            Exception: failure to load texture image
-            Exception: failure to load displacement map 
+            Exception: failure to load albedo texture
+            Exception: failure to load displacement texture 
         """
-        texture_node = Shading.texture_node(material, (-400, 0))
-        displace_texture = Shading.texture_node(material, (500, -200))
-        try:
-            texture_node.image = bpy.data.images.load(state.path["texture_path"])
-        except:
-            raise Exception(f"Failed to load image from {state.path['texture_path']}")
-
-        try:
-            displace_texture.image = bpy.data.images.load(state.path["displace_path"])
-            bpy.data.images[os.path.basename(state.path["displace_path"])].colorspace_settings.name = settings['displacement']['colorspace_name']
-        except:
-            raise Exception(f"Failed to load image from {state.path['displace_path']}")
+        if id_body is not None:
+            # Convert id_body to string to concatenate with the path key
+            albedo_path_key = f"albedo_path_{id_body}"
+            displacement_path_key = f"displacement_path_{id_body}"
+        else:
+            # Default texture key if id_body is not provided
+            albedo_path_key = "albedo_path"
+            displacement_path_key = "displacement_path"
+        
+        if albedo_path_key not in state.path:
+            raise Exception('No albedo texture found at the specified path')
+        if displacement_path_key not in state.path:
+            raise Exception('No displacement texture found at the specified path')
+        
+        albedo_texture = Shading.texture_node(material, state.path[albedo_path_key], location=(-400, 0))
+        displacement_texture = Shading.texture_node(material, state.path[displacement_path_key], settings['displacement']['colorspace_name'], location=(500, -200))
         
         mix_node = Shading.mix_node(material, (400, 0))
-        mix_node.inputs[0].default_value = settings['shading']['mix']
+        mix_node.inputs[0].default_value = settings['albedo']['weight_diffuse']
         diffuse_BSDF_node = Shading.diffuse_BSDF(material, (0, 200))
         principled_BSDF_node = Shading.principled_BSDF(material, (0, 0))
         material_node = Shading.material_output(material, (600, 0))
-        displace_node = Shading.displace_node(material, (700, -200))
-        displace_node.inputs[2].default_value = settings['displacement']['scale']
-        displace_node.inputs[1].default_value =  settings['displacement']['mid_level'] 
+        displacement_node = Shading.displacement_node(material, (700, -200))
+        displacement_node.inputs[2].default_value = settings['displacement']['scale']
+        displacement_node.inputs[1].default_value =  settings['displacement']['mid_level'] 
 
         Shading.link_nodes(
             material,
-            texture_node.outputs["Color"],
+            albedo_texture.outputs["Color"],
             principled_BSDF_node.inputs["Base Color"],
         )
         Shading.link_nodes(
@@ -341,11 +437,11 @@ class Shading:
             material, mix_node.outputs["Shader"], material_node.inputs["Surface"]
         )
         Shading.link_nodes(
-            material, displace_texture.outputs["Color"], displace_node.inputs["Height"]
+            material, displacement_texture.outputs["Color"], displacement_node.inputs["Height"]
         )
         Shading.link_nodes(
             material,
-            displace_node.outputs["Displacement"],
+            displacement_node.outputs["Displacement"],
             material_node.inputs["Displacement"],
         )
 
@@ -486,22 +582,30 @@ class Shading:
         )
         return material
 
-    def load_uv_data(body: Body, state: State):
+    def load_uv_data(body: Body, state: State, id_body: int = None):
         """This method load a shading tree serialized in a .json format and stores it into a new material
         Args:
             material_name (str): name of the material 
             state (corto.State): State object, for path handling
+            id_body (int): extra input for multiple bodies case
 
         Returns:
             _type_: _description_
         """
+        if id_body is not None:
+            # Convert id_body to string to concatenate with the path key
+            uv_key = f"uv_data_path_{id_body}"
+        else:
+            # Default uv key if id_body is not provided
+            uv_key = "uv_data_path"
+
         obj = bpy.data.objects[body.name]
         # Ensure the object has UV data
         if obj.data.uv_layers.active is None:
             obj.data.uv_layers.new(name='ImportedUV')
         uv_layer = obj.data.uv_layers.active.data
         # Load the UV data from the file
-        with open(state.path["uv_data_path"], 'r') as file:
+        with open(state.path[uv_key], 'r') as file:
             uv_data = json.load(file)
         # Ensure the number of faces matches
         if len(uv_data) != len(obj.data.polygons):

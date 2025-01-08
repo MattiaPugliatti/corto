@@ -22,7 +22,7 @@ class State:
         self,
         scene: str = None,
         geometry: str = None,
-        body: str = None,
+        body: Union[str, list] = None,
         scenario: str = None,
     ) -> None:
         """
@@ -31,8 +31,15 @@ class State:
         Args:
             scene (str): path to json file with scene settings
             geometry (str): path to json file with geometry settings
-            body (str): path to file with body .blend model?
+            body (str or list): path to file with body .blend model
         """
+        # Generate a single/multiple nd n_bodies
+        if isinstance(body, str):
+            self.n_bodies = 1
+        elif isinstance(body, list) and len(body)>1:
+            self.n_bodies = len(body)
+        else:
+            TypeError("You have used a list to specify a single body")
 
         # Get the directory where the script is located
         corto_path = Path("__file__").resolve().parent
@@ -40,12 +47,22 @@ class State:
 
         scene_file = os.path.join("input", scenario, "scene", scene)
         geometry_file = os.path.join("input", scenario, "geometry", geometry)
-        body_file = os.path.join("input", scenario, "body", "shape", body)
+        # body_file_according to single or multiple bodies
+        if self.n_bodies == 1:
+            body_file = os.path.join("input", scenario, "body", "shape", body)
+        else: #n_bodies>1
+            body_file = []
+            for ii in range(0,self.n_bodies):
+                body_file.append(os.path.join("input", scenario, "body", "shape", body[ii]))
 
-        # deal with scene first
+        # Import inputs
         self.import_scene(scene_file)
         self.import_geometry(geometry_file)
-        self.import_body(body_file)
+        if self.n_bodies == 1:
+            self.import_body(body_file)
+        else: #n_bodies>1
+            for ii in range(0,self.n_bodies):
+                self.import_body(body_file[ii])
         self.path = {}
         self.add_path("corto_path", corto_path)
         self.add_path("input_path", os.path.join(corto_path, "input", scenario))
@@ -66,12 +83,22 @@ class State:
                 self.geometry["sun"]["position"]
             )
             # Body
-            self.geometry["body"]["position"] = np.array(
-                self.geometry["body"]["position"]
-            )
-            self.geometry["body"]["orientation"] = np.array(
-                self.geometry["body"]["orientation"]
-            )
+            if self.n_bodies ==1:
+                self.geometry["body"]["position"] = np.array(
+                    self.geometry["body"]["position"]
+                )
+                self.geometry["body"]["orientation"] = np.array(
+                    self.geometry["body"]["orientation"]
+                )
+            else:
+                for ii in range(0,self.n_bodies):
+                    body_key = f"body_{ii+1}"    
+                    self.geometry[body_key]["position"] = np.array(
+                        self.geometry[body_key]["position"]
+                    )
+                    self.geometry[body_key]["orientation"] = np.array(
+                        self.geometry[body_key]["orientation"]
+                    )
             # Camera
             self.geometry["camera"]["position"] = np.array(
                 self.geometry["camera"]["position"]
@@ -82,6 +109,7 @@ class State:
 
         except:
             self.geometry = {}
+            ValueError('Geometry dictionary is empty')
 
     def import_scene(self, scene: str) -> None:
         """
@@ -96,7 +124,12 @@ class State:
                 self.properties_cam = settings_json["camera_settings"]
                 self.properties_cam["K"] = eval(self.properties_cam["K"]) # TODO: generalize handling of these type of variables from json
                 self.properties_sun = settings_json["sun_settings"]
-                self.properties_body = settings_json["body_settings"]
+                if self.n_bodies ==1:
+                    self.properties_body = settings_json["body_settings"]
+                else:
+                    for ii in range(0,self.n_bodies):
+                        property_key = f"body_settings_{ii+1}"    
+                        setattr(self, f"properties_body_{ii+1}", settings_json[property_key])
                 self.properties_rendering = settings_json["rendering_settings"]
         except:
             self.properties_cam = {}
@@ -113,6 +146,7 @@ class State:
         """
         if load_mode == "obj":
             bpy.ops.wm.obj_import(filepath=body_filepath)
+            bpy.ops.object.shade_smooth() # Default setup smooth property of the mesh
             print(f"Imported .obj file from {body_filepath}")
         elif load_mode == ".blend":
             print("Not implemented")

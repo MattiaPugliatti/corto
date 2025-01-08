@@ -7,16 +7,12 @@ import json
 
 def export_uv(obj_name, file_path):
     obj = bpy.data.objects[obj_name]
-    
     # Ensure the object has UV data
     if obj.data.uv_layers.active is None:
         raise Exception(f"Object '{obj_name}' does not have a UV map.")
-    
     uv_data = []
-    
     # Get the active UV layer
     uv_layer = obj.data.uv_layers.active.data
-    
     # Iterate over each face's UV coordinates and store them
     for poly in obj.data.polygons:
         poly_uvs = []
@@ -24,11 +20,9 @@ def export_uv(obj_name, file_path):
             uv = uv_layer[loop_index].uv
             poly_uvs.append([uv.x, uv.y])
         uv_data.append(poly_uvs)
-    
     # Save UV data to a JSON file
     with open(file_path, 'w') as file:
         json.dump(uv_data, file, indent=4)
-    
     print(f"UV data exported to {file_path}")
 
 # Example usage:
