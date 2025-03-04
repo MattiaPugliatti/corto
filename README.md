@@ -105,6 +105,6 @@ To shape your own scenario, you can imitate the ones provided in the tutorials. 
 
 The current CORTO development team 
 
-![CORTO team](docs/img/CORTO dev team.png)
+![CORTO team](docs/img/CORTO_dev_team.png)
 
 
