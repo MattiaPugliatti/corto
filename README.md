@@ -101,4 +101,10 @@ To shape your own scenario, you can imitate the ones provided in the tutorials. 
 | ------ | ------ |
 |    v1.1    |Added Lambert and Oren-Nayar; Added multi-body capability; Added scenario script for Mars-Phobos-Deimos; Fix bugs|
 
+# Dev team 
+
+The current CORTO development team 
+
+![CORTO team](docs/img/CORTO dev team.png)
+
 
