@@ -126,13 +126,13 @@ class Shading:
         )  # RGBA
 
     def create_earth_BDSF(material, state:State, settings):
-        nodes = material.node_tree.nodes
-        # Create Principled BSDF node
+
+        # CREATE nodes
+        # Create input image-texture nodes
         earth_color = Shading.texture_node(material, state.path["earth_color"], 'sRGB', (-400, 600))
         earth_landocean = Shading.texture_node(material, state.path["earth_landocean"], 'Non-Color', (-400, 200))
         earth_displacement = Shading.texture_node(material, state.path["earth_displacement"], 'Non-Color', (-400, -200))   
         earth_night = Shading.texture_node(material, state.path["earth_night"], 'Non-Color', (-400, -600))
-
         # Create principled BSDF node
         shader = Shading.principled_BSDF(material, location=(800, 0))
         # Create material output node
@@ -152,7 +152,34 @@ class Shading:
         blackbody_node = Shading.blackbody_node(material, location =(600,-400))
         # Create Multiply node
         math_node = Shading.math_node(material, location =(600,-600))
+
+        # SETUP nodes properties
+        hueSaturation_node.inputs["Hue"].default_value = 0.5
+        hueSaturation_node.inputs["Saturation"].default_value = 0 
+        hueSaturation_node.inputs["Value"].default_value = 1 
+
+        map_range_node_land.inputs["From Min"].default_value = 0
+        map_range_node_land.inputs["From Max"].default_value = 1
+        map_range_node_land.inputs["To Min"].default_value = 1
+        map_range_node_land.inputs["To Max"].default_value = 0.1
+
+        displacement_node.inputs["Midlevel"].default_value = 0
+        displacement_node.inputs["Scale"].default_value = 0.01
+
+
+        #bpy.context.object.active_material.cycles.displacement_method = 'BOTH'
+        #bpy.context.scene.cycles.feature_set = 'EXPERIMENTAL'
+        #obj.modifiers["Subdivision"].adaptive_subdivision = True
+        blackbody_node.inputs["Temperature"].default_value = 3500
         math_node.operation = 'MULTIPLY'
+        #texture_coord_node.inputs["Object"]
+        map_range_node_night.inputs["From Min"].default_value = -0.1
+        map_range_node_night.inputs["From Max"].default_value = -0.2
+        map_range_node_night.inputs["To Min"].default_value = 0
+        map_range_node_night.inputs["To Max"].default_value = 0.75
+        #bpy.data.materials["Surface"].node_tree.nodes["Texture Coordinate"].object = bpy.data.objects["Light"]
+
+        # LINK nodes
 
         # Link "Color" and "Roughness" - Model Earth color
         Shading.link_nodes(material,earth_color.outputs["Color"],hueSaturation_node.inputs["Color"])
@@ -170,8 +197,6 @@ class Shading:
         Shading.link_nodes(material,normal_node.outputs["Normal"],map_range_node_night.inputs["Value"])
         Shading.link_nodes(material,map_range_node_night.outputs["Result"],math_node.inputs[1])
         Shading.link_nodes(material,blackbody_node.outputs["Color"],shader.inputs["Emission Color"])
-
-        #bpy.data.materials["Surface"].node_tree.nodes["Texture Coordinate"].object = bpy.data.objects["Light"]
 
         # Link PSDF shade with output
         Shading.link_nodes(material,shader.outputs["BSDF"],output_node.inputs["Surface"])
