@@ -125,6 +125,57 @@ class Shading:
             1,
         )  # RGBA
 
+    def create_earth_BDSF(material, state:State, settings):
+        nodes = material.node_tree.nodes
+        # Create Principled BSDF node
+        earth_color = Shading.texture_node(material, state.path["earth_color"], 'sRGB', (-400, 600))
+        earth_landocean = Shading.texture_node(material, state.path["earth_landocean"], 'Non-Color', (-400, 200))
+        earth_displacement = Shading.texture_node(material, state.path["earth_displacement"], 'Non-Color', (-400, -200))   
+        earth_night = Shading.texture_node(material, state.path["earth_night"], 'Non-Color', (-400, -600))
+
+        # Create principled BSDF node
+        shader = Shading.principled_BSDF(material, location=(800, 0))
+        # Create material output node
+        output_node = Shading.material_output(material, location = (1200, -400))
+        # Create Hue saturation node
+        hueSaturation_node = Shading.hue_saturation_node(material, location = (200, 400))
+        # Create Displacement node
+        displacement_node = Shading.displacement_node(material, location =(200,-200))
+        # Create texture coordinate node
+        texture_coord_node = Shading.texture_coordinate_node(material, location =(-400,-1000))
+        # Create Normal node
+        normal_node = Shading.normal_node(material, location =(-200,-1000))
+        # Create Map Range node
+        map_range_node_land = Shading.map_range_node(material, location = (0,200))
+        map_range_node_night = Shading.map_range_node(material, location = (0,-1000))
+        # Create Map Range node
+        blackbody_node = Shading.blackbody_node(material, location =(600,-400))
+        # Create Multiply node
+        math_node = Shading.math_node(material, location =(600,-600))
+        math_node.operation = 'MULTIPLY'
+
+        # Link "Color" and "Roughness" - Model Earth color
+        Shading.link_nodes(material,earth_color.outputs["Color"],hueSaturation_node.inputs["Color"])
+        Shading.link_nodes(material,earth_landocean.outputs["Color"],hueSaturation_node.inputs["Fac"])
+        Shading.link_nodes(material,earth_landocean.outputs["Color"],map_range_node_land.inputs["Value"])
+        Shading.link_nodes(material,map_range_node_land.outputs["Result"],shader.inputs["Roughness"])
+        Shading.link_nodes(material,hueSaturation_node.outputs["Color"],shader.inputs["Base Color"])
+        # Link "Displacement" - Model Earth roughness
+        Shading.link_nodes(material,earth_displacement.outputs["Color"],displacement_node.inputs["Height"])
+        Shading.link_nodes(material,displacement_node.outputs["Displacement"],output_node.inputs["Displacement"])
+        # Link "Emission" - Model Earth nightlight
+        Shading.link_nodes(material,earth_night.outputs["Color"],math_node.inputs[0])
+        Shading.link_nodes(material,math_node.outputs["Value"],shader.inputs["Emission Strength"])
+        Shading.link_nodes(material,texture_coord_node.outputs["Object"],normal_node.inputs["Normal"])
+        Shading.link_nodes(material,normal_node.outputs["Normal"],map_range_node_night.inputs["Value"])
+        Shading.link_nodes(material,map_range_node_night.outputs["Result"],math_node.inputs[1])
+        Shading.link_nodes(material,blackbody_node.outputs["Color"],shader.inputs["Emission Color"])
+
+        #bpy.data.materials["Surface"].node_tree.nodes["Texture Coordinate"].object = bpy.data.objects["Light"]
+
+        # Link PSDF shade with output
+        Shading.link_nodes(material,shader.outputs["BSDF"],output_node.inputs["Surface"])
+
     def assign_material_to_object(material, body):
         """Assign a material to a body object
 
@@ -215,6 +266,78 @@ class Shading:
             node: node in the shading tree
         """        
         return Shading.create_node("ShaderNodeMixShader", material, location)
+
+    def hue_saturation_node(material, location=(0, 0)):
+        """method to create a hue saturation node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """        
+        return Shading.create_node("ShaderNodeHueSaturation", material, location)
+
+    def normal_node(material, location=(0, 0)):
+        """method to create a normal node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """        
+        return Shading.create_node("ShaderNodeNormal", material, location)
+
+    def map_range_node(material, location=(0, 0)):
+        """method to create a map range node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """        
+        return Shading.create_node("ShaderNodeMapRange", material, location)
+
+    def blackbody_node(material, location=(0, 0)):
+        """method to create a blackbody node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """        
+        return Shading.create_node("ShaderNodeBlackbody", material, location)
+
+    def math_node(material, location=(0, 0)):
+        """method to create a math node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """        
+        return Shading.create_node("ShaderNodeMath", material, location)
+
+    def texture_coordinate_node(material, location=(0, 0)):
+        """method to create a texture coordinate node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """        
+        return Shading.create_node("ShaderNodeTexCoord", material, location)
 
     def diffuse_BSDF(material, location=(0, 0)):
         """method to create a diffuse BSDF node
