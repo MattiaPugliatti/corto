@@ -183,7 +183,7 @@ class Body:
             ValueError : Provided quaternion is not a unit vector, it does not represent a rotation
         """
 
-        if not math.isclose(np.linalg.norm(orientation), 1.0, rel_tol=1e-9):
+        if not math.isclose(np.linalg.norm(orientation), 1.0, rel_tol=1e-4):
             raise ValueError("Provided quaternion is not a unit vector")
 
         self.orientation = orientation

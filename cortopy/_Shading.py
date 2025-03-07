@@ -22,7 +22,7 @@ class Shading:
         Constructor for the shading class
         """
 
-    def create_new_material(name: str):
+    def create_new_material(name: str, displace_and_bump:str = None):
         """Creata a new empty material
 
         Args:
@@ -32,12 +32,16 @@ class Shading:
             material (bpy.data.materials): New empty material
         """
         material = bpy.data.materials.new(name=name)
+
         material.use_nodes = True  # Enable use nodes
         # Get the material's node tree
         node_tree = material.node_tree
         # Clear any existing nodes (if any)
         nodes = node_tree.nodes
         nodes.clear()
+        # Toggle Displace and Bump property
+        if displace_and_bump is not None:
+            material.displacement_method = displace_and_bump #TODO: this does not really affect the final material properties!
         return material
 
     def create_simple_diffuse_BSDF(material, 
@@ -125,9 +129,16 @@ class Shading:
             1,
         )  # RGBA
 
-    def create_earth_BDSF(material, state:State, settings):
+    def create_earth_shader(material, state:State, settings: dict = None):
+        """Generate Earth-based PBSDF shader. This contains clouds, land-ocean map, nightlight, and atmospheric effects
 
-        # CREATE nodes
+        Args:
+            material (bpy.data.materials): Material
+            state (corto.State): CORTO state object
+            settings (dict): Dictionary with settings for this particular shader
+        """
+
+        ## Part 1 - Create all necessary nodes
         # Create input image-texture nodes
         earth_color = Shading.texture_node(material, state.path["earth_color"], 'sRGB', (-400, 600))
         earth_landocean = Shading.texture_node(material, state.path["earth_landocean"], 'Non-Color', (-400, 200))
@@ -153,53 +164,103 @@ class Shading:
         # Create Multiply node
         math_node = Shading.math_node(material, location =(600,-600))
 
-        # SETUP nodes properties
-        hueSaturation_node.inputs["Hue"].default_value = 0.5
-        hueSaturation_node.inputs["Saturation"].default_value = 0 
-        hueSaturation_node.inputs["Value"].default_value = 1 
+        ## Part 2 - Setup nodes properties
 
-        map_range_node_land.inputs["From Min"].default_value = 0
-        map_range_node_land.inputs["From Max"].default_value = 1
-        map_range_node_land.inputs["To Min"].default_value = 1
-        map_range_node_land.inputs["To Max"].default_value = 0.1
-
-        displacement_node.inputs["Midlevel"].default_value = 0
-        displacement_node.inputs["Scale"].default_value = 0.01
-
-
-        #bpy.context.object.active_material.cycles.displacement_method = 'BOTH'
-        #bpy.context.scene.cycles.feature_set = 'EXPERIMENTAL'
-        #obj.modifiers["Subdivision"].adaptive_subdivision = True
-        blackbody_node.inputs["Temperature"].default_value = 3500
+        # land-ocean props
+        hueSaturation_node.inputs["Hue"].default_value = settings['albedo']['hue']
+        hueSaturation_node.inputs["Saturation"].default_value = settings['albedo']['saturation']
+        hueSaturation_node.inputs["Value"].default_value = settings['albedo']['hue_scale']
+        map_range_node_land.inputs["From Min"].default_value = settings['albedo']['land_ocean_from_min']
+        map_range_node_land.inputs["From Max"].default_value = settings['albedo']['land_ocean_from_max']
+        map_range_node_land.inputs["To Min"].default_value = settings['albedo']['land_ocean_to_min']
+        map_range_node_land.inputs["To Max"].default_value = settings['albedo']['land_ocean_to_max']
+        # toplogy props
+        displacement_node.inputs["Midlevel"].default_value = settings['displacement']['earth_midlevel']
+        displacement_node.inputs["Scale"].default_value = settings['displacement']['earth_scale']
+        # Nightlights props
+        blackbody_node.inputs["Temperature"].default_value = settings['albedo']['night_temperature']
         math_node.operation = 'MULTIPLY'
-        #texture_coord_node.inputs["Object"]
-        map_range_node_night.inputs["From Min"].default_value = -0.1
-        map_range_node_night.inputs["From Max"].default_value = -0.2
-        map_range_node_night.inputs["To Min"].default_value = 0
-        map_range_node_night.inputs["To Max"].default_value = 0.75
-        #bpy.data.materials["Surface"].node_tree.nodes["Texture Coordinate"].object = bpy.data.objects["Light"]
+        math_node.use_clamp = True
+        texture_coord_node.object = bpy.data.objects["Sun"]
+        map_range_node_night.inputs["From Min"].default_value = settings['albedo']['night_from_min']
+        map_range_node_night.inputs["From Max"].default_value = settings['albedo']['night_from_max']
+        map_range_node_night.inputs["To Min"].default_value = settings['albedo']['night_to_min']
+        map_range_node_night.inputs["To Max"].default_value = settings['albedo']['night_to_max']
 
-        # LINK nodes
+        ## Part 3 - Link nodes toghether
 
-        # Link "Color" and "Roughness" - Model Earth color
+        # Land-Ocean pipeline
         Shading.link_nodes(material,earth_color.outputs["Color"],hueSaturation_node.inputs["Color"])
         Shading.link_nodes(material,earth_landocean.outputs["Color"],hueSaturation_node.inputs["Fac"])
         Shading.link_nodes(material,earth_landocean.outputs["Color"],map_range_node_land.inputs["Value"])
         Shading.link_nodes(material,map_range_node_land.outputs["Result"],shader.inputs["Roughness"])
         Shading.link_nodes(material,hueSaturation_node.outputs["Color"],shader.inputs["Base Color"])
-        # Link "Displacement" - Model Earth roughness
+        # Topology pipeline
         Shading.link_nodes(material,earth_displacement.outputs["Color"],displacement_node.inputs["Height"])
         Shading.link_nodes(material,displacement_node.outputs["Displacement"],output_node.inputs["Displacement"])
-        # Link "Emission" - Model Earth nightlight
+        # Nightlights pipeline
         Shading.link_nodes(material,earth_night.outputs["Color"],math_node.inputs[0])
         Shading.link_nodes(material,math_node.outputs["Value"],shader.inputs["Emission Strength"])
         Shading.link_nodes(material,texture_coord_node.outputs["Object"],normal_node.inputs["Normal"])
-        Shading.link_nodes(material,normal_node.outputs["Normal"],map_range_node_night.inputs["Value"])
+        Shading.link_nodes(material,normal_node.outputs["Dot"],map_range_node_night.inputs["Value"])
         Shading.link_nodes(material,map_range_node_night.outputs["Result"],math_node.inputs[1])
         Shading.link_nodes(material,blackbody_node.outputs["Color"],shader.inputs["Emission Color"])
-
-        # Link PSDF shade with output
+        # PBSDF to output
         Shading.link_nodes(material,shader.outputs["BSDF"],output_node.inputs["Surface"])
+
+    def create_atmosphere_shader(material, settings):
+        """Generate Earth-based PBSDF shader. This contains volumetric scattering amtospheric effects
+
+        Args:
+            material (bpy.data.materials): Material
+            settings (dict): Dictionary with settings for this particular shader
+        """
+        # Create principled BSDF node
+        shader = Shading.volume_shader(material, location=(800, 0))
+        # Create material output node
+        output_node = Shading.material_output(material, location = (1200, -400))
+        # Shader properties
+        shader.inputs["Color"].default_value = settings['albedo']['atm_color']
+        shader.inputs["Density"].default_value = settings['albedo']['atm_density']
+        shader.inputs["Anisotropy"].default_value = settings['albedo']['atm_anisotropy']
+
+        Shading.link_nodes(material,shader.outputs["Volume"],output_node.inputs["Volume"])
+
+    def create_clouds_shader(material, state:State, settings):
+        """Generate Earth-based PBSDF shader. This contains clouds 
+
+        Args:
+            material (bpy.data.materials): Material
+            state (corto.State): CORTO state object
+            settings (dict): Dictionary with settings for this particular shader
+        """
+
+        ## Part 1 - Create all necessary nodes
+        # Clouds shaders
+        clouds_color = Shading.texture_node(material, state.path["earth_clouds"], 'Non-Color', (0, 0))
+        subsurface_shader = Shading.subsurface_shader(material, location = (400, 400))
+        transparent_shader = Shading.transparent_shader(material, location = (400, 800))
+        mix_shader = Shading.mix_node(material, location = (800,600))
+        # Create material output node
+        output_node = Shading.material_output(material, location = (1200, 0))
+        displacement_node = Shading.displacement_node(material, location = (800, -400))
+
+        ## Part 2 - Setup nodes properties
+        # Subsurface props
+        subsurface_shader.inputs["Radius"].default_value[0] = settings["albedo"]["radius_0"]
+        subsurface_shader.inputs["Radius"].default_value[1] = settings["albedo"]["radius_1"]
+        subsurface_shader.inputs["Radius"].default_value[2] = settings["albedo"]["radius_2"]
+        subsurface_shader.inputs["Scale"].default_value = settings["albedo"]["subsurf_scale"]
+        # Displace props
+        displacement_node.inputs["Midlevel"].default_value = settings["displacement"]["clouds_midlevel"]
+        displacement_node.inputs["Scale"].default_value =settings["displacement"]["clouds_scale"]
+        
+        Shading.link_nodes(material,clouds_color.outputs["Color"],displacement_node.inputs["Height"])
+        Shading.link_nodes(material,subsurface_shader.outputs["BSSRDF"],mix_shader.inputs[2])
+        Shading.link_nodes(material,transparent_shader.outputs["BSDF"],mix_shader.inputs[1])
+        Shading.link_nodes(material,clouds_color.outputs["Color"],mix_shader.inputs["Fac"])
+        Shading.link_nodes(material,mix_shader.outputs["Shader"],output_node.inputs["Surface"])
+        Shading.link_nodes(material,displacement_node.outputs["Displacement"],output_node.inputs["Displacement"])
 
     def assign_material_to_object(material, body):
         """Assign a material to a body object
@@ -279,6 +340,42 @@ class Shading:
             node: node in the shading tree
         """
         return Shading.create_node("ShaderNodeDisplacement", material, location)
+
+    def volume_shader(material, location=(0, 0)):
+        """method to create a Volumetric scattering shader node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """
+        return Shading.create_node("ShaderNodeVolumeScatter", material, location)
+
+    def subsurface_shader(material, location=(0, 0)):
+        """method to create a Subsurface scattering shader node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """
+        return Shading.create_node("ShaderNodeSubsurfaceScattering", material, location)
+
+    def transparent_shader(material, location=(0, 0)):
+        """method to create a transparent shader node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """
+        return Shading.create_node("ShaderNodeBsdfTransparent", material, location)
 
     def mix_node(material, location=(0, 0)):
         """method to create a mix shader node
