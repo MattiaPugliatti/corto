@@ -3,3 +3,6 @@ matplotlib
 scipy
 datetime
 bpy
+OpenEXR
+Imath
+pandas

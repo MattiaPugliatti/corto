@@ -152,7 +152,7 @@ class Compositing:
             node: node in the shading tree
         """ 
         Rendering.activate_depth_pass()
-        return Compositing.create_node('CompositorNodeViewer', tree, location)
+        return Compositing.file_output_node(tree, location)
 
     def normal_node(tree,location = (0,0)):
         """method to create a normal node
@@ -222,7 +222,7 @@ class Compositing:
         Compositing.link_nodes(tree, denoise_node.outputs["Image"], gamma_node.inputs["Image"])
         Compositing.link_nodes(tree, gamma_node.outputs["Image"], composite_node.inputs["Image"])
 
-    def create_depth_branch(tree,render_node):
+    def create_depth_branch(tree,render_node,state:State):
         """method to create a simple depth tree 
 
         Args:
@@ -231,7 +231,12 @@ class Compositing:
         """
         # Create a depth node
         depth_node = Compositing.depth_node(tree,(400,200))
-        depth_node.name = 'Viewer Depth'
+        depth_node.name = 'OpenEXR Depth'
+        depth_node.format.file_format = 'OPEN_EXR'  # Set file format to OpenEXR
+        depth_node.format.color_mode = 'RGBA'  
+        depth_node.format.color_depth = '32'  # Use 32-bit float precision
+        depth_node.base_path = os.path.join(state.path["output_path"], "depth_exr")
+        depth_node.file_slots[0].path = "######"  # Filename pattern
         # Depth branch
         Compositing.link_nodes(tree, render_node.outputs["Depth"], depth_node.inputs["Image"])
 

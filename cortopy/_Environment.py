@@ -6,6 +6,8 @@ import numpy as np
 import bpy 
 import os
 import cortopy as corto
+import OpenEXR
+import Imath
 
 class Environment:
     """
@@ -138,15 +140,33 @@ class Environment:
         bpy.ops.render.render(write_still = True)
         
         if depth_flag: # TODO: debug while its not saving anything in output
-            z = bpy.data.images['Viewer Node']#TODO: does this work with multiple viewer nodes?
-            w, h = z.size
-            dmap = np.array(z.pixels[:], dtype=np.float16)
-            dmap = np.reshape(dmap, (h, w, 4))[:,:,0]
-            dmap = np.rot90(dmap, k=2)
-            dmap = np.fliplr(dmap)
+
             txtname = '{num:06d}'
-            depth_dir = os.path.join(state.path["output_path"],'depth')
+            # Define the depth folder and create it if needed
+            depth_dir = os.path.join(state.path["output_path"], 'depth_txt')
             if not os.path.exists(depth_dir):
                 os.makedirs(depth_dir)
-            np.savetxt(os.path.join(state.path["output_path"],'depth', txtname.format(num=(index+0)) + '.txt'), dmap, delimiter=' ',fmt='%.5f')    
+
+            # Path to the saved EXR depth file
+            exr_path = os.path.join(state.path["output_path"],'depth_exr', txtname.format(num=(index)) + '.exr')
+
+            # Open the EXR file
+            exr = OpenEXR.InputFile(exr_path)
+
+            # Get image resolution from the EXR header
+            header = exr.header()
+            dw = header['dataWindow']
+            width = dw.max.x - dw.min.x + 1
+            height = dw.max.y - dw.min.y + 1
+
+            # Define pixel type
+            pt = Imath.PixelType(Imath.PixelType.FLOAT)
+
+            # Read depth from 'R' channel (as EXR stores grayscale depth in R)
+            depth_str = exr.channel('R', pt)
+            depth_np = np.frombuffer(depth_str, dtype=np.float32).reshape(height, width)
+
+            # Save the depth map as TXT
+            txt_path = os.path.join(depth_dir, txtname.format(num=(index)) + '.txt')
+            np.savetxt(txt_path, depth_np, fmt='%.5f', delimiter=' ')
         return
