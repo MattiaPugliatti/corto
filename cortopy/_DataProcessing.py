@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Any, List, Mapping, Optional, Tuple, Union, overload
+from pathlib import Path
 
 import warnings
 from glob import glob
@@ -28,7 +29,21 @@ class DataProcessing:
         self.img = self.imread(img_path)
         self.label = label
 
-    # Istance methods
+    @staticmethod
+    def find_images(input_folder: str, extension: str = "*.png"):
+        """
+        Finds and returns a sorted list of relative image paths with the given extension.
+
+        Args:
+            input_folder (str): Folder to search for image files.
+            extension (str): File extension pattern (e.g., '*.png', '*.jpg').
+
+        Returns:
+            List[str]: Sorted relative paths of image files.
+        """
+        folder = Path(input_folder)
+        paths = sorted(folder.glob(extension))  # sort ensures consistent order
+        return [str(p.relative_to(folder)) for p in paths]
 
     @staticmethod
     def imread(path:str):

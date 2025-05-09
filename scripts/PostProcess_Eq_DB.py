@@ -10,13 +10,10 @@ import cv2
 sys.path.append(os.getcwd())
 import cortopy as corto
 
-# TODO: Path handling via database class
 
 ### Set image path ###
-input_folder = "output/SXX_Double/img"  # Folder with input images
-
-image_paths = glob(os.path.join(input_folder, "*.png"))  # or .jpg, etc.
-file_names = [os.path.basename(path) for path in image_paths]
+img_folder = "output/SXX_Double/img"  # Folder with input images
+img_names = corto.DataProcessing.find_images(img_folder, "*.png")
 
 ### (PART-1) Add artificial noise ###
 
@@ -46,9 +43,7 @@ label_S0 = {
 
 # TODO: loop through images here
 ii = 20 # Just analyze one image [# CRASH ON 5 and 20 (10% of the cases, multiple blobs)]
-
-img_path = input_folder + '/' + file_names[ii]
-
+img_path = os.path.join(img_folder,img_names[ii])
 # Initialize the DataProcessing object
 data = corto.DataProcessing(img_path = img_path, label = label_S0 )
 # data.imshow() # Visualize the img
@@ -77,6 +72,5 @@ plt.plot(CoM_S2[0],CoM_S2[1],'rx')
 
 # corto.DataProcessing.imsave(,img_resized)
 # corto.DataProcessing.tensave_mat(,img_resized_tens)
-
 
 plt.show()
