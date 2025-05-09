@@ -6,6 +6,7 @@ from glob import glob
 import cv2
 import numpy as np 
 from matplotlib import pyplot as plt
+import scipy 
 
 class DataProcessing:
     """
@@ -20,27 +21,109 @@ class DataProcessing:
         Constructor for the Data Processing class
 
         Args:
-            name (str): name of the CAM object
-            properties (dict): properties of the CAM object
-
-        Raises:
-            TypeError : resolution of the camera must be expressed with integer values
+            img_path (str): path of the image
+            label (dict): label dictionary associated to the image
         """
 
         self.img = self.imread(img_path)
         self.label = label
+
     # Istance methods
 
     @staticmethod
-    def imread(path):
-        return cv2.imread(path)
+    def imread(path:str):
+        """
+        Reads an image from a given file path using OpenCV.
 
-    def crop_image_by_BB(img, BB):
+        Args:
+            path (str): Path to the image file.
+
+        Returns:
+            np.ndarray or None: The image as a NumPy array (in BGR format), or None if the file could not be read.
+
+        Raises:
+            FileNotFoundError: If the image could not be read from the given path.
+        """
+        # Read the image
+        img_read = cv2.imread(path)
+        if img_read is None:
+            raise FileNotFoundError(f"Image not found or unreadable at path: {path}")
+        return img_read
+
+    @staticmethod
+    def imsave(path:str,img:np.ndarray):
+        """
+        Saves an image to the specified file path using OpenCV.
+
+        Args:
+            path (str): Destination file path where the image will be saved.
+            img (np.ndarray): Image data as a NumPy array (BGR or grayscale).
+
+        Raises:
+            IOError: If the image could not be saved to the specified path.
+        """
+
+        # Save the image using OpenCV
+        img_saved = cv2.imwrite(path, img)
+        # Check for succesfful saving
+        if not img_saved:
+            raise IOError(f"Failed to save image to {path}")
+
+    @staticmethod
+    def tensave_mat(path:str,tens:np.ndarray):
+        """
+        Saves a 3D tensor to a .mat file.
+
+        Args:
+            path (str): Destination file path where the .mat file will be saved.
+            tens (np.ndarray): A 3D NumPy array of shape (n, n, M) representing a tensor.
+
+        Raises:
+            ValueError: If the input tensor is not 3-dimensional.
+        """
+        if tens.ndim != 3:
+            raise ValueError("Input tensor must be 3D (n x n x M)")
+        scipy.io.savemat(path, {'T_img': tens})
+
+    def crop_img_by_BB(img:np.ndarray, BB):
+        """
+        Crops a region from an image based on the given bounding box.
+
+        Args:
+            img (np.ndarray): The input image as a NumPy array.
+            BB (tuple or list): Bounding box defined as (x, y, w, h), where:
+                x (int): Top-left x-coordinate.
+                y (int): Top-left y-coordinate.
+                w (int): Width of the bounding box.
+                h (int): Height of the bounding box.
+
+        Returns:
+            np.ndarray: Cropped image region corresponding to the bounding box.
+        """
         x, y, w, h = BB
         return img[y:y+h, x:x+w]
     
     @ staticmethod
-    def resize_image(img,target_res, method:str = 'INTER_NEAREST'):
+    def resize_image(img:np.ndarray,target_res:int, method:str = 'INTER_NEAREST'):
+        """
+        Resizes an image to a square of target resolution using a specified interpolation method.
+
+        Args:
+            img (np.ndarray): Input image as a NumPy array.
+            target_res (int): Target resolution for both width and height (e.g., 128 → output is 128x128).
+            method (str): Interpolation method to use. Options include:
+                - 'INTER_NEAREST'
+                - 'INTER_LINEAR'
+                - 'INTER_CUBIC'
+                - 'INTER_LANCZOS4'
+                - 'INTER_AREA'
+
+        Returns:
+            np.ndarray: The resized image.
+
+        Raises:
+            ValueError: If an unsupported interpolation method is specified.
+        """
         if method == 'INTER_NEAREST':
             interp_method = cv2.INTER_NEAREST
         elif method == 'INTER_LINEAR':
@@ -58,26 +141,62 @@ class DataProcessing:
         return img_resized
 
     def imshow(self):
+        """
+        Displays the image stored in the object using matplotlib.
+        
+        If a label is available and contains a 'CoM' (center of mass) key,
+        it overlays the CoM as a red 'x' on the image.
+        """
+        plt.figure()
         plt.imshow(self.img)
+        if self.label is not None:
+            if "CoM" in self.label:
+                plt.plot(self.label["CoM"][0],self.label["CoM"][1],'rx')
         plt.show()
     
     def find_body_bbox(self):
         """
-        Detects the bounding box of the largest contour (assumed to be the body).
-        """
-        img = self.img
+        Detects the bounding box of the largest external contour in the image,
+        which is assumed to represent the main body.
 
+        Returns:
+            np.ndarray or None: Bounding box as a NumPy array [x, y, w, h],
+            or None if no contours are found.
+        """
+        #TODO: improve the robustness of this function, needs to work with multiple blobs and at different values of noise. Maybe have it working on the labels instead
+        img = self.img
+        # Convert to grayscale if image is in color     
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if len(img.shape) == 3 else img
+        # Apply binary threshold to isolate bright regions
         _, thresh = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY)
+        # Find external contours (outer edges only)
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        # If no contours are found, return None
         if not contours:
             return None
+        # Find the largest contour (assumed to be the body)
         largest = max(contours, key=cv2.contourArea)
+        # Get the bounding box [x, y, w, h] of the largest contour
         x, y, w, h = cv2.boundingRect(largest)
         return np.array([x, y, w, h])
 
     @staticmethod
-    def determine_max_BB(source_BB,target_BB):
+    def determine_max_BB(source_BB:np.ndarray,target_BB:np.ndarray):
+        """
+        Determines the smallest bounding box size from a list of candidates that can
+        fully contain the given source bounding box.
+
+        Args:
+            source_BB (np.ndarray): The original bounding box defined as (x, y, w, h).
+            target_BB (np.ndarray): 1D array of candidate bounding box sizes (e.g., [2048, 1024, ...]).
+
+        Returns:
+            float: The smallest valid bounding box size that fits the object.
+
+        Raises:
+            ValueError: If no candidate size in target_BB is large enough to fit the source bounding box.
+        """
+
         x, y, w, h = source_BB
         # Find the smallest target_bb that fits max(w, h)
         max_size = max(w,h)
@@ -91,7 +210,29 @@ class DataProcessing:
         return float(selected_size)
 
     @staticmethod
-    def BB_random_padding(source_BB,selected_target_size, img_res, max_selected_target_size):
+    def BB_random_padding(source_BB:np.ndarray,selected_target_size:int, img_res:tuple, max_selected_target_size:int):
+        """
+        Applies random padding to a rectangular bounding box in order to expand it into a square
+        bounding box of a specified target size, while ensuring the object remains fully visible
+        within the image boundaries.
+
+        Args:
+            source_BB (np.ndarray): Original bounding box defined as (x, y, w, h).
+            selected_target_size (int): Desired square size of the output bounding box.
+            img_res (tuple): Resolution of the image as (width, height).
+            max_selected_target_size (int): Maximum allowable target size (used to bypass padding logic).
+
+        Returns:
+            new_BB (np.ndarray): New padded bounding box as (x_new, y_new, w_new, h_new).
+            delta_1234 (np.ndarray): Padding values as (left, right, top, bottom).
+            error_index (int): Error indicator:
+                - 0 if no error
+                - 1 if width > selected target size
+                - 2 if height > selected target size
+
+        Raises:
+            UserWarning: If width or height of the bounding box exceeds the selected target size.
+        """
         # Extract BB coordinates
         x, y, w, h = source_BB
         # Initialize error index to 0
@@ -147,9 +288,36 @@ class DataProcessing:
         
         return new_BB, delta_1234, error_index
 
-    def ProceduralRandomPadding(self, target_BB_sizes, original_img_size, final_img_size):
+    def ProceduralRandomPadding(self, target_BB_sizes:np.ndarray, original_img_size:int, final_img_size:int):
+        """
+        Applies procedural random padding to the original image to create a square bounding box 
+        around the detected body, followed by cropping and resizing the image and its labels.
 
-        ### ProceduralRandomPadding and resizing of the image
+        This function represent a fully functioning DataProcessing pipelinea, performing the following steps:
+            1. Detects the bounding box of the body in the original image.
+            2. Selects the smallest valid target bounding box size that fits the object.
+            3. Applies random padding to center the object within a square region.
+            4. Crops the image using the padded bounding box.
+            5. Resizes the cropped image to the final target resolution.
+            6. Adjusts the CoM (center of mass) label coordinates across all transformations.
+
+        Args:
+            target_BB_sizes (np.ndarray): Array of candidate square bounding box sizes (e.g., [2048, 1024, 512, ...]).
+            original_img_size (int): Original image resolution (assumed square).
+            final_img_size (int): Desired final output image resolution (e.g., 128, 256, etc.).
+
+        Returns:
+            img_resized (np.ndarray): Final resized image of shape (final_img_size, final_img_size). This is the image in S2
+            img_cropped (np.ndarray): Cropped image corresponding to the padded bounding box. This is the image in S1
+            original_BB (np.ndarray): Original bounding box around the detected body. This is BB0
+            final_BB (np.ndarray): Bounding box after padding to selected target size. This is BB1
+            delta_1234 (np.ndarray): Padding values [left, right, top, bottom] applied to the original BB.
+            label_resized (dict): Dictionary containing center of mass coordinates across stages:
+                - 'CoM_S0': in original image (S0)
+                - 'CoM_S1': in cropped image (S1)
+                - 'CoM_S2': in final resized image (S2)
+        """
+
         # Determine the Bounding Box (BB) in the body in the image
         original_BB = self.find_body_bbox() # Call this img_BB
         # Determine the target BB size
@@ -157,7 +325,7 @@ class DataProcessing:
         # Perform random padding
         final_BB,delta_1234, error_index = self.BB_random_padding(original_BB, target_BB_size, (original_img_size,original_img_size), original_img_size)
         # Crop the image with BB
-        img_cropped = DataProcessing.crop_image_by_BB(self.img,final_BB)
+        img_cropped = DataProcessing.crop_img_by_BB(self.img,final_BB)
         # Reduce the image to final resolution 
         img_resized = self.resize_image(img_cropped,final_img_size,'INTER_AREA')
 
@@ -172,7 +340,7 @@ class DataProcessing:
             CoM_v_S2 = CoM_v_S1 * (final_img_size / target_BB_size)
 
             label_resized = {
-                'CoM': (CoM_u_S0,CoM_v_S0), 
+                'CoM_S0': (CoM_u_S0,CoM_v_S0), 
                 'CoM_S1': (CoM_u_S1,CoM_v_S1), 
                 'CoM_S2': (CoM_u_S2,CoM_v_S2), 
             }
