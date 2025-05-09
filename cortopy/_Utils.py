@@ -58,3 +58,17 @@ class Utils:
         if not os.path.exists(blend_dir):
             os.makedirs(blend_dir)
         bpy.ops.wm.save_as_mainfile(filepath=os.path.join(blend_dir, blend_name + ".blend"))
+
+    @staticmethod
+    def mkdir(folder_path):
+        """
+        Creates a folder at the specified path if it doesn't already exist.
+        
+        Args:
+            folder_path (str): The path of the folder to be created.
+        """
+        try:
+            os.makedirs(folder_path, exist_ok=True)
+            print(f"Folder created at: {folder_path}")
+        except Exception as e:
+            print(f"Error creating folder: {e}")   
