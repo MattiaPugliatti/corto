@@ -19,12 +19,51 @@ img_names = corto.DataProcessing.find_images(img_folder, "*.png")
 
 # Define output folder for N (Artificial Noise)
 output_folder_noise = "output/SXX_Double/img_S0"
+corto.Utils.mkdir(output_folder_noise)
 
-# noise_settings = ...
-# corto.DataProcessing.add_artificial(input_path, output_path_noise, noise_settings)
+# Example noise dictionary
+noise = {
+    # (1) Generic blur
+    'sigma_blur': 0.5,
+    # (2) Motion blur
+    'motion_length': 1.2,
+    'motion_theta': 0,
+    # (3a) Generic noise (GAUSSIAN)
+    'sensor_noise_type': 'gaussian',
+    'mean': 0.1,
+    'variance': 0.0001,
+    # (4) Gamma-correction
+    'bright': 1,
+    # (5) Dead pixels
+    'n_dead_px': 5,
+    'dead_px_x': np.random.randint(0, 2048, 5),
+    'dead_px_y': np.random.randint(0, 2048, 5),
+    # (6) Saturated buckets
+    'n_sat_buckets': 2,
+    # (7) Blooming
+    'blooms': 1,
+    'sigma_blooms': 10,
+    'blooms_val': 255,
+    # (8) Radiation
+    'rad': 1,
+    'n_rad_strides': 50,
+    'rad_linewidth': 1,
+    'L_min_s': 2,
+    'L_max_s': 20,
+    'I_min_s': 1.0,
+    'I_max_s': 1.0
+}
+
+ii = 3
+img_path = os.path.join(img_folder,img_names[ii])
+
+img_input = corto.DataProcessing.imread(img_path)
+img_noise = corto.DataProcessing.add_artificial_noise(img_input[:,:,0], noise)
+corto.DataProcessing.imsave(os.path.join(output_folder_noise,img_names[ii]), img_noise)
 
 ### (PART-2) Adaptive resizing ###
 
+input_folder_S2 = output_folder_noise
 # Define output folder for S2 (cropped + resize)
 output_folder_S2 = "output/SXX_Double/img_S2"
 
@@ -42,8 +81,9 @@ label_S0 = {
 }
 
 # TODO: loop through images here
-ii = 20 # Just analyze one image [# CRASH ON 5 and 20 (10% of the cases, multiple blobs)]
-img_path = os.path.join(img_folder,img_names[ii])
+# TODO: [# CRASH ON 5 and 20 (10% of the cases, multiple blobs)]
+# TODO: crashes with noise! 
+img_path = os.path.join(input_folder_S2,img_names[ii])
 # Initialize the DataProcessing object
 data = corto.DataProcessing(img_path = img_path, label = label_S0 )
 # data.imshow() # Visualize the img
