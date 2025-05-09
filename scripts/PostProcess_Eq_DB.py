@@ -1,12 +1,18 @@
-import os
-import cv2
+import os, sys
 import numpy as np
+import matplotlib.patches as patche
 from matplotlib import pyplot as plt
-import matplotlib.patches as patches
 
-from glob import glob
 import warnings
+from glob import glob
+import cv2
 
+
+sys.path.append(os.getcwd())
+import cortopy as corto
+
+
+#TODO: Move this functions into the PostProcessing class
 def find_body_bbox(image):
     """
     Detects the bounding box of the largest contour (assumed to be the body).
