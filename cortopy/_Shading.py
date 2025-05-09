@@ -220,9 +220,9 @@ class Shading:
         # Create material output node
         output_node = Shading.material_output(material, location = (1200, -400))
         # Shader properties
-        shader.inputs["Color"].default_value = settings['albedo']['atm_color']
-        shader.inputs["Density"].default_value = settings['albedo']['atm_density']
-        shader.inputs["Anisotropy"].default_value = settings['albedo']['atm_anisotropy']
+        shader.inputs["Color"].default_value = settings['atm_color']
+        shader.inputs["Density"].default_value = settings['atm_density']
+        shader.inputs["Anisotropy"].default_value = settings['atm_anisotropy']
 
         Shading.link_nodes(material,shader.outputs["Volume"],output_node.inputs["Volume"])
 
