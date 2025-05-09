@@ -3,3 +3,4 @@ matplotlib
 scipy
 datetime
 bpy
+opencv-python
