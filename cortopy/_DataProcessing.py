@@ -8,6 +8,7 @@ import cv2
 import numpy as np 
 from matplotlib import pyplot as plt
 import scipy 
+from skimage import exposure
 
 class DataProcessing:
     """
@@ -360,3 +361,168 @@ class DataProcessing:
                 'CoM_S2': (CoM_u_S2,CoM_v_S2), 
             }
         return img_resized, img_cropped, original_BB, final_BB, delta_1234, label_resized
+    
+    def add_artificial_noise(img_input: np.ndarray, noise: dict, return_intermediates: bool = False) -> np.ndarray:
+        """
+        Applies a chain of synthetic noise effects to a grayscale image. The chain applied follows the one specificied in the PhD Thesis
+        "Data-Driven Image Processing for Enhanced Vision-Based Applications Around Small Bodies With Machine Learning", by Mattia Pugliatti.
+
+        Args:
+            img_input (np.ndarray): Input image (grayscale, uint8).
+            noise (dict): Dictionary of noise parameters (see below).
+            return_intermediates (bool): Whether to return all intermediate outputs.
+
+        Returns:
+            np.ndarray: Output noisy image (uint8).
+        """
+        
+        # --- Input validation ---
+        if img_input.dtype != np.uint8:
+            raise TypeError("Input image must be of type uint8.")
+
+        if img_input.ndim != 2:
+            raise ValueError("Input image must be a single-channel grayscale image (2D).")
+
+        img_shape = img_input.shape
+        intermediates = {}
+
+        # --- 1. Gaussian Blur ---
+        img_1 = cv2.GaussianBlur(img_input, (0, 0), sigmaX=noise['sigma_blur'])
+
+        # --- 2. Motion Blur ---
+        length = int(noise['motion_length'])
+        if length > 0:
+            angle = noise['motion_theta']
+            k = np.zeros((length, length), dtype=np.float32)
+            cv2.line(k, (0, length // 2), (length, length // 2), 1, thickness=noise.get('rad_linewidth', 1))
+            M = cv2.getRotationMatrix2D((length // 2, length // 2), angle, 1)
+            k = cv2.warpAffine(k, M, (length, length))
+            k /= np.sum(k)
+            img_2 = cv2.filter2D(img_1, -1, k)
+
+        # --- 3. Sensor Noise ---
+        img_3 = DataProcessing.SensorNoise(img_input, noise)
+
+        # --- 4. Gamma Correction ---
+        img_4 = (exposure.adjust_gamma(img_3 / 255.0, noise['bright']) * 255).astype(np.uint8)
+
+        # --- 5. Dead Pixels ---
+        # Simulated always on (255)
+        img_5 = img_4.copy()
+        for i in range(noise['n_dead_px']):
+            x = noise['dead_px_x'][i]
+            y = noise['dead_px_y'][i]
+            if 0 <= x < img_shape[1] and 0 <= y < img_shape[0]:
+                img_5[y, x] = 255
+
+        # --- 6. Saturated Buckets ---
+        # Simulated always on (255)
+        img_6 = img_5.copy()
+
+        for _ in range(noise['n_sat_buckets']):
+            if np.random.random() <= 0.5:
+                row =  np.random.randint(0, img_shape[0] - 1)
+                img_6[row, :] = 255
+            else:
+                col =  np.random.randint(0, img_shape[1] - 1)
+                img_6[:, col] = 255
+
+        # --- 7. Blooming ---
+        img_7 = img_6.copy()
+        if noise['blooms'] == 1:
+            # Find the maximum blooming spot from img_3
+            mask = (img_3 == noise['blooms_val']).astype(np.uint8)
+            if np.any(mask):
+                bloom = cv2.GaussianBlur(mask * 255, (0, 0), noise['sigma_blooms'])
+                bloom = (bloom / bloom.max() * 255).astype(np.uint8)
+                img_7 = np.clip(img_6.astype(np.uint16) + bloom.astype(np.uint16), 0, 255).astype(np.uint8)
+
+        # --- 8. Radiation ---
+        img_8 = img_7.copy()
+        if noise['rad'] == 1:
+            for _ in range(noise['n_rad_strides']):
+                L = np.random.randint(noise['L_min_s'], noise['L_max_s'])
+                I = int(np.random.uniform(noise['I_min_s'], noise['I_max_s']) * 255)
+                theta = np.deg2rad(np.random.uniform(0, 360))
+                x0 = np.random.randint(0, img_shape[1] - 1)
+                y0 = np.random.randint(0, img_shape[0] - 1)
+                x1 = int(np.clip(x0 + L * np.cos(theta), 0, img_shape[1] - 1))
+                y1 = int(np.clip(y0 + L * np.sin(theta), 0, img_shape[0] - 1))
+                cv2.line(img_8, (x0, y0), (x1, y1), I, thickness=noise['rad_linewidth'])
+
+        # Save all intermediate output (for debug)
+        intermediates['img_1_blur'] = img_1.copy()
+        intermediates['img_2_motion_blur'] = img_2.copy()
+        intermediates['img_3_sensor_noise'] = img_3.copy()
+        intermediates['img_4_gamma'] = img_4.copy()
+        intermediates['img_5_dead_pixels'] = img_5.copy()
+        intermediates['img_6_sat_buckets'] = img_6.copy()
+        intermediates['img_7_blooming'] = img_7.copy()  
+        intermediates['img_8_radiation'] = img_8.copy()
+
+        if return_intermediates:
+            return img_8, intermediates
+        else:
+            return img_8
+        
+    @staticmethod
+    def SensorNoise(img_input:np.ndarray, noise:dict) -> np.ndarray:
+        """
+        Applies simulated sensor noise to a grayscale image based on the specified noise type.
+
+        Supported noise types:
+            - 'gaussian': Additive Gaussian noise (models thermal/electronic noise).
+            - 'poisson': Poisson noise (models photon shot noise).
+            - 'speckle': Multiplicative noise (common in coherent imaging).
+            - 'salt_pepper': Random impulse noise (bit flips, corrupted memory, dead pixels).
+
+        Args:
+            img_input (np.ndarray): Grayscale input image (2D, uint8).
+            noise (dict): Dictionary with parameters:
+                - sensor_noise_type (str): Type of noise ('gaussian', 'poisson', 'speckle', 'salt_pepper')
+                - mean (float): Mean for Gaussian noise (only if type is 'gaussian')
+                - variance (float): Variance for Gaussian or Speckle noise
+                - amount (float): Proportion of image affected (only if type is 'salt_pepper')
+                - ratio (float): Salt-to-pepper ratio (only if type is 'salt_pepper')
+
+        Returns:
+            np.ndarray: Image with simulated sensor noise, in uint8 format.
+        
+        Raises:
+            ValueError: If an unsupported sensor noise type is specified.
+        """
+        # --- 3. Sensor Noise Injection ---
+        img_3 = img_input.copy().astype(np.float32)
+        # Read the noise type
+        noise_type = noise["sensor_noise_type"]
+        # Add noise accordingly
+        if noise_type == 'gaussian':
+            mean = noise["mean"] * 255
+            sigma =  np.sqrt(noise["variance"]) * 255
+            gauss = np.random.normal(mean, sigma, img_input.shape)
+            img_3 += gauss
+        elif noise_type == 'poisson':
+            # Poisson noise is signal-dependent
+            img_3 = np.random.poisson(img_3.clip(0, 255)).astype(np.float32)
+        elif noise_type == 'speckle':
+            sigma =  np.sqrt(noise["variance"]) * 255
+            noise_map = np.random.normal(0, sigma, img_input.shape)
+            img_3 += img_3 * noise_map  # multiplicative noise
+        elif noise_type == 'salt_pepper':
+            s_vs_p = noise["ratio"]
+            amount = noise["amount"]
+            num_salt = np.ceil(amount * img_3.size * s_vs_p)
+            num_pepper = np.ceil(amount * img_3.size * (1.0 - s_vs_p))
+            # Salt noise (white pixels)
+            coords = [np.random.randint(0, i, int(num_salt)) for i in img_input.shape]
+            img_3[tuple(coords)] = 255
+            # Pepper noise (black pixels)
+            coords = [np.random.randint(0, i, int(num_pepper)) for i in img_input.shape]
+            img_3[tuple(coords)] = 0
+        else:
+            raise ValueError(f"Unsupported sensor_noise_type: {noise_type}")
+
+        # Return to uint8 image
+        img_3 = np.clip(img_3, 0, 255).astype(np.uint8)
+
+        return img_3
