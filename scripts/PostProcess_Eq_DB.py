@@ -54,7 +54,7 @@ noise = {
     'I_max_s': 1.0
 }
 
-ii = 3
+ii = 5
 img_path = os.path.join(img_folder,img_names[ii])
 
 img_input = corto.DataProcessing.imread(img_path)
@@ -80,9 +80,9 @@ label_S0 = {
     'CoM': (1024,1024)
 }
 
-# TODO: loop through images here
-# TODO: [# CRASH ON 5 and 20 (10% of the cases, multiple blobs)]
-# TODO: crashes with noise! 
+# TODO: loop through images
+# TODO: change the whole thing by workin with the shadow image mask instead (more robust on bi-lobated cases)
+
 img_path = os.path.join(input_folder_S2,img_names[ii])
 # Initialize the DataProcessing object
 data = corto.DataProcessing(img_path = img_path, label = label_S0 )

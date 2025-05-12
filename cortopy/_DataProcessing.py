@@ -28,6 +28,8 @@ class DataProcessing:
         """
 
         self.img = self.imread(img_path)
+        if len(self.img.shape) != 2:
+            raise ValueError("Only grayscale images are currently supported in the DataProcessing pipeline. RGB images are not allowed.")        
         self.label = label
 
     @staticmethod
@@ -182,9 +184,9 @@ class DataProcessing:
         #TODO: improve the robustness of this function, needs to work with multiple blobs and at different values of noise. Maybe have it working on the labels instead
         img = self.img
         # Convert to grayscale if image is in color     
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if len(img.shape) == 3 else img
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if len(img.shape) == 3 else img # Remove this once the image is assumed to be grayscale only
         # Apply binary threshold to isolate bright regions
-        _, thresh = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY)
+        _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         # Find external contours (outer edges only)
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         # If no contours are found, return None
