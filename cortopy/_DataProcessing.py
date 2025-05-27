@@ -28,6 +28,8 @@ class DataProcessing:
         """
 
         self.img = self.imread(img_path)
+        self.img = cv2.cvtColor(self.img, cv2.COLOR_RGB2GRAY)#TODO: remove this, just hotfix for non-grayscale images
+
         if len(self.img.shape) != 2:
             raise ValueError("Only grayscale images are currently supported in the DataProcessing pipeline. RGB images are not allowed.")        
         self.label = label
@@ -102,6 +104,22 @@ class DataProcessing:
         if tens.ndim != 3:
             raise ValueError("Input tensor must be 3D (n x n x M)")
         scipy.io.savemat(path, {'T_img': tens})
+
+    @staticmethod
+    def matsave_mat(path:str,tens:np.ndarray):
+        """
+        Saves a 2D matrix to a .mat file.
+
+        Args:
+            path (str): Destination file path where the .mat file will be saved.
+            tens (np.ndarray): A 2D NumPy array of shape (n, n, M) representing a tensor.
+
+        Raises:
+            ValueError: If the input tensor is not 3-dimensional.
+        """
+        if tens.ndim != 2:
+            raise ValueError("Input tensor must be 3D (n x n x M)")
+        scipy.io.savemat(path, {'T_lbl': tens})
 
     def crop_img_by_BB(img:np.ndarray, BB):
         """

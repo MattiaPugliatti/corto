@@ -54,42 +54,48 @@ noise = {
     'I_max_s': 1.0
 }
 
-ii = 5
-img_path = os.path.join(img_folder,img_names[ii])
+N = 100  # or any number you need
+img_tensor = np.zeros((N, 128, 128), dtype=np.uint8)
+label_mat = np.zeros((N, 2), dtype=np.float32)
+for ii in range(0,N):
+    img_path = os.path.join(img_folder,img_names[ii])
+    img_input = corto.DataProcessing.imread(img_path)
+    img_noise = corto.DataProcessing.add_artificial_noise(img_input[:,:,0], noise)
+    corto.DataProcessing.imsave(os.path.join(output_folder_noise,img_names[ii]), img_noise)
 
-img_input = corto.DataProcessing.imread(img_path)
-img_noise = corto.DataProcessing.add_artificial_noise(img_input[:,:,0], noise)
-corto.DataProcessing.imsave(os.path.join(output_folder_noise,img_names[ii]), img_noise)
+    ### (PART-2) Adaptive resizing ###
+    input_folder_S2 = output_folder_noise
+    # Define output folder for S2 (cropped + resize)
+    output_folder_S2 = "output/SXX_Double/img_S2"
 
-### (PART-2) Adaptive resizing ###
+    # Define settings for random padding + resize
 
-input_folder_S2 = output_folder_noise
-# Define output folder for S2 (cropped + resize)
-output_folder_S2 = "output/SXX_Double/img_S2"
+    # Size (square) of the target BBs (or image size in S1)
+    target_img_size_S1 = np.array([2048, 1024, 512, 256, 128])
+    # Size (square) of the final image in S2
+    img_size_S2 = 128
+    # Size (square) of the initial image in S0
+    img_size_S0 = 2048
+    # Labels of interest for the images in S0
+    label_S0 = {
+        'CoM': (1024,1024)
+    }
 
-# Define settings for random padding + resize
+    # TODO: change the   thing by workin with the shadow image mask instead (more robust on bi-lobated cases)
 
-# Size (square) of the target BBs (or image size in S1)
-target_img_size_S1 = np.array([2048, 1024, 512, 256, 128])
-# Size (square) of the final image in S2
-img_size_S2 = 128
-# Size (square) of the initial image in S0
-img_size_S0 = 2048
-# Labels of interest for the images in S0
-label_S0 = {
-    'CoM': (1024,1024)
-}
+    img_path = os.path.join(input_folder_S2,img_names[ii])
+    # Initialize the DataProcessing object
+    data = corto.DataProcessing(img_path = img_path, label = label_S0 )
+    # data.imshow() # Visualize the img
 
-# TODO: loop through images
-# TODO: change the whole thing by workin with the shadow image mask instead (more robust on bi-lobated cases)
+    # Perform the ProceduralRandomPadding processing on the data-label pairs
+    img_resized, img_cropped, original_BB, final_BB, delta_1234,label_S2  = data.ProceduralRandomPadding(target_img_size_S1, img_size_S0, img_size_S2)
 
-img_path = os.path.join(input_folder_S2,img_names[ii])
-# Initialize the DataProcessing object
-data = corto.DataProcessing(img_path = img_path, label = label_S0 )
-# data.imshow() # Visualize the img
-
-# Perform the ProceduralRandomPadding processing on the data-label pairs
-img_resized, img_cropped, original_BB, final_BB, delta_1234,label_S2  = data.ProceduralRandomPadding(target_img_size_S1, img_size_S0, img_size_S2)
+    corto.DataProcessing.imsave(os.path.join(output_folder_S2,img_names[ii]),img_resized)
+    img_tensor[ii,:,:] = img_resized
+    label_mat[ii,:] = label_S2["CoM_S2"]
+corto.DataProcessing.tensave_mat(os.path.join(output_folder_S2,'T_data'),img_tensor)
+corto.DataProcessing.matsave_mat(os.path.join(output_folder_S2,'L_data'),label_mat)
 
 ### Plots
 
@@ -109,8 +115,5 @@ plt.axis('off')
 plt.figure()
 plt.imshow(img_resized)
 plt.plot(CoM_S2[0],CoM_S2[1],'rx')
-
-# corto.DataProcessing.imsave(,img_resized)
-# corto.DataProcessing.tensave_mat(,img_resized_tens)
 
 plt.show()
