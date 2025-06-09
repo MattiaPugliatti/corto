@@ -44,6 +44,21 @@ class Shading:
             material.displacement_method = displace_and_bump #TODO: this does not really affect the final material properties!
         return material
 
+    def print_material_node_tree(material):
+        """Prints all nodes and their input sockets for a material's node tree.
+
+        Args:
+            material (bpy.types.Material): The material to inspect.
+        """
+        if not material.use_nodes:
+            print(f"Material '{material.name}' does not use nodes.")
+            return
+        print(f"\nMaterial: {material.name} - Node Tree:")
+        for node in material.node_tree.nodes:
+            print(f"  Node: {node.name} ({node.bl_idname})")
+            for input_socket in node.inputs:
+                print(f"    Input: {input_socket.name} | Default: {getattr(input_socket, 'default_value', 'N/A')}")
+
     def create_simple_diffuse_BSDF(material, 
                                    BSDF_color_RGB=np.array([1, 0, 0])):
         """Generate a simple diffuse BSDF shader.
@@ -127,27 +142,29 @@ class Shading:
         ## Part 3 - Link nodes toghether
         Shading.link_nodes(material,shader_node.outputs["BSDF"],output_node.inputs["Surface"]) # PBSDF to output
 
-
     def create_randomized_texturePBSDF(
         material,
         wave_scale: float = 5, 
-        wave_distortion: float = 5, 
-        wave_detail: float = 5, 
-        wave_detail_scale: float = 5, 
-        wave_detail_roughness: float = 5, 
+        wave_distortion: float = 0, 
+        wave_detail: float = 2, 
+        wave_detail_scale: float = 1, 
+        wave_detail_roughness: float = 0.5, 
         magic_scale: float = 5, 
-        magic_distortion: float = 5, 
+        magic_distortion: float = 1, 
         noise_scale: float = 5, 
         noise_detail: float = 2,
+        noise_roughness: float = 0.5, 
+        noise_lacunarity: float = 2, 
+        noise_distortion: float = 0, 
         mix_1_fac: float = 0.5,
         mix_2_fac: float = 0.5,
-        PBSDF_color_RGB = np.array([1, 0, 0]),
+        PBSDF_color_RGB = np.array([0, 0, 0]),
         PBSDF_metallic: float = 1,
         PBSDF_roughness: float = 1,
         PBSDF_ior: float = 180,
         PBSDF_coat_weight: float = 0,
         PBSDF_coat_roughness: float = 1,
-        PBSDF_coat_tint = np.array([1, 0, 0]),
+        PBSDF_coat_tint = np.array([0, 0, 0]),
     ):
         """Generate a simple randomizd PBSDF shader.
 
@@ -188,11 +205,17 @@ class Shading:
         # Noise node
         texture_noise_node.inputs["Scale"].default_value = noise_scale
         texture_noise_node.inputs["Detail"].default_value = noise_detail
+        texture_noise_node.inputs["Roughness"].default_value = noise_roughness
+        texture_noise_node.inputs["Lacunarity"].default_value = noise_lacunarity
+        texture_noise_node.inputs["Distortion"].default_value = noise_distortion
         # Mix nodes
         mix_1_node.inputs["Factor"].default_value = mix_1_fac
         mix_2_node.inputs["Factor"].default_value = mix_2_fac
         # Color-Ramp node
-        # color_ramp_node.inputs # TODO: add setup for ColorRamp node
+        color_ramp_node.color_ramp.elements[0].position = 0.1
+        color_ramp_node.color_ramp.color_mode = 'RGB'
+        color_ramp_node.color_ramp.elements[0].color = (0.658, 0.658, 0.658, 1)
+        # PBDSF node
         shader_node.inputs["Base Color"].default_value = (
             PBSDF_color_RGB[0],
             PBSDF_color_RGB[1],
@@ -222,6 +245,32 @@ class Shading:
         Shading.link_nodes(material,texture_coordinate_node.outputs["Object"],texture_wave_node.inputs["Vector"])
         Shading.link_nodes(material,texture_coordinate_node.outputs["Object"],texture_magic_node.inputs["Vector"])
         Shading.link_nodes(material,texture_coordinate_node.outputs["Object"],texture_noise_node.inputs["Vector"])
+
+    def update_randomized_texturePBSDF(material, settings:dict):
+        """Update properties of a simple randomizd PBSDF shader.
+
+        Args:
+            material (bpy.data.materials): Material
+            settings (dict): Dictionary with settings for the update
+        """
+        # Update values in the "Wave Texture" node 
+        material.node_tree.nodes["Wave Texture"].inputs["Scale"].default_value = settings["wave_scale"]
+        material.node_tree.nodes["Wave Texture"].inputs["Distortion"].default_value = settings["wave_distortion"]
+        material.node_tree.nodes["Wave Texture"].inputs["Detail"].default_value = settings["wave_detail"]
+        material.node_tree.nodes["Wave Texture"].inputs["Detail Scale"].default_value = settings["wave_detail_scale"]
+        material.node_tree.nodes["Wave Texture"].inputs["Detail Roughness"].default_value = settings["wave_detail_roughness"]
+        # Update values in the "Magic Texture" node
+        material.node_tree.nodes["Magic Texture"].inputs["Scale"].default_value = settings["magic_scale"]
+        material.node_tree.nodes["Magic Texture"].inputs["Distortion"].default_value = settings["magic_distortion"]
+        # Update values in the "Noise Texture" node
+        material.node_tree.nodes["Noise Texture"].inputs["Scale"].default_value = settings["noise_scale"]
+        material.node_tree.nodes["Noise Texture"].inputs["Detail"].default_value = settings["noise_detail"]
+        material.node_tree.nodes["Noise Texture"].inputs["Roughness"].default_value = settings["noise_roughness"]
+        material.node_tree.nodes["Noise Texture"].inputs["Lacunarity"].default_value = settings["noise_lacunarity"]
+        material.node_tree.nodes["Noise Texture"].inputs["Distortion"].default_value = settings["noise_distortion"]
+        # Update values in the "Mix" nodes (wave + magic) and ((wave + magic) + noise)
+        material.node_tree.nodes["Mix"].inputs["Factor"].default_value = settings["mix_1_fac"]
+        material.node_tree.nodes["Mix.001"].inputs["Factor"].default_value = settings["mix_2_fac"]
 
     def create_earth_shader(material, state:State, settings: dict = None):
         """Generate Earth-based PBSDF shader. This contains clouds, land-ocean map, nightlight, and atmospheric effects

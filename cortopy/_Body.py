@@ -232,3 +232,11 @@ class Body:
             raise TypeError("Number of bounces must have integer values.")
         self.diffuse_bounces = par
         bpy.context.scene.cycles.diffuse_bounces = self.diffuse_bounces  # [-]
+
+    def visible(self, visibility_flag:bool = True) -> None: 
+        """
+        Make the body object visible in both the viewport and render
+        """
+        self.BODY_Blender.hide_viewport = not(visibility_flag)
+        self.BODY_Blender.hide_render = not(visibility_flag)
+        self.BODY_Blender.hise_set = not(visibility_flag)
