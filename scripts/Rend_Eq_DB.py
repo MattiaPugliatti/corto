@@ -5,6 +5,7 @@ import cortopy as corto
 import numpy as np 
 import json
 
+#TODO: id_shadow not working
 ## Clean all existing/Default objects in the scene 
 corto.Utils.clean_scene()
 
@@ -68,9 +69,9 @@ for idx in range(idx_start,idx_end):
     env_idx = env_list[id_body]
     body_idx = body_list[id_body]
     state_idx = state_list[id_body]
-    if body_idx.name != settings_body_dyn[idx]["body_name"][0:-5]:
+    if body_idx.name != settings_body_dyn[idx]["body_name"][0:-4]:
         print(body_idx.name)
-        print(settings_body_dyn[idx]["body_name"][0:-5])
+        print(settings_body_dyn[idx]["body_name"][0:-4])
         break
     # Setup rendering scene
     env_idx.PositionAll(state_idx,index=idx)
