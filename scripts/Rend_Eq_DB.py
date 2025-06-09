@@ -3,6 +3,8 @@ import os
 sys.path.append(os.getcwd())
 import cortopy as corto
 import numpy as np 
+import json
+
 #TODO: fix image generation to get uint8 grayscale instead of uint16-RGB
 
 ## Clean all existing/Default objects in the scene 
@@ -12,6 +14,7 @@ corto.Utils.clean_scene()
 scenario_name = "SXX_Double" # Name of the scenario folder
 scene_name = "scene.json" # name of the scene input
 geometry_name = "R5_2025_05_25_15_16_44.json" # name of the geometry input
+body_dyn_name = "R5_50k_body_settings.json" # name of the json for the dynamic body's settings
 
 # Select body #TODO: automatize this, for now assume we are working on one body only
 body_name = "41458_X5Y4.obj" # name of the body input
@@ -36,43 +39,19 @@ material = corto.Shading.create_new_material('BodySurfaceRand')
 corto.Shading.create_randomized_texturePBSDF(material)
 corto.Shading.assign_material_to_object(material, body)
 
-# corto.Shading.print_material_node_tree(material)
-
-settings_body_dyn = {
-    # Wave Texture
-    "wave_scale": 0,
-    "wave_distortion": 0,
-    "wave_detail": 0,
-    "wave_detail_scale": 0,
-    "wave_detail_roughness": 0,
-    # Magic Texture
-    "magic_scale": 0,
-    "magic_distortion": 0,
-    # Noise Texture
-    "noise_scale": 0,
-    "noise_detail": 0,
-    "noise_roughness": 0,
-    "noise_lacunarity": 0,
-    "noise_distortion": 0,
-    # Mix 
-    "mix_1_fac": 0, 
-    "mix_2_fac": 0
-}
-
-corto.Shading.update_randomized_texturePBSDF(material, settings_body_dyn)
-
+# Open and read the JSON file
+with open(os.path.join("input/SXX_Double/body/material", body_dyn_name ), "r") as f:
+    settings_body_dyn = json.load(f)
+    
+corto.Shading.update_randomized_texturePBSDF(material, settings_body_dyn[0])
+corto.Shading.print_material_node_tree(material)
 corto.Utils.save_blend(State)
 
 ### (4) COMPOSITING PROPERTIES ###
-
-#TODO: Define output labels
-
 # Build image-label pairs pipeline
 tree = corto.Compositing.create_compositing()
 render_node = corto.Compositing.rendering_node(tree, (0,0)) # Create Render node
 corto.Compositing.create_img_denoise_branch(tree,render_node) # Create img_denoise branch
-# corto.Compositing.create_depth_branch(tree,render_node) # Create depth branch
-# corto.Compositing.create_slopes_branch(tree,render_node,State) # Create slopes branch
 corto.Compositing.create_maskID_branch(tree,render_node,State) # Create ID mask branch
 
 ### (5) GENERATION OF IMG-LBL PAIRS ###
