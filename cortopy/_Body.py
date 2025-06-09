@@ -239,4 +239,3 @@ class Body:
         """
         self.BODY_Blender.hide_viewport = not(visibility_flag)
         self.BODY_Blender.hide_render = not(visibility_flag)
-        self.BODY_Blender.hise_set = not(visibility_flag)
