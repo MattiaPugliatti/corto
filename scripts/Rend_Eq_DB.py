@@ -12,7 +12,7 @@ corto.Utils.clean_scene()
 ### (1) DEFINE INPUT ### 
 scenario_name = "SXX_Double" # Name of the scenario folder
 scene_name = "scene.json" # name of the scene input
-geometry_name = "R5_2025_05_25_15_16_44.json" # name of the geometry input
+geometry_name = "R5_2025_06_05_19_55_16.json" # name of the geometry input
 body_dyn_name = "R5_50k_body_settings.json" # name of the json for the dynamic body's settings
 
 # Open and read the JSON file with dynamic body's parameters
@@ -62,7 +62,7 @@ for ii_body in range(len(unique_body_names)):
 ### (5) GENERATE IMG-LBL PAIRS ###
 
 idx_start = 0
-idx_end = 2 # Render the images between idx_start and idx_end
+idx_end = 1000 # Render the images between idx_start and idx_end
 for idx in range(idx_start,idx_end):
     id_body = body_name_list.index(settings_body_dyn[idx]["body_name"]) # Get the body's index from the body's name list
     # Extract dedicated env, body, and state objects

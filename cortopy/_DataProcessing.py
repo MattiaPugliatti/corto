@@ -121,9 +121,10 @@ class DataProcessing:
             raise ValueError("Input tensor must be 3D (n x n x M)")
         scipy.io.savemat(path, {'T_lbl': tens})
 
-    def crop_img_by_BB(img:np.ndarray, BB):
+    def crop_img_by_BB_int(img:np.ndarray, BB):
         """
         Crops a region from an image based on the given bounding box.
+        NOTE: The bounding box has to be defined with integer values.
 
         Args:
             img (np.ndarray): The input image as a NumPy array.
@@ -139,6 +140,34 @@ class DataProcessing:
         x, y, w, h = BB
         return img[y:y+h, x:x+w]
     
+    def crop_img_by_BB_float(img: np.ndarray, BB):
+        """
+        Crops a region from an image based on a float-defined bounding box,
+        using subpixel precision.
+        NOTE: The bounding box has to be defined with float values.
+
+        Args:
+            img (np.ndarray): The input image as a NumPy array.
+            BB (tuple or list): Bounding box defined as (x, y, w, h), where:
+                x (float): Top-left x-coordinate.
+                y (float): Top-left y-coordinate.
+                w (float): Width of the bounding box.
+                h (float): Height of the bounding box.
+
+        Returns:
+            np.ndarray: Cropped image region corresponding to the bounding box
+                        using float precision.
+        """
+        x, y, w, h = BB
+
+        # Compute center of bounding box
+        center = (x + w / 2.0, y + h / 2.0)
+        size = (int(round(w)), int(round(h)))  # Output size must be integers
+
+        # Use cv2.getRectSubPix for subpixel-accurate cropping
+        cropped = cv2.getRectSubPix(img, patchSize=size, center=center)
+        return cropped
+
     @ staticmethod
     def resize_image(img:np.ndarray,target_res:int, method:str = 'INTER_NEAREST'):
         """
@@ -302,20 +331,24 @@ class DataProcessing:
         else:
             while check:
                 if check_1:
-                    delta_1 = np.random.randint(0, max(max_delta_1, 1))
+                    # delta_1 = np.random.randint(0, max(max_delta_1, 1))
+                    delta_1 = np.random.uniform(0, max(max_delta_1, 1))
                     delta_2 = delta_all[0] - delta_1
                 if check_2:
-                    delta_3 = np.random.randint(0, max(max_delta_3, 1))
+                    # delta_3 = np.random.randint(0, max(max_delta_3, 1))
+                    delta_3 = np.random.uniform(0, max(max_delta_3, 1))
                     delta_4 = delta_all[1] - delta_3
                 if (delta_1 <= max_delta_1 and delta_2 <= max_delta_2 and
                     delta_3 <= max_delta_3 and delta_4 <= max_delta_4):
                     check = False
             # Pack all delta's (left, right, top, bottom) of the final bounding box            
-            delta_1234 = np.array([int(delta_1), int(delta_2), int(delta_3), int(delta_4)])
+            # delta_1234 = np.array([int(delta_1), int(delta_2), int(delta_3), int(delta_4)])
+            delta_1234 = np.array([delta_1, delta_2, delta_3, delta_4])
             # Generate the new bounding box
             x_new = source_BB[0] - delta_1234[0]
             y_new = source_BB[1] - delta_1234[2]
-        new_BB = np.array([int(x_new), int(y_new), int(w_new), int(h_new)])
+        # new_BB = np.array([int(x_new), int(y_new), int(w_new), int(h_new)])
+        new_BB = np.array([x_new, y_new, w_new, h_new])
         # Activate warnings for I's
         if error_index == 1: 
             warnings.warn(f"Width of bounding box ({w}) exceeds selected target size ({selected_target_size}).")
@@ -361,7 +394,7 @@ class DataProcessing:
         # Perform random padding
         final_BB,delta_1234, error_index = self.BB_random_padding(original_BB, target_BB_size, (original_img_size,original_img_size), original_img_size)
         # Crop the image with BB
-        img_cropped = DataProcessing.crop_img_by_BB(self.img,final_BB)
+        img_cropped = DataProcessing.crop_img_by_BB_float(self.img,final_BB)
         # Reduce the image to final resolution 
         img_resized = self.resize_image(img_cropped,final_img_size,'INTER_AREA')
 
