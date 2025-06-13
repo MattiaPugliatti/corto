@@ -10,12 +10,18 @@ import cortopy as corto
 PostProcessing script (PART-1) that adds artificial noise to the images in 'img_folder'
 '''
 ### Set image path ###
-img_folder = "/Users/mapu7335/Repos/equilibrium/Data/Images/Test/img/" # Folder with input images
-img_names = corto.DataProcessing.find_images(img_folder, "*.png")
-N = len(img_names)  # or any number you need
+data_folder = "/Users/mapu7335/Repos/equilibrium/Data/Images/Test"
+# data_folder = "/Users/mapu7335/Repos/equilibrium/Data/Images/R1_2025_06_11_11_09_08"
+# data_folder = "/Users/mapu7335/Repos/equilibrium/Data/Images/R2_2025_06_11_11_09_17"
+# data_folder = "/Users/mapu7335/Repos/equilibrium/Data/Images/R3_2025_06_11_11_09_24"
+# data_folder = "/Users/mapu7335/Repos/equilibrium/Data/Images/R4_2025_06_11_11_09_31"
 
-# Define output folder for S0 (Artificial Noise)
-output_folder_noise = "/Users/mapu7335/Repos/equilibrium/Data/Images/Test/img_S0"
+img_folder = os.path.join(data_folder, "img") # Folder with input images
+output_folder_noise = os.path.join(data_folder, "img_S0") # Folder with output images
+img_names = corto.DataProcessing.find_images(img_folder, "*.png")
+N = len(img_names) # or any number you need
+
+# Create output folder for S0 (Artificial Noise)
 corto.Utils.mkdir(output_folder_noise)
 
 def uniform_log(min_val, max_val):

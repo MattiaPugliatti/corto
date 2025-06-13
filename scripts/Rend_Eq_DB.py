@@ -12,8 +12,19 @@ corto.Utils.clean_scene()
 ### (1) DEFINE INPUT ### 
 scenario_name = "SXX_Double" # Name of the scenario folder
 scene_name = "scene.json" # name of the scene input
-geometry_name = "R5_2025_06_05_19_55_16.json" # name of the geometry input
-body_dyn_name = "R5_50k_body_settings.json" # name of the json for the dynamic body's settings
+
+# geometry_name = "R1_2025_06_11_11_09_08.json" # Te1 
+# geometry_name = "R2_2025_06_11_11_09_17.json" # Te2 
+# geometry_name = "R3_2025_06_11_11_09_24.json" # Te3 
+# geometry_name = "R4_2025_06_11_11_09_31.json" # Te4 
+body_dyn_name = "R1234_1k_body_settings.json" # Valid for Te1, Te2, Te3, and Te4
+idx_start = 0
+idx_end = 1000 # Render the images between idx_start and idx_end
+
+geometry_name = "R4_2025_06_11_11_09_31.json" # Te4 
+body_dyn_name = "R1234_1k_body_settings.json" # Valid for Te1, Te2, Te3, and Te4
+idx_start = 0
+idx_end = 16000 # Render the images between idx_start and idx_end
 
 # Open and read the JSON file with dynamic body's parameters
 with open(os.path.join("input/SXX_Double/body/material", body_dyn_name ), "r") as f:
@@ -61,8 +72,6 @@ for ii_body in range(len(unique_body_names)):
 
 ### (5) GENERATE IMG-LBL PAIRS ###
 
-idx_start = 0
-idx_end = 1000 # Render the images between idx_start and idx_end
 for idx in range(idx_start,idx_end):
     id_body = body_name_list.index(settings_body_dyn[idx]["body_name"]) # Get the body's index from the body's name list
     # Extract dedicated env, body, and state objects

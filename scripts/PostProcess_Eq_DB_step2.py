@@ -13,15 +13,22 @@ PostProcessing script (PART-2) that performs randomized paddin to the images in 
 '''
 
 ### Set image path ###
-mask_folder = "/Users/mapu7335/Repos/equilibrium/Data/Images/Test/mask_ID_1/" # Folder with image masks
-img_folder = "/Users/mapu7335/Repos/equilibrium/Data/Images/Test/img/" # Folder with input images
-img_noise_folder = "/Users/mapu7335/Repos/equilibrium/Data/Images/Test/img_S0" # Folder with noisy images
+data_folder = "/Users/mapu7335/Repos/equilibrium/Data/Images/PipelineTest"
+# data_folder = "/Users/mapu7335/Repos/equilibrium/Data/Images/R1_2025_06_11_11_09_08"
+# data_folder = "/Users/mapu7335/Repos/equilibrium/Data/Images/R2_2025_06_11_11_09_17"
+# data_folder = "/Users/mapu7335/Repos/equilibrium/Data/Images/R3_2025_06_11_11_09_24"
+# data_folder = "/Users/mapu7335/Repos/equilibrium/Data/Images/R4_2025_06_11_11_09_31"
+
+mask_folder = os.path.join(data_folder, "mask_ID_1") # Folder with image masks
+img_folder = os.path.join(data_folder, "img") # Folder with input images
+img_noise_folder = os.path.join(data_folder, "img_S0") # Folder with noisy images
 
 img_names = corto.DataProcessing.find_images(img_folder, "*.png")
 N = len(img_names)  # or any number you need
 
 # Define output folder for S2 (cropped + resize)
-output_folder_S2 = "/Users/mapu7335/Repos/equilibrium/Data/Images/Test/img_S2"
+output_folder_S2 = os.path.join(data_folder, "img_S2") 
+corto.Utils.mkdir(output_folder_S2)
 
 # Define the input folder for S2 (to compute BB)
 # input_folder_S2 = img_noise_folder # Take as input for the random padding the images with noise
@@ -61,9 +68,9 @@ for ii in range(0,N):
     label_finalBB[ii,:] = final_BB
     label_delta1234[ii,:] = delta_1234
 
-corto.DataProcessing.tensave_mat(os.path.join(output_folder_S2,'T_data.mat'),img_tensor)
+corto.DataProcessing.tensave_mat(os.path.join(data_folder,'T_data.mat'),img_tensor)
 # corto.DataProcessing.matsave_mat(os.path.join(output_folder_S2,'L_data.mat'),label_CoM,label_originalBB,label_finalBB,label_delta1234)
-scipy.io.savemat(os.path.join(output_folder_S2,'L_data.mat'), {'T_lbl': label_CoM,'originalBB':label_originalBB,'finalBB':label_finalBB,'delta1234':label_delta1234})
+scipy.io.savemat(os.path.join(data_folder,'L_data.mat'), {'T_lbl': label_CoM,'originalBB':label_originalBB,'finalBB':label_finalBB,'delta1234':label_delta1234})
 
 ### Plots
 
