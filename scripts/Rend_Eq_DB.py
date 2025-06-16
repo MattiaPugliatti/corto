@@ -2,10 +2,8 @@ import sys
 import os
 sys.path.append(os.getcwd())
 import cortopy as corto
-import numpy as np 
 import json
 
-#TODO: id_shadow not working
 ## Clean all existing/Default objects in the scene 
 corto.Utils.clean_scene()
 
@@ -17,13 +15,14 @@ scene_name = "scene.json" # name of the scene input
 # geometry_name = "R2_2025_06_11_11_09_17.json" # Te2 
 # geometry_name = "R3_2025_06_11_11_09_24.json" # Te3 
 # geometry_name = "R4_2025_06_11_11_09_31.json" # Te4 
-body_dyn_name = "R1234_1k_body_settings.json" # Valid for Te1, Te2, Te3, and Te4
-idx_start = 0
-idx_end = 1000 # Render the images between idx_start and idx_end
+# geometry_name = "R5_2025_06_13_10_16_22.json" # Te5 
+# body_dyn_name = "R1234_1k_body_settings.json" # Valid for Te1, Te2, Te3, Te4, and Te5
+# idx_start = 0
+# idx_end = 1000 # Render the images between idx_start and idx_end
 
-geometry_name = "R4_2025_06_11_11_09_31.json" # Te4 
-body_dyn_name = "R1234_1k_body_settings.json" # Valid for Te1, Te2, Te3, and Te4
-idx_start = 0
+geometry_name = "R5_2025_06_13_10_21_51.json" # Tr&V
+body_dyn_name = "R5_16k_body_settings.json" # Valid for Tr&V
+idx_start = 5685
 idx_end = 16000 # Render the images between idx_start and idx_end
 
 # Open and read the JSON file with dynamic body's parameters

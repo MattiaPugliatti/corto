@@ -228,7 +228,6 @@ class DataProcessing:
             np.ndarray or None: Bounding box as a NumPy array [x, y, w, h],
             or None if no contours are found.
         """
-        #TODO: improve the robustness of this function, needs to work with multiple blobs and at different values of noise. Maybe have it working on the labels instead
         img = self.img
         # Convert to grayscale if image is in color     
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if len(img.shape) == 3 else img # Remove this once the image is assumed to be grayscale only
@@ -332,12 +331,20 @@ class DataProcessing:
             while check:
                 if check_1:
                     # delta_1 = np.random.randint(0, max(max_delta_1, 1))
-                    delta_1 = np.random.uniform(0, max(max_delta_1, 1))
-                    delta_2 = delta_all[0] - delta_1
+                    if max_delta_1 == 0:
+                        delta_1 = 0 
+                        delta_2 = 0
+                    else:
+                        delta_1 = np.random.uniform(0, max(max_delta_1, 1))
+                        delta_2 = delta_all[0] - delta_1
                 if check_2:
                     # delta_3 = np.random.randint(0, max(max_delta_3, 1))
-                    delta_3 = np.random.uniform(0, max(max_delta_3, 1))
-                    delta_4 = delta_all[1] - delta_3
+                    if max_delta_3 == 0:
+                        delta_3 = 0 
+                        delta_4 = 0
+                    else:
+                        delta_3 = np.random.uniform(0, max(max_delta_3, 1))
+                        delta_4 = delta_all[1] - delta_3
                 if (delta_1 <= max_delta_1 and delta_2 <= max_delta_2 and
                     delta_3 <= max_delta_3 and delta_4 <= max_delta_4):
                     check = False

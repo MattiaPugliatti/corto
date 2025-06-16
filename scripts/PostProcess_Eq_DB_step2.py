@@ -75,26 +75,6 @@ scipy.io.savemat(os.path.join(data_folder,'L_data.mat'), {'T_lbl': label_CoM,'or
 ### Plots
 
 # All labels
-
-plt.figure()
-plt.plot(label_CoM[:,0],label_CoM[:,1],'.')
-plt.xlabel('u [px]')
-plt.ylabel('v [px]')
-
-plt.figure()
-plt.hist(label_CoM[:,0])
-plt.hist(label_CoM[:,1])
-plt.xlabel('u-v [px]')
-plt.ylabel('# of points [-]')
-
-plt.figure()
-plt.hist(label_originalBB[:,2])
-plt.hist(label_originalBB[:,3])
-
-plt.figure()
-plt.plot(label_finalBB[:,2])
-plt.plot(label_finalBB[:,3])
-
 # 1 Image
 CoM_S0 = label_S2["CoM_S0"]
 CoM_S2 = label_S2["CoM_S2"]
