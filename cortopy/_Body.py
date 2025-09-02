@@ -183,7 +183,7 @@ class Body:
             ValueError : Provided quaternion is not a unit vector, it does not represent a rotation
         """
 
-        if not math.isclose(np.linalg.norm(orientation), 1.0, rel_tol=1e-9):
+        if not math.isclose(np.linalg.norm(orientation), 1.0, rel_tol=1e-4):
             raise ValueError("Provided quaternion is not a unit vector")
 
         self.orientation = orientation
@@ -232,3 +232,10 @@ class Body:
             raise TypeError("Number of bounces must have integer values.")
         self.diffuse_bounces = par
         bpy.context.scene.cycles.diffuse_bounces = self.diffuse_bounces  # [-]
+
+    def visible(self, visibility_flag:bool = True) -> None: 
+        """
+        Make the body object visible in both the viewport and render
+        """
+        self.BODY_Blender.hide_viewport = not(visibility_flag)
+        self.BODY_Blender.hide_render = not(visibility_flag)

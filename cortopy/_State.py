@@ -38,6 +38,8 @@ class State:
             self.n_bodies = 1
         elif isinstance(body, list) and len(body)>1:
             self.n_bodies = len(body)
+        elif not isinstance(body, list):
+            self.n_bodies = 0
         else:
             TypeError("You have used a list to specify a single body")
 
@@ -50,10 +52,13 @@ class State:
         # body_file_according to single or multiple bodies
         if self.n_bodies == 1:
             body_file = os.path.join("input", scenario, "body", "shape", body)
-        else: #n_bodies>1
+        elif self.n_bodies>1:
             body_file = []
             for ii in range(0,self.n_bodies):
                 body_file.append(os.path.join("input", scenario, "body", "shape", body[ii]))
+        elif self.n_bodies==0:
+            body_file = os.path.join("input", scenario, "body", "shape", "None")
+
 
         # Import inputs
         self.import_scene(scene_file)

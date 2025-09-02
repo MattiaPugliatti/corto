@@ -21,7 +21,8 @@ __all__ = (
     "Rendering"
     "PostPro",
     "Shading",
-    "Compositing"
+    "Compositing",
+    "DataProcessing"
 )
 
 from ._version import __version__
@@ -34,3 +35,4 @@ from ._Rendering import Rendering
 from ._Shading import Shading
 from ._Compositing import Compositing
 from ._Utils import Utils 
+from ._DataProcessing import DataProcessing

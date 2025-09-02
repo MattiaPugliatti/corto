@@ -22,7 +22,7 @@ class Shading:
         Constructor for the shading class
         """
 
-    def create_new_material(name: str):
+    def create_new_material(name: str, displace_and_bump:str = None):
         """Creata a new empty material
 
         Args:
@@ -32,13 +32,32 @@ class Shading:
             material (bpy.data.materials): New empty material
         """
         material = bpy.data.materials.new(name=name)
+
         material.use_nodes = True  # Enable use nodes
         # Get the material's node tree
         node_tree = material.node_tree
         # Clear any existing nodes (if any)
         nodes = node_tree.nodes
         nodes.clear()
+        # Toggle Displace and Bump property
+        if displace_and_bump is not None:
+            material.displacement_method = displace_and_bump #TODO: this does not really affect the final material properties!
         return material
+
+    def print_material_node_tree(material):
+        """Prints all nodes and their input sockets for a material's node tree.
+
+        Args:
+            material (bpy.types.Material): The material to inspect.
+        """
+        if not material.use_nodes:
+            print(f"Material '{material.name}' does not use nodes.")
+            return
+        print(f"\nMaterial: {material.name} - Node Tree:")
+        for node in material.node_tree.nodes:
+            print(f"  Node: {node.name} ({node.bl_idname})")
+            for input_socket in node.inputs:
+                print(f"    Input: {input_socket.name} | Default: {getattr(input_socket, 'default_value', 'N/A')}")
 
     def create_simple_diffuse_BSDF(material, 
                                    BSDF_color_RGB=np.array([1, 0, 0])):
@@ -78,7 +97,8 @@ class Shading:
     def create_simple_principled_BSDF(
         material,
         PBSDF_color_RGB=np.array([1, 0, 0]),
-        PBSDF_roughness:float=1,
+        PBSDF_metallic: float = 0,
+        PBSDF_roughness: float = 1,
         PBSDF_ior:float=180,
         PBSDF_coat_weight:float=0,
         PBSDF_coat_roughness:float=1,
@@ -89,41 +109,301 @@ class Shading:
         Args:
             material (bpy.data.materials): material 
             PBSDF_color_RGB (np.array, optional): color value. Defaults to np.array([1, 0, 0]).
+            PBSDF_metallic (float, optional): metallic value. Defaults to 0.
             PBSDF_roughness (float, optional): roughness value. Defaults to 1.
             PBSDF_ior (float, optional): ior value. Defaults to 180.
             PBSDF_coat_weight (float, optional): _description_. Defaults to 0.
             PBSDF_coat_roughness (float, optional): coat weight value. Defaults to 1.
             PBSDF_coat_tint (np.array, optional): coat tint value. Defaults to np.array([1, 0, 0]).
         """
-        nodes = material.node_tree.nodes
-        # Create Principled BSDF node
-        shader = nodes.new(type="ShaderNodeBsdfPrincipled") # TODO: update with new node method
-        shader.location = (0, 0)
-        # Create material output node
-        output_node = nodes.new(type="ShaderNodeOutputMaterial") # TODO: update with new node method
-        output_node.location = (200, 0)
-        # Connect the Principled BSDF node to the Material Output node
-        material.node_tree.links.new(
-            shader.outputs["BSDF"], output_node.inputs["Surface"]
-        )
-        # Set the base color
-        shader.inputs["Base Color"].default_value = (
+        ## Part 1 - Create all necessary nodes
+        shader_node = Shading.principled_BSDF(material, (0, 0))
+        output_node = Shading.material_output(material, (200, 0))
+
+        ## Part 2 - Setup nodes properties
+        shader_node.inputs["Base Color"].default_value = (
             PBSDF_color_RGB[0],
             PBSDF_color_RGB[1],
             PBSDF_color_RGB[2],
             1,
-        )  # RGBA
-        # Set other PBSDF properties
-        shader.inputs["Roughness"].default_value = PBSDF_roughness
-        shader.inputs["IOR"].default_value = PBSDF_ior
-        shader.inputs["Coat Weight"].default_value = PBSDF_coat_weight
-        shader.inputs["Coat Roughness"].default_value = PBSDF_coat_roughness
-        shader.inputs["Coat Tint"].default_value = (
+        ) 
+        shader_node.inputs["Coat Tint"].default_value = (
             PBSDF_coat_tint[0],
             PBSDF_coat_tint[1],
             PBSDF_coat_tint[2],
             1,
-        )  # RGBA
+        )
+        shader_node.inputs["Metallic"].default_value = PBSDF_metallic
+        shader_node.inputs["Roughness"].default_value = PBSDF_roughness
+        shader_node.inputs["IOR"].default_value = PBSDF_ior
+        shader_node.inputs["Coat Weight"].default_value = PBSDF_coat_weight
+        shader_node.inputs["Coat Roughness"].default_value = PBSDF_coat_roughness
+
+        ## Part 3 - Link nodes toghether
+        Shading.link_nodes(material,shader_node.outputs["BSDF"],output_node.inputs["Surface"]) # PBSDF to output
+
+    def create_randomized_texturePBSDF(
+        material,
+        wave_scale: float = 5, 
+        wave_distortion: float = 0, 
+        wave_detail: float = 2, 
+        wave_detail_scale: float = 1, 
+        wave_detail_roughness: float = 0.5, 
+        magic_scale: float = 5, 
+        magic_distortion: float = 1, 
+        noise_scale: float = 5, 
+        noise_detail: float = 2,
+        noise_roughness: float = 0.5, 
+        noise_lacunarity: float = 2, 
+        noise_distortion: float = 0, 
+        mix_1_fac: float = 0.5,
+        mix_2_fac: float = 0.5,
+        PBSDF_color_RGB = np.array([0, 0, 0]),
+        PBSDF_metallic: float = 1,
+        PBSDF_roughness: float = 1,
+        PBSDF_ior: float = 180,
+        PBSDF_coat_weight: float = 0,
+        PBSDF_coat_roughness: float = 1,
+        PBSDF_coat_tint = np.array([0, 0, 0]),
+    ):
+        """Generate a simple randomizd PBSDF shader.
+
+        Args:
+            material (bpy.data.materials): material 
+            PBSDF_color_RGB (np.array, optional): color value. Defaults to np.array([1, 0, 0]).
+            PBSDF_metallic (float, optional): metallic value. Defaults to 0.
+            PBSDF_roughness (float, optional): roughness value. Defaults to 1.
+            PBSDF_ior (float, optional): ior value. Defaults to 180.
+            PBSDF_coat_weight (float, optional): _description_. Defaults to 0.
+            PBSDF_coat_roughness (float, optional): coat weight value. Defaults to 1.
+            PBSDF_coat_tint (np.array, optional): coat tint value. Defaults to np.array([1, 0, 0]).
+        """
+        ## Part 1 - Create all necessary nodes
+        texture_coordinate_node = Shading.texture_coordinate_node(material,(0,0))
+        texture_wave_node = Shading.texture_wave_node(material,(200,400))
+        texture_magic_node = Shading.texture_magic_node(material,(200,0))
+        texture_noise_node = Shading.texture_noise_node(material,(200,-400))
+        color_ramp_node = Shading.color_ramp_node(material, (400, 200))
+        mix_1_node = Shading.mix_node(material, (800, 200))
+        mix_2_node = Shading.mix_node(material, (1200, 100))
+        shader_node = Shading.principled_BSDF(material, (1600, 0))
+        output_node = Shading.material_output(material, (2000, 0))
+
+        ## Part 2 - Setup nodes properties
+        # Wave node
+        texture_wave_node.wave_type = 'RINGS'
+        texture_wave_node.rings_direction = 'SPHERICAL'
+        texture_wave_node.wave_profile = 'TRI'
+        texture_wave_node.inputs["Scale"].default_value = wave_scale
+        texture_wave_node.inputs["Distortion"].default_value = wave_distortion
+        texture_wave_node.inputs["Detail"].default_value = wave_detail
+        texture_wave_node.inputs["Detail Scale"].default_value = wave_detail_scale
+        texture_wave_node.inputs["Detail Roughness"].default_value = wave_detail_roughness
+        # Magic node
+        texture_magic_node.inputs["Scale"].default_value = magic_scale
+        texture_magic_node.inputs["Distortion"].default_value = magic_distortion
+        # Noise node
+        texture_noise_node.inputs["Scale"].default_value = noise_scale
+        texture_noise_node.inputs["Detail"].default_value = noise_detail
+        texture_noise_node.inputs["Roughness"].default_value = noise_roughness
+        texture_noise_node.inputs["Lacunarity"].default_value = noise_lacunarity
+        texture_noise_node.inputs["Distortion"].default_value = noise_distortion
+        # Mix nodes
+        mix_1_node.inputs["Factor"].default_value = mix_1_fac
+        mix_2_node.inputs["Factor"].default_value = mix_2_fac
+        # Color-Ramp node
+        color_ramp_node.color_ramp.elements[0].position = 0.1
+        color_ramp_node.color_ramp.color_mode = 'RGB'
+        color_ramp_node.color_ramp.elements[0].color = (0.658, 0.658, 0.658, 1)
+        # PBDSF node
+        shader_node.inputs["Base Color"].default_value = (
+            PBSDF_color_RGB[0],
+            PBSDF_color_RGB[1],
+            PBSDF_color_RGB[2],
+            1,
+        ) 
+        shader_node.inputs["Coat Tint"].default_value = (
+            PBSDF_coat_tint[0],
+            PBSDF_coat_tint[1],
+            PBSDF_coat_tint[2],
+            1,
+        )
+        shader_node.inputs["Metallic"].default_value = PBSDF_metallic
+        shader_node.inputs["Roughness"].default_value = PBSDF_roughness
+        shader_node.inputs["IOR"].default_value = PBSDF_ior
+        shader_node.inputs["Coat Weight"].default_value = PBSDF_coat_weight
+        shader_node.inputs["Coat Roughness"].default_value = PBSDF_coat_roughness
+
+        ## Part 3 - Link nodes toghether
+        Shading.link_nodes(material,texture_wave_node.outputs["Fac"],color_ramp_node.inputs["Fac"]) 
+        Shading.link_nodes(material,color_ramp_node.outputs["Color"],mix_1_node.inputs["A"]) 
+        Shading.link_nodes(material,texture_magic_node.outputs["Fac"],mix_1_node.inputs["B"]) 
+        Shading.link_nodes(material,texture_noise_node.outputs["Fac"],mix_2_node.inputs["B"]) 
+        Shading.link_nodes(material,mix_1_node.outputs["Result"],mix_2_node.inputs["A"]) 
+        Shading.link_nodes(material,mix_2_node.outputs["Result"],shader_node.inputs["Base Color"]) 
+        Shading.link_nodes(material,shader_node.outputs["BSDF"],output_node.inputs["Surface"]) # PBSDF to output
+        Shading.link_nodes(material,texture_coordinate_node.outputs["Object"],texture_wave_node.inputs["Vector"])
+        Shading.link_nodes(material,texture_coordinate_node.outputs["Object"],texture_magic_node.inputs["Vector"])
+        Shading.link_nodes(material,texture_coordinate_node.outputs["Object"],texture_noise_node.inputs["Vector"])
+
+    def update_randomized_texturePBSDF(material, settings:dict):
+        """Update properties of a simple randomizd PBSDF shader.
+
+        Args:
+            material (bpy.data.materials): Material
+            settings (dict): Dictionary with settings for the update
+        """
+        # Update values in the "Wave Texture" node 
+        material.node_tree.nodes["Wave Texture"].inputs["Scale"].default_value = settings["wave_scale"]
+        material.node_tree.nodes["Wave Texture"].inputs["Distortion"].default_value = settings["wave_distortion"]
+        material.node_tree.nodes["Wave Texture"].inputs["Detail"].default_value = settings["wave_detail"]
+        material.node_tree.nodes["Wave Texture"].inputs["Detail Scale"].default_value = settings["wave_detail_scale"]
+        material.node_tree.nodes["Wave Texture"].inputs["Detail Roughness"].default_value = settings["wave_detail_roughness"]
+        # Update values in the "Magic Texture" node
+        material.node_tree.nodes["Magic Texture"].inputs["Scale"].default_value = settings["magic_scale"]
+        material.node_tree.nodes["Magic Texture"].inputs["Distortion"].default_value = settings["magic_distortion"]
+        # Update values in the "Noise Texture" node
+        material.node_tree.nodes["Noise Texture"].inputs["Scale"].default_value = settings["noise_scale"]
+        material.node_tree.nodes["Noise Texture"].inputs["Detail"].default_value = settings["noise_detail"]
+        material.node_tree.nodes["Noise Texture"].inputs["Roughness"].default_value = settings["noise_roughness"]
+        material.node_tree.nodes["Noise Texture"].inputs["Lacunarity"].default_value = settings["noise_lacunarity"]
+        material.node_tree.nodes["Noise Texture"].inputs["Distortion"].default_value = settings["noise_distortion"]
+        # Update values in the "Mix" nodes (wave + magic) and ((wave + magic) + noise)
+        material.node_tree.nodes["Mix"].inputs["Factor"].default_value = settings["mix_1_fac"]
+        material.node_tree.nodes["Mix.001"].inputs["Factor"].default_value = settings["mix_2_fac"]
+
+    def create_earth_shader(material, state:State, settings: dict = None):
+        """Generate Earth-based PBSDF shader. This contains clouds, land-ocean map, nightlight, and atmospheric effects
+
+        Args:
+            material (bpy.data.materials): Material
+            state (corto.State): CORTO state object
+            settings (dict): Dictionary with settings for this particular shader
+        """
+
+        ## Part 1 - Create all necessary nodes
+        # Create input image-texture nodes
+        earth_color = Shading.texture_node(material, state.path["earth_color"], 'sRGB', (-400, 600))
+        earth_landocean = Shading.texture_node(material, state.path["earth_landocean"], 'Non-Color', (-400, 200))
+        earth_displacement = Shading.texture_node(material, state.path["earth_displacement"], 'Non-Color', (-400, -200))   
+        earth_night = Shading.texture_node(material, state.path["earth_night"], 'Non-Color', (-400, -600))
+        # Create principled BSDF node
+        shader = Shading.principled_BSDF(material, location=(800, 0))
+        # Create material output node
+        output_node = Shading.material_output(material, location = (1200, -400))
+        # Create Hue saturation node
+        hueSaturation_node = Shading.hue_saturation_node(material, location = (200, 400))
+        # Create Displacement node
+        displacement_node = Shading.displacement_node(material, location =(200,-200))
+        # Create texture coordinate node
+        texture_coord_node = Shading.texture_coordinate_node(material, location =(-400,-1000))
+        # Create Normal node
+        normal_node = Shading.normal_node(material, location =(-200,-1000))
+        # Create Map Range node
+        map_range_node_land = Shading.map_range_node(material, location = (0,200))
+        map_range_node_night = Shading.map_range_node(material, location = (0,-1000))
+        # Create Map Range node
+        blackbody_node = Shading.blackbody_node(material, location =(600,-400))
+        # Create Multiply node
+        math_node = Shading.math_node(material, location =(600,-600))
+
+        ## Part 2 - Setup nodes properties
+
+        # land-ocean props
+        hueSaturation_node.inputs["Hue"].default_value = settings['albedo']['hue']
+        hueSaturation_node.inputs["Saturation"].default_value = settings['albedo']['saturation']
+        hueSaturation_node.inputs["Value"].default_value = settings['albedo']['hue_scale']
+        map_range_node_land.inputs["From Min"].default_value = settings['albedo']['land_ocean_from_min']
+        map_range_node_land.inputs["From Max"].default_value = settings['albedo']['land_ocean_from_max']
+        map_range_node_land.inputs["To Min"].default_value = settings['albedo']['land_ocean_to_min']
+        map_range_node_land.inputs["To Max"].default_value = settings['albedo']['land_ocean_to_max']
+        # toplogy props
+        displacement_node.inputs["Midlevel"].default_value = settings['displacement']['earth_midlevel']
+        displacement_node.inputs["Scale"].default_value = settings['displacement']['earth_scale']
+        # Nightlights props
+        blackbody_node.inputs["Temperature"].default_value = settings['albedo']['night_temperature']
+        math_node.operation = 'MULTIPLY'
+        math_node.use_clamp = True
+        texture_coord_node.object = bpy.data.objects["Sun"]
+        map_range_node_night.inputs["From Min"].default_value = settings['albedo']['night_from_min']
+        map_range_node_night.inputs["From Max"].default_value = settings['albedo']['night_from_max']
+        map_range_node_night.inputs["To Min"].default_value = settings['albedo']['night_to_min']
+        map_range_node_night.inputs["To Max"].default_value = settings['albedo']['night_to_max']
+
+        ## Part 3 - Link nodes toghether
+
+        # Land-Ocean pipeline
+        Shading.link_nodes(material,earth_color.outputs["Color"],hueSaturation_node.inputs["Color"])
+        Shading.link_nodes(material,earth_landocean.outputs["Color"],hueSaturation_node.inputs["Fac"])
+        Shading.link_nodes(material,earth_landocean.outputs["Color"],map_range_node_land.inputs["Value"])
+        Shading.link_nodes(material,map_range_node_land.outputs["Result"],shader.inputs["Roughness"])
+        Shading.link_nodes(material,hueSaturation_node.outputs["Color"],shader.inputs["Base Color"])
+        # Topology pipeline
+        Shading.link_nodes(material,earth_displacement.outputs["Color"],displacement_node.inputs["Height"])
+        Shading.link_nodes(material,displacement_node.outputs["Displacement"],output_node.inputs["Displacement"])
+        # Nightlights pipeline
+        Shading.link_nodes(material,earth_night.outputs["Color"],math_node.inputs[0])
+        Shading.link_nodes(material,math_node.outputs["Value"],shader.inputs["Emission Strength"])
+        Shading.link_nodes(material,texture_coord_node.outputs["Object"],normal_node.inputs["Normal"])
+        Shading.link_nodes(material,normal_node.outputs["Dot"],map_range_node_night.inputs["Value"])
+        Shading.link_nodes(material,map_range_node_night.outputs["Result"],math_node.inputs[1])
+        Shading.link_nodes(material,blackbody_node.outputs["Color"],shader.inputs["Emission Color"])
+        # PBSDF to output
+        Shading.link_nodes(material,shader.outputs["BSDF"],output_node.inputs["Surface"])
+
+    def create_atmosphere_shader(material, settings):
+        """Generate Earth-based PBSDF shader. This contains volumetric scattering amtospheric effects
+
+        Args:
+            material (bpy.data.materials): Material
+            settings (dict): Dictionary with settings for this particular shader
+        """
+        # Create principled BSDF node
+        shader = Shading.volume_shader(material, location=(800, 0))
+        # Create material output node
+        output_node = Shading.material_output(material, location = (1200, -400))
+        # Shader properties
+        shader.inputs["Color"].default_value = settings['atm_color']
+        shader.inputs["Density"].default_value = settings['atm_density']
+        shader.inputs["Anisotropy"].default_value = settings['atm_anisotropy']
+
+        Shading.link_nodes(material,shader.outputs["Volume"],output_node.inputs["Volume"])
+
+    def create_clouds_shader(material, state:State, settings):
+        """Generate Earth-based PBSDF shader. This contains clouds 
+
+        Args:
+            material (bpy.data.materials): Material
+            state (corto.State): CORTO state object
+            settings (dict): Dictionary with settings for this particular shader
+        """
+
+        ## Part 1 - Create all necessary nodes
+        # Clouds shaders
+        clouds_color = Shading.texture_node(material, state.path["earth_clouds"], 'Non-Color', (0, 0))
+        subsurface_shader = Shading.subsurface_shader(material, location = (400, 400))
+        transparent_shader = Shading.transparent_shader(material, location = (400, 800))
+        mix_shader = Shading.mix_shader_node(material, location = (800,600))
+        # Create material output node
+        output_node = Shading.material_output(material, location = (1200, 0))
+        displacement_node = Shading.displacement_node(material, location = (800, -400))
+
+        ## Part 2 - Setup nodes properties
+        # Subsurface props
+        subsurface_shader.inputs["Radius"].default_value[0] = settings["albedo"]["radius_0"]
+        subsurface_shader.inputs["Radius"].default_value[1] = settings["albedo"]["radius_1"]
+        subsurface_shader.inputs["Radius"].default_value[2] = settings["albedo"]["radius_2"]
+        subsurface_shader.inputs["Scale"].default_value = settings["albedo"]["subsurf_scale"]
+        # Displace props
+        displacement_node.inputs["Midlevel"].default_value = settings["displacement"]["clouds_midlevel"]
+        displacement_node.inputs["Scale"].default_value =settings["displacement"]["clouds_scale"]
+        
+        Shading.link_nodes(material,clouds_color.outputs["Color"],displacement_node.inputs["Height"])
+        Shading.link_nodes(material,subsurface_shader.outputs["BSSRDF"],mix_shader.inputs[2])
+        Shading.link_nodes(material,transparent_shader.outputs["BSDF"],mix_shader.inputs[1])
+        Shading.link_nodes(material,clouds_color.outputs["Color"],mix_shader.inputs["Fac"])
+        Shading.link_nodes(material,mix_shader.outputs["Shader"],output_node.inputs["Surface"])
+        Shading.link_nodes(material,displacement_node.outputs["Displacement"],output_node.inputs["Displacement"])
 
     def assign_material_to_object(material, body):
         """Assign a material to a body object
@@ -191,6 +471,53 @@ class Shading:
        
         return node
 
+    def texture_magic_node(material, location=(0, 0)):
+        """method to create a texture magic node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """
+        return Shading.create_node("ShaderNodeTexMagic", material, location)
+    
+    def texture_wave_node(material, location=(0, 0)):
+        """method to create a texture wave node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """
+        return Shading.create_node("ShaderNodeTexWave", material, location)
+
+    def color_ramp_node(material, location=(0, 0)):
+        """method to create a color ramp node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """
+        return Shading.create_node("ShaderNodeValToRGB", material, location)
+
+    def texture_noise_node(material, location=(0, 0)):
+        """method to create a texture noise node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """
+        return Shading.create_node("ShaderNodeTexNoise", material, location)
 
     def displacement_node(material, location=(0, 0)):
         """method to create a displacement node
@@ -204,7 +531,43 @@ class Shading:
         """
         return Shading.create_node("ShaderNodeDisplacement", material, location)
 
-    def mix_node(material, location=(0, 0)):
+    def volume_shader(material, location=(0, 0)):
+        """method to create a Volumetric scattering shader node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """
+        return Shading.create_node("ShaderNodeVolumeScatter", material, location)
+
+    def subsurface_shader(material, location=(0, 0)):
+        """method to create a Subsurface scattering shader node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """
+        return Shading.create_node("ShaderNodeSubsurfaceScattering", material, location)
+
+    def transparent_shader(material, location=(0, 0)):
+        """method to create a transparent shader node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """
+        return Shading.create_node("ShaderNodeBsdfTransparent", material, location)
+
+    def mix_shader_node(material, location=(0, 0)):
         """method to create a mix shader node
 
         Args:
@@ -215,6 +578,90 @@ class Shading:
             node: node in the shading tree
         """        
         return Shading.create_node("ShaderNodeMixShader", material, location)
+
+    def mix_node(material, location=(0, 0)):
+        """method to create a mix node. Note, this is differnt than MixShader
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """        
+        return Shading.create_node("ShaderNodeMix", material, location)
+
+    def hue_saturation_node(material, location=(0, 0)):
+        """method to create a hue saturation node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """        
+        return Shading.create_node("ShaderNodeHueSaturation", material, location)
+
+    def normal_node(material, location=(0, 0)):
+        """method to create a normal node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """        
+        return Shading.create_node("ShaderNodeNormal", material, location)
+
+    def map_range_node(material, location=(0, 0)):
+        """method to create a map range node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """        
+        return Shading.create_node("ShaderNodeMapRange", material, location)
+
+    def blackbody_node(material, location=(0, 0)):
+        """method to create a blackbody node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """        
+        return Shading.create_node("ShaderNodeBlackbody", material, location)
+
+    def math_node(material, location=(0, 0)):
+        """method to create a math node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """        
+        return Shading.create_node("ShaderNodeMath", material, location)
+
+    def texture_coordinate_node(material, location=(0, 0)):
+        """method to create a texture coordinate node
+
+        Args:
+            material (bpy.data.materials): material in which the node is generated
+            location (tuple, optional): location in the node tree. Defaults to (0, 0).
+
+        Returns:
+            node: node in the shading tree
+        """        
+        return Shading.create_node("ShaderNodeTexCoord", material, location)
 
     def diffuse_BSDF(material, location=(0, 0)):
         """method to create a diffuse BSDF node
@@ -360,7 +807,7 @@ class Shading:
         if albedo_path_key not in state.path:
             raise Exception('No albedo texture found at the specified path')
         albedo_texture = Shading.texture_node(material, state.path[albedo_path_key], location=(-400, 0))
-        mix_node = Shading.mix_node(material, (400, 0))
+        mix_node = Shading.mix_shader_node(material, (400, 0))
         mix_node.inputs[0].default_value = 0.95
         diffuse_BSDF_node = Shading.diffuse_BSDF(material, (0, 200))
         principled_BSDF_node = Shading.principled_BSDF(material, (0, 0))
@@ -413,7 +860,7 @@ class Shading:
         albedo_texture = Shading.texture_node(material, state.path[albedo_path_key], location=(-400, 0))
         displacement_texture = Shading.texture_node(material, state.path[displacement_path_key], settings['displacement']['colorspace_name'], location=(500, -200))
         
-        mix_node = Shading.mix_node(material, (400, 0))
+        mix_node = Shading.mix_shader_node(material, (400, 0))
         mix_node.inputs[0].default_value = settings['albedo']['weight_diffuse']
         diffuse_BSDF_node = Shading.diffuse_BSDF(material, (0, 200))
         principled_BSDF_node = Shading.principled_BSDF(material, (0, 0))
