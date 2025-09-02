@@ -3,5 +3,8 @@ matplotlib
 scipy
 datetime
 bpy
+OpenEXR
+Imath
+pandas
 opencv-python
 scikit-image

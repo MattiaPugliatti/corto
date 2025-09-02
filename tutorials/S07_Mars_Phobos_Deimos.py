@@ -70,7 +70,7 @@ corto.Shading.assign_material_to_object(material_3, body_3)
 tree = corto.Compositing.create_compositing()
 render_node = corto.Compositing.rendering_node(tree, (0,0)) # Create Render node
 corto.Compositing.create_img_denoise_branch(tree,render_node) # Create img_denoise branch
-corto.Compositing.create_depth_branch(tree,render_node) # Create depth branch
+corto.Compositing.create_depth_branch(tree,render_node,State) # Create depth branch
 corto.Compositing.create_slopes_branch(tree,render_node,State) # Create slopes branch
 corto.Compositing.create_maskID_branch(tree,render_node,State) # Create ID mask branch
 
