@@ -14,12 +14,12 @@ def uniform_log(min_val, max_val):
     return 10 ** random.uniform(log_min, log_max)
 
 ### Set image path ###
-mask_folder = "/Users/mapu7335/Repos/equilibrium/Data/Images/Test/mask_ID_1/" # Folder with image masks
-img_folder = "/Users/mapu7335/Repos/equilibrium/Data/Images/Test/img/" # Folder with input images
+mask_folder = "/Users/mapu7335/Repos/equilibrium/Data/Images/PipelineTest/mask_ID_1/" # Folder with image masks
+img_folder = "/Users/mapu7335/Repos/equilibrium/Data/Images/PipelineTest/img/" # Folder with input images
 img_names = corto.DataProcessing.find_images(img_folder, "*.png")
 
 # Define output folder for S0 (Artificial Noise)
-output_folder_noise = "/Users/mapu7335/Repos/equilibrium/Data/Images/Test/img_S0"
+output_folder_noise = "/Users/mapu7335/Repos/equilibrium/Data/Images/PipelineTest/img_S0"
 corto.Utils.mkdir(output_folder_noise)
 
 ### (PART-1) Add artificial noise ###
@@ -37,9 +37,9 @@ noise = {
     # (4) Gamma-correction
     'bright': 1,
     # (5) Dead pixels (disabled)s
-    'n_dead_px': 0,
-    'dead_px_x': np.random.randint(0, 2048, 5),
-    'dead_px_y': np.random.randint(0, 2048, 5),
+    'n_dead_px': 100,
+    'dead_px_x': np.random.randint(0, 2048, 100),
+    'dead_px_y': np.random.randint(0, 2048, 100),
     # (6) Saturated buckets (disabled)
     'n_sat_buckets': 0,
     # (7) Blooming (disabled)
@@ -47,8 +47,8 @@ noise = {
     'sigma_blooms': 10,
     'blooms_val': 255,
     # (8) RadiationN (disabled)
-    'rad': 0,
-    'n_rad_strides': 50,
+    'rad': 1,
+    'n_rad_strides': 100,
     'rad_linewidth': 1,
     'L_min_s': 2,
     'L_max_s': 20,

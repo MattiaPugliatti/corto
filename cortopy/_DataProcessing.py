@@ -336,6 +336,7 @@ class DataProcessing:
                         delta_2 = 0
                     else:
                         delta_1 = np.random.uniform(0, max(max_delta_1, 1))
+                        # delta_1 = max_delta_1/2, # hard-coded fix for the equal-cropped case
                         delta_2 = delta_all[0] - delta_1
                 if check_2:
                     # delta_3 = np.random.randint(0, max(max_delta_3, 1))
@@ -344,6 +345,7 @@ class DataProcessing:
                         delta_4 = 0
                     else:
                         delta_3 = np.random.uniform(0, max(max_delta_3, 1))
+                        # delta_3 = max_delta_3/2  # hard-coded fix for the equal-cropped case
                         delta_4 = delta_all[1] - delta_3
                 if (delta_1 <= max_delta_1 and delta_2 <= max_delta_2 and
                     delta_3 <= max_delta_3 and delta_4 <= max_delta_4):
