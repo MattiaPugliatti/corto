@@ -1,5 +1,8 @@
 """
 Tutorial script to render images of the S01_Eros scenario. 
+This is the path-tracing setup using CYCLES. 
+It's slower than case S01b_Eros, but is generating more labels and a more sophisticated rendering engine (CYCLES)
+
 To run this tutorial, you first need to put data in the input folder. 
 You can download the tutorial data from:
 
@@ -17,7 +20,7 @@ corto.Utils.clean_scene()
 
 ### (1) DEFINE INPUT ### 
 scenario_name = "S01_Eros" # Name of the scenario folder
-scene_name = "scene.json" # name of the scene input
+scene_name = "scene_CYCLES.json" # name of the scene input, path-tracing setup
 geometry_name = "geometry.json" # name of the geometry input
 body_name = "433_Eros_512ICQ.obj" # name of the body input
 
@@ -56,7 +59,7 @@ corto.Compositing.create_maskID_branch(tree,render_node,State) # Create ID mask 
 ### (5) GENERATION OF IMG-LBL PAIRS ###
 body.set_scale(np.array([0.1, 0.1, 0.1])) # adjust body scale for better test renderings
 
-n_img = 1 # Render the first "n_img" images
+n_img = 5 # Render the first "n_img" images
 for idx in range(0,n_img):
     ENV.PositionAll(State,index=idx)
     ENV.RenderOne(cam, State, index=idx, depth_flag = True)

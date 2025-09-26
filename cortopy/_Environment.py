@@ -139,7 +139,7 @@ class Environment:
         bpy.context.scene.frame_current = index
         bpy.ops.render.render(write_still = True)
         
-        if depth_flag:
+        if depth_flag and bpy.context.scene.render.engine == 'CYCLES':
             Environment.GenerateDepthMap(state,index)
         return
     
