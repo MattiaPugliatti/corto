@@ -139,34 +139,44 @@ class Environment:
         bpy.context.scene.frame_current = index
         bpy.ops.render.render(write_still = True)
         
-        if depth_flag: # TODO: debug while its not saving anything in output
-
-            txtname = '{num:06d}'
-            # Define the depth folder and create it if needed
-            depth_dir = os.path.join(state.path["output_path"], 'depth_txt')
-            if not os.path.exists(depth_dir):
-                os.makedirs(depth_dir)
-
-            # Path to the saved EXR depth file
-            exr_path = os.path.join(state.path["output_path"],'depth_exr', txtname.format(num=(index)) + '.exr')
-
-            # Open the EXR file
-            exr = OpenEXR.InputFile(exr_path)
-
-            # Get image resolution from the EXR header
-            header = exr.header()
-            dw = header['dataWindow']
-            width = dw.max.x - dw.min.x + 1
-            height = dw.max.y - dw.min.y + 1
-
-            # Define pixel type
-            pt = Imath.PixelType(Imath.PixelType.FLOAT)
-
-            # Read depth from 'R' channel (as EXR stores grayscale depth in R)
-            depth_str = exr.channel('R', pt)
-            depth_np = np.frombuffer(depth_str, dtype=np.float32).reshape(height, width)
-
-            # Save the depth map as TXT
-            txt_path = os.path.join(depth_dir, txtname.format(num=(index)) + '.txt')
-            np.savetxt(txt_path, depth_np, fmt='%.5f', delimiter=' ')
+        if depth_flag:
+            Environment.GenerateDepthMap(state,index)
         return
+    
+    def GenerateDepthMap(state, index):
+        """
+        Generate a depthmap and save it both in .exr and .txt formats.
+
+        Args:
+            state: instance of cortopy.State class containing scene, geometry, and body settings
+            index: (optional) geometry config file may contain multiple configurations, this index selects a specific sample, by default it gathers the first one available.
+        """
+
+        txtname = '{num:06d}'
+        # Define the depth folder and create it if needed
+        depth_dir = os.path.join(state.path["output_path"], 'depth_txt')
+        if not os.path.exists(depth_dir):
+            os.makedirs(depth_dir)
+
+        # Path to the saved EXR depth file
+        exr_path = os.path.join(state.path["output_path"],'depth_exr', txtname.format(num=(index)) + '.exr')
+
+        # Open the EXR file
+        exr = OpenEXR.InputFile(exr_path)
+
+        # Get image resolution from the EXR header
+        header = exr.header()
+        dw = header['dataWindow']
+        width = dw.max.x - dw.min.x + 1
+        height = dw.max.y - dw.min.y + 1
+
+        # Define pixel type
+        pt = Imath.PixelType(Imath.PixelType.FLOAT)
+
+        # Read depth from 'V' channel (as EXR stores grayscale depth in V)
+        depth_str = exr.channel('V', pt)
+        depth_np = np.frombuffer(depth_str, dtype=np.float32).reshape(height, width)
+
+        # Save the depth map as TXT
+        txt_path = os.path.join(depth_dir, txtname.format(num=(index)) + '.txt')
+        np.savetxt(txt_path, depth_np, fmt='%.5f', delimiter=' ')
