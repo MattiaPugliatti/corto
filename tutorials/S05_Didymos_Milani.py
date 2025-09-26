@@ -50,7 +50,7 @@ corto.Compositing.create_slopes_branch(tree,render_node,State) # Create slopes b
 
 ### (5) GENERATION OF IMG-LBL PAIRS ###
 
-n_img = 1 # Render the first "n_img" images
+n_img = 5 # Render the first "n_img" images
 for idx in range(0,n_img):
     ENV.PositionAll(State,index=idx)
     ENV.RenderOne(cam, State, index=idx, depth_flag = True)
