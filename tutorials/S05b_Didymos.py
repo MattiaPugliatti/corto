@@ -1,5 +1,8 @@
 """
 Tutorial script to render images of the S05_Didymos_Milani. 
+
+This tutorial uses the shape model after DART impact.
+
 To run this tutorial, you first need to put data in the input folder. 
 You can download the tutorial data from: 
 
@@ -15,7 +18,7 @@ import cortopy as corto
 corto.Utils.clean_scene()
 
 ### (1) DEFINE INPUT ### 
-scenario_name = "S05_Didymos" # Name of the scenario folder
+scenario_name = "S05b_Didymos" # Name of the scenario folder
 scene_name = "scene.json" # name of the scene input
 geometry_name = "geometry.json" # name of the geometry input
 body_name = "didymos_g_2329mm_spc_obj_0000n00000_v003.obj" # name of the body input

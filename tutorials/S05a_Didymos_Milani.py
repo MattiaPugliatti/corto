@@ -1,5 +1,8 @@
 """
 Tutorial script to render images of the S05_Didymos_Milani scenario. 
+
+This tutorial uses the shape model prior to DART impact. It's the shape model used in the design of the Milani's CubeSat image processing
+
 To run this tutorial, you first need to put data in the input folder. 
 You can download the tutorial data from:
 
@@ -15,7 +18,7 @@ import cortopy as corto
 corto.Utils.clean_scene()
 
 ### (1) DEFINE INPUT ### 
-scenario_name = "S05_Didymos_Milani" # Name of the scenario folder
+scenario_name = "S05a_Didymos_Milani" # Name of the scenario folder
 scene_name = "scene.json" # name of the scene input
 geometry_name = "geometry.json" # name of the geometry input
 body_name = "Didymos.obj" # name of the body input
