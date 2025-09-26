@@ -1,5 +1,8 @@
 """
 Tutorial script to render images of the S04_Bennu scenario. 
+
+NOTE: play with the albedo map you would like to use
+
 To run this tutorial, you first need to put data in the input folder. 
 You can download the tutorial data from:
 
@@ -25,7 +28,8 @@ body_name = "Bennu.obj" # name of the body input
 # Load inputs and settings into the State object
 State = corto.State(scene = scene_name, geometry = geometry_name, body = body_name, scenario = scenario_name)
 # Add extra inputs 
-State.add_path('albedo_path',os.path.join(State.path["input_path"],'body','albedo','Bennu_global_FB34_FB56_ShapeV28_GndControl_MinnaertPhase30_PAN_8bit.tif'))
+# State.add_path('albedo_path',os.path.join(State.path["input_path"],'body','albedo','Bennu_lowres.jpg')) # Lower-resolution texture map (62 MB)
+State.add_path('albedo_path',os.path.join(State.path["input_path"],'body','albedo','Bennu_hires.tif')) # High-resolution texture map (494 MB)
 State.add_path('uv_data_path',os.path.join(State.path["input_path"],'body','uv data','uv_data.json'))
 
 ### (2) SETUP THE SCENE ###
@@ -57,7 +61,7 @@ corto.Compositing.create_maskID_branch(tree,render_node,State) # Create ID mask 
 ### (5) GENERATION OF IMG-LBL PAIRS ###
 body.set_scale(np.array([1, 1, 1])) # adjust body scale for better test renderings
 
-n_img = 1 # Render the first "n_img" images
+n_img = 5 # Render the first "n_img" images
 for idx in range(0,n_img):
     ENV.PositionAll(State,index=idx)
     ENV.RenderOne(cam, State, index=idx, depth_flag = True)

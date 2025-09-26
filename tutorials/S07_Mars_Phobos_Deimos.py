@@ -1,5 +1,8 @@
 """
-Tutorial script to render images of the S01_Eros scenario. 
+Tutorial script to render images of the S07_Mars_Phobos_Deimos scenario. 
+
+NOTE: play with the albedo map you would like to use
+
 To run this tutorial, you first need to put data in the input folder. 
 You can download the tutorial data from:
 
@@ -19,19 +22,34 @@ corto.Utils.clean_scene()
 scenario_name = "S07_Mars_Phobos_Deimos" # Name of the scenario folder
 scene_name = "scene_mmx.json" # name of the scene input
 geometry_name = "geometry_mmx.json" # name of the geometry input
-body_name = ["g_phobos_287m_spc_0000n00000_v002.obj",
-             "Mars_65k.obj",
-             "g_deimos_162m_spc_0000n00000_v001.obj"] # name of the body input
+setup_fidelity = 'lowres' # "lowres" or "hires"
 
-# Load inputs and settings into the State object
-State = corto.State(scene = scene_name, geometry = geometry_name, body = body_name, scenario = scenario_name)
-# Add extra inputs 
-State.add_path('albedo_path_1',os.path.join(State.path["input_path"],'body','albedo','Phobos grayscale.jpg'))
-State.add_path('uv_data_path_1',os.path.join(State.path["input_path"],'body','uv data','g_phobos_287m_spc_0000n00000_v002.json'))
-State.add_path('albedo_path_2',os.path.join(State.path["input_path"],'body','albedo','mars_1k_color.jpg'))
-State.add_path('uv_data_path_2',os.path.join(State.path["input_path"],'body','uv data','Mars_65k.json'))
-State.add_path('albedo_path_3',os.path.join(State.path["input_path"],'body','albedo','Deimos grayscale.jpg'))
-State.add_path('uv_data_path_3',os.path.join(State.path["input_path"],'body','uv data','g_deimos_162m_spc_0000n00000_v001.json'))
+if setup_fidelity == 'lowres': # LOW-RES setup
+    body_name = ["g_phobos_287m_spc_0000n00000_v002.obj",
+                "Mars_65k.obj",
+                "g_deimos_162m_spc_0000n00000_v001.obj"] # name of the body input
+    # Load inputs and settings into the State object
+    State = corto.State(scene = scene_name, geometry = geometry_name, body = body_name, scenario = scenario_name)
+    # Add extra inputs 
+    State.add_path('albedo_path_1',os.path.join(State.path["input_path"],'body','albedo','Phobos grayscale.jpg'))
+    State.add_path('uv_data_path_1',os.path.join(State.path["input_path"],'body','uv data','g_phobos_287m_spc_0000n00000_v002.json'))
+    State.add_path('albedo_path_2',os.path.join(State.path["input_path"],'body','albedo','mars_1k_color.jpg'))
+    State.add_path('uv_data_path_2',os.path.join(State.path["input_path"],'body','uv data','Mars_65k.json'))
+    State.add_path('albedo_path_3',os.path.join(State.path["input_path"],'body','albedo','Deimos grayscale.jpg'))
+    State.add_path('uv_data_path_3',os.path.join(State.path["input_path"],'body','uv data','g_deimos_162m_spc_0000n00000_v001.json'))
+elif setup_fidelity == 'hires': # HIGH-RES setup (run at your own risk)
+    body_name = ["g_phobos_018m_spc_0000n00000_v002.obj",
+                "Mars_65k.obj",
+                "g_deimos_020m_spc_0000n00000_v001.obj"] # name of the body input
+    # Load inputs and settings into the State object
+    State = corto.State(scene = scene_name, geometry = geometry_name, body = body_name, scenario = scenario_name)
+    # Add extra inputs 
+    State.add_path('albedo_path_1',os.path.join(State.path["input_path"],'body','albedo','Phobos grayscale.jpg'))
+    State.add_path('uv_data_path_1',os.path.join(State.path["input_path"],'body','uv data','g_phobos_018m_spc_0000n00000_v002.json'))
+    State.add_path('albedo_path_2',os.path.join(State.path["input_path"],'body','albedo','mars_1k_color.jpg'))
+    State.add_path('uv_data_path_2',os.path.join(State.path["input_path"],'body','uv data','Mars_65k.json'))
+    State.add_path('albedo_path_3',os.path.join(State.path["input_path"],'body','albedo','Deimos grayscale.jpg'))
+    State.add_path('uv_data_path_3',os.path.join(State.path["input_path"],'body','uv data','g_deimos_020m_spc_0000n00000_v001.json'))
 
 ### (2) SETUP THE SCENE ###
 # Setup bodies
@@ -79,7 +97,7 @@ body_1.set_scale(np.array([1, 1, 1])) # adjust body scale for better test render
 body_2.set_scale(np.array([1e3, 1e3, 1e3])) # adjust body scale for better test renderings
 body_3.set_scale(np.array([1, 1, 1])) # adjust body scale for better test renderings
 
-n_img = 1 # Render the first "n_img" images
+n_img = 5 # Render the first "n_img" images
 for idx in range(0,n_img):
     ENV.PositionAll(State,index=idx)
     ENV.RenderOne(cam, State, index=idx, depth_flag = True)

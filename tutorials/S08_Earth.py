@@ -1,3 +1,15 @@
+"""
+Tutorial script to render images of the S08_Earth scenario. 
+
+NOTE: play with the resolution case you would like to use
+
+To run this tutorial, you first need to put data in the input folder. 
+You can download the tutorial data from:
+
+https://drive.google.com/drive/folders/1K3e5MyQin6T9d_EXLG_gFywJt3I18r6H?usp=sharing
+
+"""
+
 import sys
 import os
 sys.path.append(os.getcwd())
@@ -15,6 +27,7 @@ body_name = ["Earth.obj","Atmosphere.obj","Clouds.obj","g_phobos_036m_spc_0000n0
 
 # Load inputs and settings into the State object
 State = corto.State(scene = scene_name, geometry = geometry_name, body = body_name, scenario = scenario_name)
+
 # LOW-RES setup
 State.add_path('earth_color',os.path.join(State.path["input_path"],'body','albedo','earth_color_10K.tif')) 
 State.add_path('earth_landocean',os.path.join(State.path["input_path"],'body','albedo','earth_landocean_4K.png'))
@@ -22,7 +35,7 @@ State.add_path('earth_night',os.path.join(State.path["input_path"],'body','albed
 State.add_path('earth_clouds',os.path.join(State.path["input_path"],'body','albedo','earth_clouds_8K.tif'))
 State.add_path('earth_displacement',os.path.join(State.path["input_path"],'body','displacement','topography_5k.png'))
 
-# HIGH-RES setup
+# HIGH-RES setup (run at your own risk)
 #State.add_path('earth_color',os.path.join(State.path["input_path"],'body','albedo','earth_color_43K.tif'))
 #State.add_path('earth_landocean',os.path.join(State.path["input_path"],'body','albedo','earth_landocean_16K.png'))
 #State.add_path('earth_night',os.path.join(State.path["input_path"],'body','albedo','earth_nightlights_10K.tif'))
