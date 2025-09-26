@@ -56,7 +56,7 @@ corto.Compositing.create_maskID_branch(tree,render_node,State) # Create ID mask 
 ### (5) GENERATION OF IMG-LBL PAIRS ###
 body.set_scale(np.array([1, 1, 1])) # adjust body scale for better test renderings
 
-n_img = 1 # Render the first "n_img" images
+n_img = 5 # Render the first "n_img" images
 for idx in range(0,n_img):
     ENV.PositionAll(State,index=idx)
     ENV.RenderOne(cam, State, index=idx, depth_flag = True)

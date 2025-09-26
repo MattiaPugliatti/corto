@@ -54,7 +54,7 @@ body.set_scale(np.array([0.1, 0.1, 0.1])) # adjust body scale for better test re
 n_img = 5 # Render the first "n_img" images
 for idx in range(0,n_img):
     ENV.PositionAll(State,index=idx)
-    ENV.RenderOne(cam, State, index=idx, depth_flag = True)
+    ENV.RenderOne(cam, State, index=idx)
 
 # Save .blend as debug
 corto.Utils.save_blend(State)
