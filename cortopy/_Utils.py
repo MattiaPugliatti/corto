@@ -5,7 +5,8 @@ import bpy
 import os
 import cortopy as corto
 from datetime import datetime
-
+import numpy as np
+import matplotlib.pyplot as plt
 
 class Utils:
     """
@@ -72,3 +73,22 @@ class Utils:
             print(f"Folder created at: {folder_path}")
         except Exception as e:
             print(f"Error creating folder: {e}")   
+
+    @staticmethod
+    def visualize_depth_map(path: str):
+        depth = np.loadtxt(path)
+        # Define a threshold above which values are invalid
+        invalid_threshold = 1e9   # e.g., anything >= 1e9 is "no data"
+        # Mask the depth map
+        masked_depth = np.ma.masked_where(depth >= invalid_threshold, depth)
+        # Compute min and max of the masked depth
+        dmin = np.min(masked_depth)
+        dmax = np.max(masked_depth)
+
+        plt.figure()
+        plt.imshow(masked_depth, vmin = dmin, vmax = dmax, cmap="inferno", origin="lower")
+        plt.colorbar()
+        plt.show()
+        return plt
+    
+    
