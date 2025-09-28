@@ -4,7 +4,7 @@ sys.path.append(os.getcwd())
 import cortopy as corto
 
 # Define the path of your depth map (the .txt one). You could have generated it with one of the tutorials
-depth_map_path = "/Users/mapu7335/Repos/corto/corto/output/S01a_Eros/depth_txt/000001.txt"
+depth_map_path = "/Users/mapu7335/Repos/corto/corto/output/S01_Eros/depth_txt/000001.txt"
 # depth_map_path = "/Users/mapu7335/Repos/corto/corto/output/S02_Itokawa/depth_txt/000001.txt"
 # depth_map_path = "/Users/mapu7335/Repos/corto/corto/output/S04_Bennu/depth_txt/000001.txt"
 # depth_map_path = "/Users/mapu7335/Repos/corto/corto/output/S05_Didymos/depth_txt/000001.txt"

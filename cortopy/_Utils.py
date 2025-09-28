@@ -76,11 +76,17 @@ class Utils:
 
     @staticmethod
     def visualize_depth_map(path: str):
+        """
+        Visualize a depth map saved as a .txt 
+        
+        Args:
+            path (str): The path of the .txt depth map
+        """
         depth = np.loadtxt(path)
         # Define a threshold above which values are invalid
-        invalid_threshold = 1e9   # e.g., anything >= 1e9 is "no data"
+        invalid_threshold = 0   # e.g., anything >= 1e9 is "no data"
         # Mask the depth map
-        masked_depth = np.ma.masked_where(depth >= invalid_threshold, depth)
+        masked_depth = np.ma.masked_where(depth == invalid_threshold, depth)
         # Compute min and max of the masked depth
         dmin = np.min(masked_depth)
         dmax = np.max(masked_depth)
@@ -90,5 +96,4 @@ class Utils:
         plt.colorbar()
         plt.show()
         return plt
-    
     

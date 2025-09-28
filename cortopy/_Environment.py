@@ -143,13 +143,17 @@ class Environment:
             Environment.GenerateDepthMap(state,index)
         return
     
-    def GenerateDepthMap(state, index):
+    def GenerateDepthMap(state, index, precision: int = 2):
         """
         Generate a depthmap and save it both in .exr and .txt formats.
 
         Args:
             state: instance of cortopy.State class containing scene, geometry, and body settings
             index: (optional) geometry config file may contain multiple configurations, this index selects a specific sample, by default it gathers the first one available.
+            precision: number of decimal digits to save in the .txt file (default = 5)
+
+        Note: 
+            A higher precision means a larger size depth map. Tune this according to your needs
         """
 
         txtname = '{num:06d}'
@@ -176,7 +180,8 @@ class Environment:
         # Read depth from 'V' channel (as EXR stores grayscale depth in V)
         depth_str = exr.channel('V', pt)
         depth_np = np.frombuffer(depth_str, dtype=np.float32).reshape(height, width)
-
-        # Save the depth map as TXT
+        # Remove the 1e9 max values and susbtite them with zeros
+        depth_np_clean = np.where(depth_np >= 1e9, 0, depth_np)
+        # Save depth map as a .txt with the precision specified by "precision". 
         txt_path = os.path.join(depth_dir, txtname.format(num=(index)) + '.txt')
-        np.savetxt(txt_path, depth_np, fmt='%.5f', delimiter=' ')
+        np.savetxt(txt_path, depth_np_clean, fmt=f'%.{precision}f', delimiter=' ')
