@@ -11,7 +11,7 @@ the properties of the pointcloud. The data structure of the pointcloud is:
 """
 
 import sys
-
+import os 
 sys.path.append("./src/")
 import numpy as np
 import matplotlib.pyplot as plt
@@ -172,4 +172,4 @@ for ii in range(0, nPoints, 1):
     LABEL[ii, 17] = z_Sun_dist[ii]
 
 # Export the LABEL matrix for rendering in CORTO
-np.savetxt("Cloud_" + output_timestamp + ".txt", LABEL)
+np.savetxt(os.path.join("output","Cloud_" + output_timestamp + ".txt"), LABEL)

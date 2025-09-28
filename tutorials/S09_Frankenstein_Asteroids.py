@@ -29,7 +29,7 @@ import json
 corto.Utils.clean_scene()
 
 ### (1) INPUT DEFINITION ### 
-scenario_name = "SXX_Double" # Name of the scenario folder
+scenario_name = "S09_Frankenstein_Asteroids" # Name of the scenario folder
 scene_name = "scene_EEVEE.json" # name of the scene input, use this for simplified renderings (faster)
 # scene_name = "scene.json" # name of the scene input, use this if you want more labels, realism (slower)
 dataset_setup = "D0" # Names as in [1]: "D0","D1",...., "D15"
@@ -78,7 +78,7 @@ else:
 ### (2) PREPARE STRUCTURES ###
 
 # Open and read the JSON file with dynamic body's parameters
-with open(os.path.join("input/SXX_Double/body/material", body_dyn_name ), "r") as f:
+with open(os.path.join("input/S09_Frankenstein_Asteroids/body/material", body_dyn_name ), "r") as f:
     settings_body_dyn = json.load(f)
 
 # Identify the unique set of body names
