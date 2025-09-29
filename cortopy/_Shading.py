@@ -787,12 +787,13 @@ class Shading:
             )
 
 
-    def create_branch_albedo_mix(material, state: State, id_body: int = None):
+    def create_branch_albedo_mix(material, state: State, settings:dict = None , id_body: int = None):
         """method to create a complex shading tree with albedo texture and mix shaders
 
         Args:
             material (bpy.data.materials): material in which the node is generated
             state (corto.State): State object, used for paths handling
+            settings (dict): Dictionary with settings for this particular shader
             id_body (int): extra input for multiple bodies case
 
         Returns:
@@ -814,6 +815,11 @@ class Shading:
         material_node = Shading.material_output(material, (600, 0))
         uv_map_node = Shading.uv_map(material, (-600, 0))
 
+        # SETUP properties of the nodes
+        if settings:
+            principled_BSDF_node.inputs['Roughness'].default_value = settings["pbsdf"]["roughness"]
+
+        # LINK nodes
         Shading.link_nodes(
             material,
             albedo_texture.outputs["Color"],

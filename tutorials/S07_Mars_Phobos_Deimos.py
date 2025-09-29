@@ -72,9 +72,13 @@ material_1 = corto.Shading.create_new_material('properties body 1')
 material_2 = corto.Shading.create_new_material('properties body 2')
 material_3 = corto.Shading.create_new_material('properties body 3')
 
-corto.Shading.create_branch_albedo_mix(material_1, State,1)
-corto.Shading.create_branch_albedo_mix(material_2, State,2)
-corto.Shading.create_branch_albedo_mix(material_3, State,3)
+pbsdf_settings = {'roughness': 0.95}
+settings_phobos_shader = {'pbsdf': pbsdf_settings}
+settings_deimos_shader = {'pbsdf': pbsdf_settings}
+
+corto.Shading.create_branch_albedo_mix(material_1, State, settings_phobos_shader, 1)
+corto.Shading.create_branch_albedo_mix(material_2, State, None, 2)
+corto.Shading.create_branch_albedo_mix(material_3, State, settings_deimos_shader, 3)
 
 corto.Shading.load_uv_data(body_1,State,1)
 corto.Shading.assign_material_to_object(material_1, body_1)
