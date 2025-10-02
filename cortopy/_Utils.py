@@ -7,6 +7,7 @@ import cortopy as corto
 from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
+import subprocess
 
 class Utils:
     """
@@ -97,3 +98,42 @@ class Utils:
         plt.show()
         return plt
     
+    @staticmethod
+    def long_run_override(idx_start:int, idx_end:int, script_path: str):
+        """
+        This method is used to override the run for a rendering script to allow for batch running. 
+        
+        Args:
+            idx_start (int): first index to be used in the renderings
+            idx_end (int): last index to be used in the renderings
+            script_path (str): path of the script to run (e.g. "tutorials/S09_Frankenstein_Asteroids.py")
+
+        NOTE: in order for this method to be effective, you need to put the following function and override the idx_start and idx_end used for the renderings
+
+        import sys, argparse
+        def _override_range_via_cli(default_start, default_end):
+            argv = sys.argv
+            if "--" in argv: # Blender passes script args after a literal "--".
+                argv = argv[argv.index("--") + 1:]
+            else:
+                argv = argv[1:]
+            parser = argparse.ArgumentParser(add_help=False)
+            parser.add_argument("--start", type=int, dest="start")
+            parser.add_argument("--end",   type=int, dest="end")
+            # parse_known_args so we ignore any extra scenario flags you may add later
+            ns, _ = parser.parse_known_args(argv)
+            s = default_start if ns.start is None else ns.start
+            e = default_end   if ns.end   is None else ns.end
+            if e < s:
+                raise ValueError(f"--end ({e}) must be >= --start ({s})")
+            print(f" Render range: idx_start={s}, idx_end={e}")
+        return s, e
+
+        """
+        print(f"Rendering {idx_start}..{idx_end}")
+        cmd = ["python", script_path,
+            "--start", str(idx_start), "--end", str(idx_end)]
+
+        r = subprocess.run(" ".join(cmd), shell=True)
+        if r.returncode != 0:
+            raise SystemExit(f"Batch failed: {idx_start}-{idx_end}")

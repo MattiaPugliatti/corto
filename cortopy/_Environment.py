@@ -137,10 +137,23 @@ class Environment:
         rendering_name = '{}.png'.format(str(int(index)).zfill(6))
         bpy.context.scene.render.filepath = os.path.join(state.path["output_path"],'img',rendering_name)
         bpy.context.scene.frame_current = index
-        bpy.ops.render.render(write_still = True)
-        
+        if bpy.context.scene.render.engine == 'CYCLES':
+            bpy.ops.render.render(write_still = True)
+
         if depth_flag and bpy.context.scene.render.engine == 'CYCLES':
             Environment.GenerateDepthMap(state,index)
+            
+        
+        if bpy.context.scene.render.engine == 'BLENDER_EEVEE_NEXT':
+            # EEVEE cache between renders — disable
+            bpy.context.scene.render.use_persistent_data = False
+            # If you don't use the compositor, disable nodes
+            bpy.context.scene.use_nodes = False
+            bpy.ops.render.render(write_still = True, use_viewport=False)
+            rr = bpy.data.images.get("Render Result")
+            if rr:
+                # frees float buffers/tiles in RAM without destroying the datablock
+                rr.buffers_free()
         return
     
     def GenerateDepthMap(state, index, precision: int = 2):

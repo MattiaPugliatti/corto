@@ -222,6 +222,18 @@ class Compositing:
         Compositing.link_nodes(tree, denoise_node.outputs["Image"], gamma_node.inputs["Image"])
         Compositing.link_nodes(tree, gamma_node.outputs["Image"], composite_node.inputs["Image"])
 
+    def create_img_branch(tree,render_node, state:State):
+        """method to create a simple image tree (for EEVEE)
+
+        Args:
+            tree (Compositing.tree): tree
+            render_node (Compositing.node): render node to link 
+        """
+        # Create Composite node
+        composite_node = Compositing.composite_node(tree,(800,0))
+        # Link nodes toghether
+        Compositing.link_nodes(tree, render_node.outputs["Image"], composite_node.inputs["Image"])
+
     def create_depth_branch(tree,render_node,state:State):
         """method to create a simple depth tree 
 
