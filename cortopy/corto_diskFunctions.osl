@@ -1,0 +1,33 @@
+///// Definition of disk functions /////
+
+float LommelSeeliger (float i, float e)
+{
+    return cos(i) / (cos(i) + cos(e));
+}
+
+///// Shader /////
+
+shader diskFunction(
+
+    // Incidence angle (i), radians
+    float i = 0.0,
+
+    // Emission angle (e), radians
+    float e = 0.0,
+
+    // Photometric function selector
+    int function = 1,
+
+    // Outputs
+    output float Value = 0.0,  // selected disk function value
+    output float Alpha = 0.0   // i + e
+)
+{
+    Alpha = i + e;
+
+    if (function == 1) {
+        Value = LommelSeeliger(i, e);
+    } else {
+        Value = 1.0;
+    }
+}

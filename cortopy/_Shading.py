@@ -13,6 +13,39 @@ class Shading:
     """
     Shading class
     """
+    NODE_TYPES = {
+        # Textures
+        "texture_magic_node": "ShaderNodeTexMagic",
+        "texture_wave_node": "ShaderNodeTexWave",
+        "texture_noise_node": "ShaderNodeTexNoise",
+        "texture_coordinate_node": "ShaderNodeTexCoord",
+        "uv_map_node": "ShaderNodeUVMap",
+
+        # Converters / utilities
+        "color_ramp_node": "ShaderNodeValToRGB",
+        "map_range_node": "ShaderNodeMapRange",
+        "blackbody_node": "ShaderNodeBlackbody",
+        "math_node": "ShaderNodeMath",
+        "vector_math_node": "ShaderNodeVectorMath",
+        "normal_node": "ShaderNodeNormal",
+        "value_node": "ShaderNodeValue",
+        "mix_node": "ShaderNodeMix",
+        "geometry_node": "ShaderNodeNewGeometry",
+        "script_node": "ShaderNodeScript",
+        
+        # Shaders
+        "diffuse_BSDF": "ShaderNodeBsdfDiffuse",
+        "principled_BSDF": "ShaderNodeBsdfPrincipled",
+        "transparent_shader": "ShaderNodeBsdfTransparent",
+        "subsurface_shader": "ShaderNodeSubsurfaceScattering",
+        "volume_shader": "ShaderNodeVolumeScatter",
+        "mix_shader_node": "ShaderNodeMixShader",
+        "displacement_node": "ShaderNodeDisplacement",
+
+        # Outputs
+        "material_output": "ShaderNodeOutputMaterial",
+    }
+
     # *************************************************************************
     # *     Constructors & Destructors
     # *************************************************************************
@@ -405,6 +438,116 @@ class Shading:
         Shading.link_nodes(material,mix_shader.outputs["Shader"],output_node.inputs["Surface"])
         Shading.link_nodes(material,displacement_node.outputs["Displacement"],output_node.inputs["Displacement"])
 
+    def create_osl_shader(
+        material,
+        function: str, 
+        albedo: float,
+        disk_function_path: str, 
+        phase_function_path: str,
+    ):
+        """Generate a shader with OSL
+
+        Args:
+            material (bpy.data.materials): material 
+
+        """
+        bpy.context.scene.render.engine = 'CYCLES'
+        bpy.context.scene.cycles.shading_system = True  # Enable OSL
+
+        def set_osl_external(node, path):
+            abspath = bpy.path.native_pathsep(os.path.abspath(path))
+            if not os.path.isfile(abspath):
+                raise FileNotFoundError(f"OSL not found: {abspath}")
+            node.mode = 'EXTERNAL'
+            node.filepath = abspath
+            node.use_auto_update = True
+
+        def force_compile_script_node(node: bpy.types.ShaderNodeScript):
+            # Nudge Blender that the script changed
+            node.use_auto_update = False
+            node.use_auto_update = True
+
+            # “Flip” mode to force reload
+            m = node.mode
+            node.mode = 'INTERNAL' if m == 'EXTERNAL' else 'EXTERNAL'
+            node.mode = m
+
+            # Reassign the same filepath to mark dirty (safe no-op)
+            if node.mode == 'EXTERNAL':
+                node.filepath = node.filepath
+
+            # Tag the **node tree** (not the node) and update depsgraph
+            node.id_data.update_tag()  # node.id_data is the Material.node_tree
+            bpy.context.view_layer.update()
+
+        ## Part 1 - Create all necessary nodes
+        output_node = Shading.material_output(material, (2000, 0))
+        dot_product_node_1 =  Shading.vector_math_node(material, (800, +200))
+        dot_product_node_2 =  Shading.vector_math_node(material, (800, -200))
+        arcosine_node_1 = Shading.math_node(material, (1000, +200))
+        arcosine_node_2 = Shading.math_node(material, (1000, -200))
+        subtract_node = Shading.vector_math_node(material, (400, -200))
+        normalize_node = Shading.vector_math_node(material, (600, -200))
+        multiply_node_1 = Shading.math_node(material, (1600,0))
+        multiply_node_2 = Shading.math_node(material, (1700,0))
+        geometry_node = Shading.geometry_node(material, (200,0))
+        disk_function_node = Shading.script_node(material, (1200,0))
+        phase_function_node = Shading.script_node(material, (1400,0))
+        diffuse_bsdf = Shading.diffuse_BSDF(material, (1800,0))
+        ## Part 2 - Setup nodes properties
+        subtract_node.operation = 'SUBTRACT'
+        subtract_node.inputs[0].default_value = (0,1,2) # CAM position
+        dot_product_node_1.operation = 'DOT_PRODUCT'
+        dot_product_node_1.inputs[0].default_value = (3,4,5) # SUN position
+        dot_product_node_2.operation = 'DOT_PRODUCT'
+        multiply_node_1.inputs[1].default_value = albedo
+        arcosine_node_1.operation = 'ARCCOSINE'
+        arcosine_node_2.operation = 'ARCCOSINE'
+        normalize_node.operation = 'NORMALIZE'
+        multiply_node_1.operation = 'MULTIPLY'
+        multiply_node_2.operation = 'MULTIPLY'
+        disk_function_node.mode = 'EXTERNAL'
+        phase_function_node.mode = 'EXTERNAL'
+
+        disk_function_path = "/Users/mapu7335/Repos/corto/corto/cortopy/corto_diskFunctions.osl"
+        phase_function_path = "/Users/mapu7335/Repos/corto/corto/cortopy/corto_phaseFunctions.osl"
+        
+        disk_function_node.filepath = disk_function_path
+        phase_function_node.filepath = phase_function_path
+
+        # --- usage ---
+        set_osl_external(disk_function_node, disk_function_path)
+        set_osl_external(phase_function_node, phase_function_path)
+
+        force_compile_script_node(disk_function_node)
+        force_compile_script_node(phase_function_node)
+
+        if function == "LommelSeeliger":
+            function_id = 1
+        disk_function_node.inputs["function"].default_value = function_id
+        phase_function_node.inputs["function"].default_value = function_id
+
+        ## Part 3 - Link nodes toghether
+        Shading.link_nodes(material,diffuse_bsdf.outputs["BSDF"],output_node.inputs["Surface"]) # PBSDF to output
+        # Compute emission angle from camera position (input[0] to subtract_node)
+        Shading.link_nodes(material,geometry_node.outputs["Position"],subtract_node.inputs[1]) # Geometry to subtract node
+        Shading.link_nodes(material,subtract_node.outputs["Vector"],normalize_node.inputs["Vector"]) # subtract to normalize
+        Shading.link_nodes(material,normalize_node.outputs["Vector"],dot_product_node_2.inputs[0]) # normalize to dot_product_2
+        Shading.link_nodes(material,geometry_node.outputs["True Normal"],dot_product_node_2.inputs[1]) # geometry to dot_product_2
+        Shading.link_nodes(material,dot_product_node_2.outputs["Value"],arcosine_node_2.inputs["Value"]) # dot_product_2 to arcosine_2
+        Shading.link_nodes(material,arcosine_node_2.outputs["Value"],disk_function_node.inputs["e"]) # arcosine_node_2 to disk_function
+
+        # Compute incident angle from sun position
+        Shading.link_nodes(material,dot_product_node_1.outputs["Value"],arcosine_node_1.inputs["Value"]) # dot_product_1 to arcosine_1 
+        Shading.link_nodes(material,arcosine_node_2.outputs["Value"],disk_function_node.inputs["i"]) # arcosine_1 to disk_function
+
+
+        Shading.link_nodes(material,disk_function_node.outputs["Value"],phase_function_node.inputs["DiskFunction"]) # disk_function_node to phase_function_node
+        Shading.link_nodes(material,disk_function_node.outputs["Alpha"],phase_function_node.inputs["Alpha"]) # disk_function_node to phase_function_node
+        Shading.link_nodes(material,phase_function_node.outputs["Output"],multiply_node_1.inputs[0]) # phase_function_node to multiply (albedo)
+        Shading.link_nodes(material,multiply_node_1.outputs["Value"],diffuse_bsdf.inputs["Color"]) # phase_function_node to multiply (albedo)
+
+
     def assign_material_to_object(material, body):
         """Assign a material to a body object
 
@@ -422,7 +565,11 @@ class Shading:
                 obj.data.materials.append(material)
         print("Material created and assigned to the active object.")
 
-    def create_node(name: str, material, location=(0, 0)):
+    @classmethod
+    def node(cls, key_or_bl_idname: str, material: bpy.types.Material, location=(0, 0)):
+        """
+        Create a node by alias or by raw Blender bl_idname.
+        """
         """Generic method to create a node in the tree of a material
 
         Args:
@@ -433,11 +580,12 @@ class Shading:
         Returns:
             node: node in the nodetree of the material
         """        
-        
-        node = material.node_tree.nodes.new(type=name)
-        node.location = location
-        return node
 
+        bl_idname = cls.NODE_TYPES.get(key_or_bl_idname, key_or_bl_idname)
+        n = material.node_tree.nodes.new(type=bl_idname)
+        n.location = location
+        return n
+    
     def link_nodes(material, node_output, node_input):
         """Generic method to link two nodes toghether
 
@@ -462,7 +610,7 @@ class Shading:
             node: node in the shading tree
         """        
 
-        node = Shading.create_node("ShaderNodeTexImage", material, location)
+        node = Shading.node("ShaderNodeTexImage", material, location)
         try:
             node.image = bpy.data.images.load(texture_path)
             bpy.data.images[os.path.basename(texture_path)].colorspace_settings.name = colorspace_name
@@ -470,248 +618,7 @@ class Shading:
             raise NameError(f"Failed to load image from {texture_path}")
        
         return node
-
-    def texture_magic_node(material, location=(0, 0)):
-        """method to create a texture magic node
-
-        Args:
-            material (bpy.data.materials): material in which the node is generated
-            location (tuple, optional): location in the node tree. Defaults to (0, 0).
-
-        Returns:
-            node: node in the shading tree
-        """
-        return Shading.create_node("ShaderNodeTexMagic", material, location)
     
-    def texture_wave_node(material, location=(0, 0)):
-        """method to create a texture wave node
-
-        Args:
-            material (bpy.data.materials): material in which the node is generated
-            location (tuple, optional): location in the node tree. Defaults to (0, 0).
-
-        Returns:
-            node: node in the shading tree
-        """
-        return Shading.create_node("ShaderNodeTexWave", material, location)
-
-    def color_ramp_node(material, location=(0, 0)):
-        """method to create a color ramp node
-
-        Args:
-            material (bpy.data.materials): material in which the node is generated
-            location (tuple, optional): location in the node tree. Defaults to (0, 0).
-
-        Returns:
-            node: node in the shading tree
-        """
-        return Shading.create_node("ShaderNodeValToRGB", material, location)
-
-    def texture_noise_node(material, location=(0, 0)):
-        """method to create a texture noise node
-
-        Args:
-            material (bpy.data.materials): material in which the node is generated
-            location (tuple, optional): location in the node tree. Defaults to (0, 0).
-
-        Returns:
-            node: node in the shading tree
-        """
-        return Shading.create_node("ShaderNodeTexNoise", material, location)
-
-    def displacement_node(material, location=(0, 0)):
-        """method to create a displacement node
-
-        Args:
-            material (bpy.data.materials): material in which the node is generated
-            location (tuple, optional): location in the node tree. Defaults to (0, 0).
-
-        Returns:
-            node: node in the shading tree
-        """
-        return Shading.create_node("ShaderNodeDisplacement", material, location)
-
-    def volume_shader(material, location=(0, 0)):
-        """method to create a Volumetric scattering shader node
-
-        Args:
-            material (bpy.data.materials): material in which the node is generated
-            location (tuple, optional): location in the node tree. Defaults to (0, 0).
-
-        Returns:
-            node: node in the shading tree
-        """
-        return Shading.create_node("ShaderNodeVolumeScatter", material, location)
-
-    def subsurface_shader(material, location=(0, 0)):
-        """method to create a Subsurface scattering shader node
-
-        Args:
-            material (bpy.data.materials): material in which the node is generated
-            location (tuple, optional): location in the node tree. Defaults to (0, 0).
-
-        Returns:
-            node: node in the shading tree
-        """
-        return Shading.create_node("ShaderNodeSubsurfaceScattering", material, location)
-
-    def transparent_shader(material, location=(0, 0)):
-        """method to create a transparent shader node
-
-        Args:
-            material (bpy.data.materials): material in which the node is generated
-            location (tuple, optional): location in the node tree. Defaults to (0, 0).
-
-        Returns:
-            node: node in the shading tree
-        """
-        return Shading.create_node("ShaderNodeBsdfTransparent", material, location)
-
-    def mix_shader_node(material, location=(0, 0)):
-        """method to create a mix shader node
-
-        Args:
-            material (bpy.data.materials): material in which the node is generated
-            location (tuple, optional): location in the node tree. Defaults to (0, 0).
-
-        Returns:
-            node: node in the shading tree
-        """        
-        return Shading.create_node("ShaderNodeMixShader", material, location)
-
-    def mix_node(material, location=(0, 0)):
-        """method to create a mix node. Note, this is differnt than MixShader
-
-        Args:
-            material (bpy.data.materials): material in which the node is generated
-            location (tuple, optional): location in the node tree. Defaults to (0, 0).
-
-        Returns:
-            node: node in the shading tree
-        """        
-        return Shading.create_node("ShaderNodeMix", material, location)
-
-    def hue_saturation_node(material, location=(0, 0)):
-        """method to create a hue saturation node
-
-        Args:
-            material (bpy.data.materials): material in which the node is generated
-            location (tuple, optional): location in the node tree. Defaults to (0, 0).
-
-        Returns:
-            node: node in the shading tree
-        """        
-        return Shading.create_node("ShaderNodeHueSaturation", material, location)
-
-    def normal_node(material, location=(0, 0)):
-        """method to create a normal node
-
-        Args:
-            material (bpy.data.materials): material in which the node is generated
-            location (tuple, optional): location in the node tree. Defaults to (0, 0).
-
-        Returns:
-            node: node in the shading tree
-        """        
-        return Shading.create_node("ShaderNodeNormal", material, location)
-
-    def map_range_node(material, location=(0, 0)):
-        """method to create a map range node
-
-        Args:
-            material (bpy.data.materials): material in which the node is generated
-            location (tuple, optional): location in the node tree. Defaults to (0, 0).
-
-        Returns:
-            node: node in the shading tree
-        """        
-        return Shading.create_node("ShaderNodeMapRange", material, location)
-
-    def blackbody_node(material, location=(0, 0)):
-        """method to create a blackbody node
-
-        Args:
-            material (bpy.data.materials): material in which the node is generated
-            location (tuple, optional): location in the node tree. Defaults to (0, 0).
-
-        Returns:
-            node: node in the shading tree
-        """        
-        return Shading.create_node("ShaderNodeBlackbody", material, location)
-
-    def math_node(material, location=(0, 0)):
-        """method to create a math node
-
-        Args:
-            material (bpy.data.materials): material in which the node is generated
-            location (tuple, optional): location in the node tree. Defaults to (0, 0).
-
-        Returns:
-            node: node in the shading tree
-        """        
-        return Shading.create_node("ShaderNodeMath", material, location)
-
-    def texture_coordinate_node(material, location=(0, 0)):
-        """method to create a texture coordinate node
-
-        Args:
-            material (bpy.data.materials): material in which the node is generated
-            location (tuple, optional): location in the node tree. Defaults to (0, 0).
-
-        Returns:
-            node: node in the shading tree
-        """        
-        return Shading.create_node("ShaderNodeTexCoord", material, location)
-
-    def diffuse_BSDF(material, location=(0, 0)):
-        """method to create a diffuse BSDF node
-
-        Args:
-            material (bpy.data.materials): material in which the node is generated
-            location (tuple, optional): location in the node tree. Defaults to (0, 0).
-
-        Returns:
-            node: node in the shading tree
-        """        
-        return Shading.create_node("ShaderNodeBsdfDiffuse", material, location)
-
-    def principled_BSDF(material, location=(0, 0)):
-        """method to create a principled BSDF node
-
-        Args:
-            material (bpy.data.materials): material in which the node is generated
-            location (tuple, optional): location in the node tree. Defaults to (0, 0).
-
-        Returns:
-            node: node in the shading tree
-        """
-        return Shading.create_node("ShaderNodeBsdfPrincipled", material, location)
-
-    def material_output(material, location=(0, 0)):
-        """method to create a material output node
-
-        Args:
-            material (bpy.data.materials): material in which the node is generated
-            location (tuple, optional): location in the node tree. Defaults to (0, 0).
-
-        Returns:
-            node: node in the shading tree
-        """        
-        return Shading.create_node("ShaderNodeOutputMaterial", material, location)
-
-    def uv_map(material, location=(0, 0)):
-        """method to create a uv mapping node
-
-        Args:
-            material (bpy.data.materials): material in which the node is generated
-            location (tuple, optional): location in the node tree. Defaults to (0, 0).
-
-        Returns:
-            node: node in the shading tree
-        """        
-        return Shading.create_node("ShaderNodeUVMap", material, location)
-        
-
     def lambert(material, state: State, settings, id_body: int = None):
         """method to create an Oren-Nayar shading tree with optional albedo and displacement textures
 
@@ -813,7 +720,7 @@ class Shading:
         diffuse_BSDF_node = Shading.diffuse_BSDF(material, (0, 200))
         principled_BSDF_node = Shading.principled_BSDF(material, (0, 0))
         material_node = Shading.material_output(material, (600, 0))
-        uv_map_node = Shading.uv_map(material, (-600, 0))
+        uv_map_node = Shading.uv_map_node(material, (-600, 0))
 
         # SETUP properties of the nodes
         if settings:
@@ -1068,3 +975,16 @@ class Shading:
             for loop_index, uv in zip(poly.loop_indices, poly_uvs):
                 uv_layer[loop_index].uv = (uv[0], uv[1])
         print(f"UV data imported to {body.name}")
+
+# --- Auto-generate convenience classmethods like Shading.principled_bsdf(...), Shading.texture_noise(...)
+
+def _make_helper(alias):
+    def _helper(cls, material, location=(0, 0)):
+        return cls.node(alias, material, location)
+    _helper.__name__ = alias
+    return classmethod(_helper)
+
+for alias in Shading.NODE_TYPES.keys():
+    # create a clean python-friendly name (optional; here we keep alias as-is)
+    py_name = alias
+    setattr(Shading, py_name, _make_helper(alias))

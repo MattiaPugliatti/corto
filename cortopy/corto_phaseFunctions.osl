@@ -1,0 +1,35 @@
+///// Definition of the phase functions /////
+
+
+float LommelSeeliger (float alpha, float A_LS, float beta, float gamma, float delta) {
+
+	float exponent = (beta * alpha) + (gamma * pow(alpha, 2)) + (delta * pow(alpha, 3));
+
+	return A_LS * M_PI * exp(exponent);
+
+}
+
+///// Shader /////
+
+shader phaseFunction (
+
+	// Disk function as input.
+	float DiskFunction = 0.0,
+
+	// Alpha angle (e + i)
+	float Alpha = 0.0,
+
+	// Photometric function
+	//1: Lommel-Seeliger, 2: ROLO, 3: Akimov,
+	//4: Linear-Akimov, 5: Lunar-Lambert, 6: Minnaert
+	int function = 1,
+
+	// Output
+	output float Output = 0.0,
+
+)
+
+{
+	//LommelSeeliger(Alpha, A_LS, beta, gamma, delta)
+	Output = DiskFunction * LommelSeeliger(Alpha, 0.0270, -3.395e-2, 2.577e-4, -1.579e-6);
+}
