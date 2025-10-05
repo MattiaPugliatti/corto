@@ -8,6 +8,7 @@ from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import subprocess
+import shutil
 
 class Utils:
     """
@@ -137,3 +138,44 @@ class Utils:
         r = subprocess.run(" ".join(cmd), shell=True)
         if r.returncode != 0:
             raise SystemExit(f"Batch failed: {idx_start}-{idx_end}")
+
+    @staticmethod
+
+    @staticmethod
+    def move_files_by_type(src_dir:str, dest_dir:str, startwith: str, endswith:str = ".png", max_n_files:float = 1e8):
+        """ 
+        Detect all .png files in src_dir and move them to dest_dir.
+        Prints progress updates and the total number of files moved.
+
+        Args:
+            src_dir (str): source directory
+            dest_dir (str): last index to be used in the renderings
+            extension (str): file extension to search for
+
+        """
+        # Create destination directory if it doesn't exist
+        if not os.path.exists(dest_dir):
+            os.makedirs(dest_dir)
+        # Collect all .png files
+        if startwith:
+            png_files = [f for f in os.listdir(src_dir) if f.lower().endswith(endswith) and f.lower().startswith(startwith)]
+        else:
+            png_files = [f for f in os.listdir(src_dir) if f.lower().endswith(endswith)]
+
+        # Add a ceiling on the number of files to move (the first max_n_files)
+        png_files = png_files[0:int(max_n_files)]
+        total = len(png_files)
+        if total == 0:
+            print("No {extension} files found.")
+            return
+        
+        png_files = png_files[0:int(max_n_files)]
+        # Move files with progress index
+        for idx, filename in enumerate(png_files, start=1):
+            src_path = os.path.join(src_dir, filename)
+            dest_path = os.path.join(dest_dir, filename)
+            shutil.move(src_path, dest_path)
+            print(f"[{idx}/{total}] Moved: {filename} -> {dest_dir}")
+        print(f"\n✅ Done! {total} .png files moved to '{dest_dir}'")
+
+    
