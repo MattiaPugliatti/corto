@@ -243,6 +243,98 @@ class DataProcessing:
         # Get the bounding box [x, y, w, h] of the largest contour
         x, y, w, h = cv2.boundingRect(largest)
         return np.array([x, y, w, h])
+    
+    def find_body_bbox_noise(self, min_area_frac=0.0003, pad=4):
+        """
+        Robustly detect the bounding box of the largest blob in a noisy image.
+
+        Args:
+            img (np.ndarray): grayscale or BGR image.
+            min_area_frac (float): minimum blob area as a fraction of image area to accept.
+            pad (int): pixels to pad around the bbox (clamped to image bounds).
+
+        Returns:
+            np.ndarray | None: [x, y, w, h] or None if nothing usable is found.
+        """
+        def _ensure_odd(n, lo=3):
+            n = int(max(lo, n))
+            return n if n % 2 == 1 else n + 1
+
+        img = self.img
+        # 0) Grayscale
+        g = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if img.ndim == 3 else img.copy()
+        H, W = g.shape[:2]
+        min_area_px = max(1, int(min_area_frac * H * W))
+
+        # 1) Contrast + denoise
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        g = clahe.apply(g)
+        k = _ensure_odd(int(min(H, W) * 0.01))       # ~1% of min dim, odd, >=3
+        g = cv2.medianBlur(g, k)
+
+        # Helper: build bbox from a single-component label in `labels`
+        def bbox_for_label(stats, label):
+            x = int(stats[label, cv2.CC_STAT_LEFT])
+            y = int(stats[label, cv2.CC_STAT_TOP])
+            w = int(stats[label, cv2.CC_STAT_WIDTH])
+            h = int(stats[label, cv2.CC_STAT_HEIGHT])
+            return x, y, w, h
+
+        # Try both polarities; keep the one with bigger final component
+        best = (None, 0)  # (bbox, area)
+        for bright_foreground in (True, False):
+            gg = g if bright_foreground else 255 - g
+
+            # 2a) Tight core: very bright pixels (seed)
+            p = np.percentile(gg, 99)  # core threshold
+            tight = (gg >= p).astype(np.uint8) * 255
+            # remove tiny specks
+            ks = _ensure_odd(int(min(H, W) * 0.008))  # ~0.8% size
+            ker = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (ks, ks))
+            tight = cv2.morphologyEx(tight, cv2.MORPH_OPEN, ker)
+
+            num_t, labels_t, stats_t, centroids_t = cv2.connectedComponentsWithStats(tight, connectivity=8)
+            if num_t <= 1:
+                continue  # no seed found in this polarity
+
+            # take largest seed
+            areas_t = stats_t[1:, cv2.CC_STAT_AREA]
+            seed_label_rel = int(np.argmax(areas_t))  # 0-based among foreground only
+            seed_label = seed_label_rel + 1
+            if areas_t[seed_label_rel] < 5:
+                continue
+            cx, cy = centroids_t[seed_label]
+
+            # 2b) Loose mask: Otsu (or adaptive) so we include dimmer parts but not background
+            thr, _ = cv2.threshold(gg, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            loose = (gg >= max(10, thr)).astype(np.uint8) * 255
+            # clean & connect
+            loose = cv2.morphologyEx(loose, cv2.MORPH_OPEN, ker)
+            loose = cv2.morphologyEx(loose, cv2.MORPH_CLOSE, ker)
+
+            # 3) Keep only the connected component in `loose` that contains the seed point
+            num_l, labels_l, stats_l, _ = cv2.connectedComponentsWithStats(loose, connectivity=8)
+            if num_l <= 1:
+                continue
+
+            sx, sy = int(round(cx)), int(round(cy))
+            sx = np.clip(sx, 0, W - 1); sy = np.clip(sy, 0, H - 1)
+            seed_comp = int(labels_l[sy, sx])
+            if seed_comp == 0:
+                # seed not inside loose foreground; skip this polarity
+                continue
+
+            area = int(stats_l[seed_comp, cv2.CC_STAT_AREA])
+            if area < min_area_px:
+                continue
+
+            x, y, w, h = bbox_for_label(stats_l, seed_comp)
+
+            # Optional padding
+            x = max(0, x - pad); y = max(0, y - pad)
+            w = min(W - x, w + 2 * pad); h = min(H - y, h + 2 * pad)
+            if area > best[1]:
+                best = (np.array([x, y, w, h]), area)
 
     @staticmethod
     def determine_max_BB(source_BB:np.ndarray,target_BB:np.ndarray):
@@ -270,11 +362,10 @@ class DataProcessing:
             raise ValueError("No bounding box size can fit the object!")
         # Take the minimum among valid sizes
         selected_size = np.min(valid_sizes) # Save this one
-        print(f"Selected bounding box size: {selected_size}")
         return float(selected_size)
 
     @staticmethod
-    def BB_random_padding(source_BB:np.ndarray,selected_target_size:int, img_res:tuple, max_selected_target_size:int):
+    def BB_random_padding(source_BB:np.ndarray,selected_target_size:int, img_res:tuple, max_selected_target_size:int, equal_flag = False):
         """
         Applies random padding to a rectangular bounding box in order to expand it into a square
         bounding box of a specified target size, while ensuring the object remains fully visible
@@ -336,7 +427,10 @@ class DataProcessing:
                         delta_2 = 0
                     else:
                         delta_1 = np.random.uniform(0, max(max_delta_1, 1))
-                        # delta_1 = max_delta_1/2, # hard-coded fix for the equal-cropped case
+                        if equal_flag:
+                            delta_1 = max_delta_1/2, # hard-coded fix for the equal-cropped case
+                        else:
+                            delta_1 = np.random.uniform(0, max(max_delta_1, 1))
                         delta_2 = delta_all[0] - delta_1
                 if check_2:
                     # delta_3 = np.random.randint(0, max(max_delta_3, 1))
@@ -344,8 +438,10 @@ class DataProcessing:
                         delta_3 = 0 
                         delta_4 = 0
                     else:
-                        delta_3 = np.random.uniform(0, max(max_delta_3, 1))
-                        # delta_3 = max_delta_3/2  # hard-coded fix for the equal-cropped case
+                        if equal_flag:
+                            delta_3 = max_delta_3/2  # hard-coded fix for the equal-cropped case
+                        else:
+                            delta_3 = np.random.uniform(0, max(max_delta_3, 1))
                         delta_4 = delta_all[1] - delta_3
                 if (delta_1 <= max_delta_1 and delta_2 <= max_delta_2 and
                     delta_3 <= max_delta_3 and delta_4 <= max_delta_4):
@@ -366,7 +462,7 @@ class DataProcessing:
         
         return new_BB, delta_1234, error_index
 
-    def ProceduralRandomPadding(self, target_BB_sizes:np.ndarray, original_img_size:int, final_img_size:int):
+    def ProceduralRandomPadding(self, target_BB_sizes:np.ndarray, original_img_size:int, final_img_size:int, equal_flag = False, suggested_BB = 0 ):
         """
         Applies procedural random padding to the original image to create a square bounding box 
         around the detected body, followed by cropping and resizing the image and its labels.
@@ -398,10 +494,19 @@ class DataProcessing:
 
         # Determine the Bounding Box (BB) in the body in the image
         original_BB = self.find_body_bbox() # Call this img_BB
+        # original_BB = suggested_BB
         # Determine the target BB size
         target_BB_size = self.determine_max_BB(original_BB,target_BB_sizes)
+        # if int(target_BB_size) == 2048:
+        #     target_BB_size = 128
+        #     original_BB = np.array([1023,1023,64,64])
+        # original_BB = np.array([1023,1023,64,64])     
         # Perform random padding
-        final_BB,delta_1234, error_index = self.BB_random_padding(original_BB, target_BB_size, (original_img_size,original_img_size), original_img_size)
+        final_BB,delta_1234, error_index = self.BB_random_padding(original_BB, target_BB_size, (original_img_size,original_img_size), original_img_size,equal_flag)
+
+        # final_BB = np.array([1024-128/2, 1024-128/2,128,128])
+        # delta_1234 = np.array([0,0,0,0])
+        # target_BB_size = 128
         # Crop the image with BB
         img_cropped = DataProcessing.crop_img_by_BB_float(self.img,final_BB)
         # Reduce the image to final resolution 
@@ -423,7 +528,58 @@ class DataProcessing:
                 'CoM_S2': (CoM_u_S2,CoM_v_S2), 
             }
         return img_resized, img_cropped, original_BB, final_BB, delta_1234, label_resized
-    
+
+    def ProceduralRandomPadding_v2(self, target_BB_sizes:np.ndarray, original_img_size:int, final_img_size:int):
+        """
+        Applies procedural random padding to the original image to create a square bounding box 
+        around the detected body, followed by cropping and resizing the image and its labels.
+
+        This function represent a fully functioning DataProcessing pipelinea, performing the following steps:
+            1. Detects the bounding box of the body in the original image.
+            2. Selects the smallest valid target bounding box size that fits the object.
+            3. Applies random padding to center the object within a square region.
+            4. Crops the image using the padded bounding box.
+            5. Resizes the cropped image to the final target resolution.
+            6. Adjusts the CoM (center of mass) label coordinates across all transformations.
+
+        Args:
+            target_BB_sizes (np.ndarray): Array of candidate square bounding box sizes (e.g., [2048, 1024, 512, ...]).
+            original_img_size (int): Original image resolution (assumed square).
+            final_img_size (int): Desired final output image resolution (e.g., 128, 256, etc.).
+
+        Returns:
+            img_resized (np.ndarray): Final resized image of shape (final_img_size, final_img_size). This is the image in S2
+            img_cropped (np.ndarray): Cropped image corresponding to the padded bounding box. This is the image in S1
+            original_BB (np.ndarray): Original bounding box around the detected body. This is BB0
+            final_BB (np.ndarray): Bounding box after padding to selected target size. This is BB1
+            delta_1234 (np.ndarray): Padding values [left, right, top, bottom] applied to the original BB.
+            label_resized (dict): Dictionary containing center of mass coordinates across stages:
+                - 'CoM_S0': in original image (S0)
+                - 'CoM_S1': in cropped image (S1)
+                - 'CoM_S2': in final resized image (S2)
+        """
+        original_BB = 0 
+        final_BB = np.array([1024-target_BB_sizes/2, 1024-target_BB_sizes/2,target_BB_sizes,target_BB_sizes])
+        delta_1234 = np.array([0,0,0,0])
+        target_BB_size = target_BB_sizes
+
+        ### ProceduralRandomPadding and resizing of the label        
+        if "CoM" in self.label:
+            CoM_u_S0, CoM_v_S0 = self.label["CoM"]
+            # Compute CoM in S1 
+            CoM_u_S1 = CoM_u_S0 - final_BB[0]
+            CoM_v_S1 = CoM_v_S0 - final_BB[1]
+            # Compute CoM in S2
+            CoM_u_S2 = CoM_u_S1 * (final_img_size / target_BB_size)
+            CoM_v_S2 = CoM_v_S1 * (final_img_size / target_BB_size)
+
+            label_resized = {
+                'CoM_S0': (CoM_u_S0,CoM_v_S0), 
+                'CoM_S1': (CoM_u_S1,CoM_v_S1), 
+                'CoM_S2': (CoM_u_S2,CoM_v_S2), 
+            }
+        return 0,0,original_BB, final_BB, delta_1234, label_resized
+
     def add_artificial_noise(img_input: np.ndarray, noise: dict, return_intermediates: bool = False) -> np.ndarray:
         """
         Applies a chain of synthetic noise effects to a grayscale image. The chain applied follows the one specificied in the PhD Thesis
