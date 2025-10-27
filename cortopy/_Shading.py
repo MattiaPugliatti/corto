@@ -473,8 +473,8 @@ class Shading:
             node.mode = m
 
             # Reassign the same filepath to mark dirty (safe no-op)
-            if node.mode == 'EXTERNAL':
-                node.filepath = node.filepath
+            # if node.mode == 'EXTERNAL':
+            #     node.filepath = node.filepath
 
             # Tag the **node tree** (not the node) and update depsgraph
             node.id_data.update_tag()  # node.id_data is the Material.node_tree
@@ -486,39 +486,37 @@ class Shading:
         dot_product_node_2 =  Shading.vector_math_node(material, (800, -200))
         arcosine_node_1 = Shading.math_node(material, (1000, +200))
         arcosine_node_2 = Shading.math_node(material, (1000, -200))
-        subtract_node = Shading.vector_math_node(material, (400, -200))
-        normalize_node = Shading.vector_math_node(material, (600, -200))
-        multiply_node_1 = Shading.math_node(material, (1600,0))
-        multiply_node_2 = Shading.math_node(material, (1700,0))
+        subtract_node_1 = Shading.vector_math_node(material, (400, 200))
+        subtract_node_2 = Shading.vector_math_node(material, (400, -200))
+        normalize_node_2 = Shading.vector_math_node(material, (600, -200))
+        normalize_node_1 = Shading.vector_math_node(material, (600, 200))
+        multiply_node = Shading.math_node(material, (1600,0))
         geometry_node = Shading.geometry_node(material, (200,0))
         disk_function_node = Shading.script_node(material, (1200,0))
         phase_function_node = Shading.script_node(material, (1400,0))
         diffuse_bsdf = Shading.diffuse_BSDF(material, (1800,0))
         ## Part 2 - Setup nodes properties
-        subtract_node.operation = 'SUBTRACT'
-        subtract_node.inputs[0].default_value = (0,1,2) # CAM position
+        subtract_node_1.operation = 'SUBTRACT'
+        subtract_node_1.name = 'subtract_node_1' # assign name to be able to update 
+        subtract_node_1.inputs[0].default_value = (0,1,2) # SUN position
+        subtract_node_2.operation = 'SUBTRACT'
+        subtract_node_2.name = 'subtract_node_2' # assign name to be able to update 
+        subtract_node_2.inputs[0].default_value = (3,4,5) # CAM position
         dot_product_node_1.operation = 'DOT_PRODUCT'
-        dot_product_node_1.inputs[0].default_value = (3,4,5) # SUN position
         dot_product_node_2.operation = 'DOT_PRODUCT'
-        multiply_node_1.inputs[1].default_value = albedo
+        multiply_node.inputs[1].default_value = albedo
         arcosine_node_1.operation = 'ARCCOSINE'
         arcosine_node_2.operation = 'ARCCOSINE'
-        normalize_node.operation = 'NORMALIZE'
-        multiply_node_1.operation = 'MULTIPLY'
-        multiply_node_2.operation = 'MULTIPLY'
+        normalize_node_1.operation = 'NORMALIZE'
+        normalize_node_2.operation = 'NORMALIZE'
+        multiply_node.operation = 'MULTIPLY'
         disk_function_node.mode = 'EXTERNAL'
         phase_function_node.mode = 'EXTERNAL'
-
-        disk_function_path = "/Users/mapu7335/Repos/corto/corto/cortopy/corto_diskFunctions.osl"
-        phase_function_path = "/Users/mapu7335/Repos/corto/corto/cortopy/corto_phaseFunctions.osl"
-        
         disk_function_node.filepath = disk_function_path
         phase_function_node.filepath = phase_function_path
 
-        # --- usage ---
         set_osl_external(disk_function_node, disk_function_path)
         set_osl_external(phase_function_node, phase_function_path)
-
         force_compile_script_node(disk_function_node)
         force_compile_script_node(phase_function_node)
 
@@ -529,24 +527,43 @@ class Shading:
 
         ## Part 3 - Link nodes toghether
         Shading.link_nodes(material,diffuse_bsdf.outputs["BSDF"],output_node.inputs["Surface"]) # PBSDF to output
-        # Compute emission angle from camera position (input[0] to subtract_node)
-        Shading.link_nodes(material,geometry_node.outputs["Position"],subtract_node.inputs[1]) # Geometry to subtract node
-        Shading.link_nodes(material,subtract_node.outputs["Vector"],normalize_node.inputs["Vector"]) # subtract to normalize
-        Shading.link_nodes(material,normalize_node.outputs["Vector"],dot_product_node_2.inputs[0]) # normalize to dot_product_2
+        # Compute emission angle (e) from camera position (input[0] to subtract_node_2)
+        Shading.link_nodes(material,geometry_node.outputs["Position"],subtract_node_2.inputs[1]) # Geometry to subtract node
+        Shading.link_nodes(material,subtract_node_2.outputs["Vector"],normalize_node_2.inputs["Vector"]) # subtract to normalize
+        Shading.link_nodes(material,normalize_node_2.outputs["Vector"],dot_product_node_2.inputs[0]) # normalize to dot_product_2
         Shading.link_nodes(material,geometry_node.outputs["True Normal"],dot_product_node_2.inputs[1]) # geometry to dot_product_2
         Shading.link_nodes(material,dot_product_node_2.outputs["Value"],arcosine_node_2.inputs["Value"]) # dot_product_2 to arcosine_2
         Shading.link_nodes(material,arcosine_node_2.outputs["Value"],disk_function_node.inputs["e"]) # arcosine_node_2 to disk_function
 
-        # Compute incident angle from sun position
-        Shading.link_nodes(material,dot_product_node_1.outputs["Value"],arcosine_node_1.inputs["Value"]) # dot_product_1 to arcosine_1 
-        Shading.link_nodes(material,arcosine_node_2.outputs["Value"],disk_function_node.inputs["i"]) # arcosine_1 to disk_function
+        # Compute incident angle (i) from Sun position
+        Shading.link_nodes(material,geometry_node.outputs["Position"],subtract_node_1.inputs[1]) # Geometry to subtract node
+        Shading.link_nodes(material,subtract_node_1.outputs["Vector"],normalize_node_1.inputs["Vector"]) # subtract to normalize
+        Shading.link_nodes(material,normalize_node_1.outputs["Vector"],dot_product_node_1.inputs[0]) # normalize to dot_product_2
+        Shading.link_nodes(material,geometry_node.outputs["True Normal"],dot_product_node_1.inputs[1]) # geometry to dot_product_2
+        Shading.link_nodes(material,dot_product_node_1.outputs["Value"],arcosine_node_1.inputs["Value"]) # dot_product_2 to arcosine_2
+        Shading.link_nodes(material,arcosine_node_1.outputs["Value"],disk_function_node.inputs["i"]) # arcosine_node_2 to disk_function
 
 
         Shading.link_nodes(material,disk_function_node.outputs["Value"],phase_function_node.inputs["DiskFunction"]) # disk_function_node to phase_function_node
         Shading.link_nodes(material,disk_function_node.outputs["Alpha"],phase_function_node.inputs["Alpha"]) # disk_function_node to phase_function_node
-        Shading.link_nodes(material,phase_function_node.outputs["Output"],multiply_node_1.inputs[0]) # phase_function_node to multiply (albedo)
-        Shading.link_nodes(material,multiply_node_1.outputs["Value"],diffuse_bsdf.inputs["Color"]) # phase_function_node to multiply (albedo)
+        Shading.link_nodes(material,phase_function_node.outputs["Output"],multiply_node.inputs[0]) # phase_function_node to multiply (albedo)
+        Shading.link_nodes(material,multiply_node.outputs["Value"],diffuse_bsdf.inputs["Color"]) # phase_function_node to multiply (albedo)
 
+    def update_osl_shader(material, settings:dict):
+        """Update properties of a OSL shader shader.
+
+        Args:
+            material (bpy.data.materials): Material
+            settings (dict): Dictionary with settings for the update
+        """
+        # Update values in the camera and sun positions 
+        material.node_tree.nodes["subtract_node_1"].inputs[0].default_value = settings["sun_pos"]
+        material.node_tree.nodes["subtract_node_2"].inputs[0].default_value = settings["cam_pos"]
+        # Update values in albedo and scattering function (if available)
+        if "function" in settings:
+            material.node_tree.nodes["phase_function_node"].inputs["function"].default_value = settings["function"]
+        if "albedo" in settings:
+            material.node_tree.nodes["multiply_node"].inputs[1].default_value = settings["albedo"]
 
     def assign_material_to_object(material, body):
         """Assign a material to a body object
