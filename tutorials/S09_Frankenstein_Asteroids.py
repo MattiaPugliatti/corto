@@ -32,12 +32,42 @@ corto.Utils.clean_scene()
 scenario_name = "S09_Frankenstein_Asteroids" # Name of the scenario folder
 scene_name = "scene_EEVEE.json" # name of the scene input, use this for simplified renderings (faster)
 # scene_name = "scene.json" # name of the scene input, use this if you want more labels, realism (slower)
-dataset_setup = "D0" # Names as in [1]: "D0","D1",...., "D15"
+dataset_setup = "D0b" # Names as in [1]: "D0",'D0b","D1",...., "D15", "D16", "D17"
+
+# Uncomment this portion if you need to overun this in a long-run
+# Also, remember to uncomment line 119
+
+'''
+# --- CLI override for idx range (works with Blender's "--" as well) ---
+import sys, argparse
+def _override_range_via_cli(default_start, default_end):
+    # Blender passes script args after a literal "--".
+    argv = sys.argv
+    if "--" in argv:
+        argv = argv[argv.index("--") + 1:]
+    else:
+        argv = argv[1:]
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--start", type=int, dest="start")
+    parser.add_argument("--end",   type=int, dest="end")
+    # parse_known_args so we ignore any extra scenario flags you may add later
+    ns, _ = parser.parse_known_args(argv)
+    s = default_start if ns.start is None else ns.start
+    e = default_end   if ns.end   is None else ns.end
+    if e < s:
+        raise ValueError(f"--end ({e}) must be >= --start ({s})")
+    print(f"[S09] render range: idx_start={s}, idx_end={e}")
+    return s, e
+'''
 
 if dataset_setup == "D0":
     geometry_name = "R5_2025_06_13_10_21_51.json" # Training & Validation (D0)
     body_dyn_name = "R5_16k_body_settings.json" # Training & Validation (D0)
     idx_start, idx_end = 0, 16000 # Render the images between idx_start and idx_end (D0)
+if dataset_setup == "D0b":
+    geometry_name = "R5_2025_09_30_11_05_37_160k.json" # Training & Validation (D0b)
+    body_dyn_name = "R5_160k_body_settings.json" # Training & Validation (D0b)
+    idx_start, idx_end = 0, 160000 # Render the images between idx_start and idx_end (D0b)
 elif dataset_setup in ("D1", "D2", "D3", "D4", "D5"):
     body_dyn_name = "R12345_1k_body_settings.json" # 
     idx_start, idx_end = 0, 1000 # Render the images between idx_start and idx_end
@@ -72,8 +102,23 @@ elif dataset_setup == "D15":
     body_dyn_name = "67P_range_test.json" # Te
     geometry_name = "R7_2025_07_23_22_05_17.json" # Te
     idx_start, idx_end = 0, 100 # Render the images between idx_start and idx_end
+elif dataset_setup == "D16":
+    body_dyn_name = "flyby_67P.json" # Te
+    geometry_name = "flyby_2025_10_19_13_32_41.json" # Te
+    idx_start, idx_end = 0, 4000 # Render the images between idx_start and idx_end
+elif dataset_setup == "D17":
+    body_dyn_name = "flyby_apophis.json" # Te
+    geometry_name = "flyby_2025_10_19_13_32_41.json" # Te
+    idx_start, idx_end = 0, 4000 # Render the images between idx_start and idx_end
+elif dataset_setup == "D18":
+    body_dyn_name = "flyby_67P.json" # Te
+    geometry_name = "range_test_R1_2025_10_20_17_15_40.json" # Te
+    idx_start, idx_end = 0, 4000 # Render the images between idx_start and idx_end
 else:
     raise ValueError(f"Unknown dataset_setup: {dataset_setup}")
+
+# apply overrides on idx
+# idx_start, idx_end = _override_range_via_cli(idx_start, idx_end)
 
 ### (2) PREPARE STRUCTURES ###
 
@@ -112,6 +157,8 @@ for ii_body in range(len(unique_body_names)):
         if scene_name == "scene.json": # Activate these labels if you are using CYCLES instead of EEVEE
             corto.Compositing.create_img_denoise_branch(tree,render_node) # Create img_denoise branch
             corto.Compositing.create_maskID_branch(tree,render_node,State_ii_body) # Create ID mask branch
+        elif scene_name == "scene_EEVEE.json":
+            corto.Compositing.create_img_branch(tree,render_node, State_ii_body) # Create img branch
     # Assign the same material to each body (properties are updated in the rendering loop)
     corto.Shading.assign_material_to_object(material, body_ii_body)
     # Setup environment object
