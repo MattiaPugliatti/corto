@@ -41,8 +41,9 @@ ENV = corto.Environment(cam, body, sun, rendering_engine)
 
 ### (3) MATERIAL PROPERTIES ###
 
-disk_function_path = "/Users/mapu7335/Repos/corto/corto/cortopy/corto_diskFunctions.osl"
-phase_function_path = "/Users/mapu7335/Repos/corto/corto/cortopy/corto_phaseFunctions.osl"
+disk_function_path = os.path.join(os.getcwd(),"cortopy/corto_diskFunctions.osl")
+phase_function_path = os.path.join(os.getcwd(),"cortopy/corto_phaseFunctions.osl")
+
 albedo = 0.2
 scattering_function = "LommelSeeliger"
 
