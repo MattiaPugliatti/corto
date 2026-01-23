@@ -2,7 +2,7 @@ numpy
 matplotlib 
 scipy
 datetime
-bpy
+bpy==4.2.0
 OpenEXR
 Imath
 pandas
