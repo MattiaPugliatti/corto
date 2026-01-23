@@ -142,19 +142,30 @@ class State:
             self.properties_body = {}
             self.properties_rendering = {}
 
-    def import_body(self, body_filepath: str, load_mode: str = "obj") -> None:
+    def import_body(self, body_filepath: str) -> None:
         """Import body
 
         Args:
             body_filepath (str): filepath of the body
-            load_mode (str, optional): loading mode flag. Defaults to 'obj'.
+            load_mode (str): loading mode flag: "obj", "gltf", "glb"
         """
-        if load_mode == "obj":
+
+        if not Path(body_filepath).exists():
+            raise FileNotFoundError(f"File not found: {body_filepath}")
+    
+        body_type = Path(body_filepath).suffix.lower()
+
+        if body_type == ".obj":
             bpy.ops.wm.obj_import(filepath=body_filepath)
             bpy.ops.object.shade_smooth() # Default setup smooth property of the mesh
             print(f"Imported .obj file from {body_filepath}")
-        elif load_mode == ".blend":
+        elif body_type in {".gltf", ".glb"}:
+            bpy.ops.import_scene.gltf(filepath=str(body_filepath))
+            print(f"Imported .gltf file from {body_filepath}")
+        elif body_type == ".blend":
             print("Not implemented")
+        else:
+            raise ValueError(f"Unsupported body file")
 
     def add_path(self, name: str, path: str) -> None:
         """add path into the State dictionary containing all relevant paths
