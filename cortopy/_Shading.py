@@ -515,8 +515,15 @@ class Shading:
         disk_function_node.filepath = bpy.path.abspath(disk_function_path)
         phase_function_node.filepath = bpy.path.abspath(phase_function_path)
 
-        if function == "LommelSeeliger":
+        if function == "Lambertian":
             function_id = 1
+        elif function == "LommelSeeliger":
+            function_id = 2
+        elif function == "McEwen":
+            function_id = 3
+        else:
+            raise ValueError(f"Unknown scattering function: {function}")
+        
         disk_function_node.inputs["function"].default_value = function_id
         phase_function_node.inputs["function"].default_value = function_id
 

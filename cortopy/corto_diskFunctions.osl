@@ -1,8 +1,30 @@
 ///// Definition of disk functions /////
 
+// Photometric functions
+//1: Lambertian
+//2: Lommel-Seeliger
+//3: McEwen
+
+// --- (1) Lambertian ---
+float Lambertian(float i, float e)
+{
+    return cos(i);
+}
+
+// --- (2) Lommel-Seeliger ---
 float LommelSeeliger (float i, float e)
 {
     return cos(i) / (cos(i) + cos(e));
+}
+
+// --- (3) McEwen ---
+float McEwen (float i, float e)
+{
+	float alpha = i + e;
+	float beta = exp(-alpha/(60*M_PI/180));
+	float t2 = cos(i) / ( cos(i) + cos(e) );
+	float t1 = cos(i);
+	return (1 - beta)*t1 + beta*t2;
 }
 
 ///// Shader /////
@@ -26,8 +48,15 @@ shader diskFunction(
     Alpha = i + e;
 
     if (function == 1) {
+        Value = Lambertian(i, e);
+    } 
+    else if (function == 2) {
         Value = LommelSeeliger(i, e);
-    } else {
+    }
+    else if (function == 3) {
+        Value = McEwen(i, e);
+    }
+    else {
         Value = 1.0;
     }
 }

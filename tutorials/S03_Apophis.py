@@ -44,7 +44,9 @@ disk_function_path = os.path.join(os.getcwd(),"cortopy/corto_diskFunctions.osl")
 phase_function_path = os.path.join(os.getcwd(),"cortopy/corto_phaseFunctions.osl")
 
 albedo = 0.2
-scattering_function = "LommelSeeliger"
+scattering_function = "Lambertian"
+# scattering_function = "LommelSeeliger"
+scattering_function = "McEwen"
 
 material = corto.Shading.create_new_material('Apophis with OSL')
 corto.Shading.create_osl_shader(material, scattering_function, albedo, disk_function_path, phase_function_path)
