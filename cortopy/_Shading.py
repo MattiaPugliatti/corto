@@ -473,8 +473,8 @@ class Shading:
             node.mode = m
 
             # Reassign the same filepath to mark dirty (safe no-op)
-            # if node.mode == 'EXTERNAL':
-            #     node.filepath = node.filepath
+            if node.mode == 'EXTERNAL':
+                node.filepath = node.filepath
 
             # Tag the **node tree** (not the node) and update depsgraph
             node.id_data.update_tag()  # node.id_data is the Material.node_tree
@@ -512,13 +512,8 @@ class Shading:
         multiply_node.operation = 'MULTIPLY'
         disk_function_node.mode = 'EXTERNAL'
         phase_function_node.mode = 'EXTERNAL'
-        disk_function_node.filepath = disk_function_path
-        phase_function_node.filepath = phase_function_path
-
-        set_osl_external(disk_function_node, disk_function_path)
-        set_osl_external(phase_function_node, phase_function_path)
-        force_compile_script_node(disk_function_node)
-        force_compile_script_node(phase_function_node)
+        disk_function_node.filepath = bpy.path.abspath(disk_function_path)
+        phase_function_node.filepath = bpy.path.abspath(phase_function_path)
 
         if function == "LommelSeeliger":
             function_id = 1
@@ -542,7 +537,6 @@ class Shading:
         Shading.link_nodes(material,geometry_node.outputs["True Normal"],dot_product_node_1.inputs[1]) # geometry to dot_product_2
         Shading.link_nodes(material,dot_product_node_1.outputs["Value"],arcosine_node_1.inputs["Value"]) # dot_product_2 to arcosine_2
         Shading.link_nodes(material,arcosine_node_1.outputs["Value"],disk_function_node.inputs["i"]) # arcosine_node_2 to disk_function
-
 
         Shading.link_nodes(material,disk_function_node.outputs["Value"],phase_function_node.inputs["DiskFunction"]) # disk_function_node to phase_function_node
         Shading.link_nodes(material,disk_function_node.outputs["Alpha"],phase_function_node.inputs["Alpha"]) # disk_function_node to phase_function_node

@@ -138,7 +138,8 @@ class Environment:
         bpy.context.scene.render.filepath = os.path.join(state.path["output_path"],'img',rendering_name)
         bpy.context.scene.frame_current = index
         if bpy.context.scene.render.engine == 'CYCLES':
-            bpy.context.scene.cycles.shading_system = True # TODO: find a better place for this one
+            bpy.context.scene.render.engine = 'CYCLES'
+            bpy.context.scene.cycles.shading_system = True
             bpy.ops.render.render(write_still = True)
 
         if depth_flag and bpy.context.scene.render.engine == 'CYCLES':

@@ -20,7 +20,6 @@ corto.Utils.clean_scene()
 
 ### (1) DEFINE INPUT ### 
 scenario_name = "S03_Apophis" # Name of the scenario folder
-# scene_name = "scene_EEVEE.json" # name of the scene input, fast rendering setup
 scene_name = "scene_CYCLES.json" # name of the scene input, fast rendering setup
 geometry_name = "geometry.json" # name of the geometry input
 body_name = "apophis.obj" # name of the body input
@@ -56,11 +55,11 @@ body.set_scale(np.array([3, 3, 3])) # adjust body scale for better test renderin
 
 settings_osl = {}
 
-n_img = 5 # Render the first "n_img" images
+n_img = 1 # Render the first "n_img" images
 for idx in range(0,n_img):
     ENV.PositionAll(State,index=idx)
     _, pos_cam, pos_sun = ENV.get_positions() # TODO: add a check on pos_bod such that the vectors are all body-referenced for the OSL shader
-    settings_osl['cam_pos'] = pos_cam
+    settings_osl["cam_pos"] = pos_cam
     settings_osl["sun_pos"] = pos_sun
     corto.Shading.update_osl_shader(material, settings_osl) # Update OSL shading properties
     ENV.RenderOne(cam, State, index=idx)
