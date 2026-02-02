@@ -4,6 +4,7 @@
 //1: Lambertian
 //2: Lommel-Seeliger
 //3: McEwen
+//4: SimplifiedHapke
 
 // --- (1) Lambertian ---
 float Lambertian(float i, float e)
@@ -25,6 +26,12 @@ float McEwen (float i, float e)
 	float t2 = cos(i) / ( cos(i) + cos(e) );
 	float t1 = cos(i);
 	return (1 - beta)*t1 + beta*t2;
+}
+
+// --- (4) SimplifiedHapke ---
+float SimplifiedHapke (float i, float e)
+{
+	return LommelSeeliger(i,e);
 }
 
 ///// Shader /////
@@ -55,6 +62,9 @@ shader diskFunction(
     }
     else if (function == 3) {
         Value = McEwen(i, e);
+    }
+    else if (function == 4) {
+        Value = SimplifiedHapke(i, e);
     }
     else {
         Value = 1.0;

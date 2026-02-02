@@ -45,8 +45,9 @@ phase_function_path = os.path.join(os.getcwd(),"cortopy/corto_phaseFunctions.osl
 
 albedo = 0.2
 scattering_function = "Lambertian"
-# scattering_function = "LommelSeeliger"
+scattering_function = "LommelSeeliger"
 scattering_function = "McEwen"
+scattering_function = "SimplifiedHapke" #TODO: add g parameter to the OSL shader and generalize this as shader settings (needed for phase functions)
 
 material = corto.Shading.create_new_material('Apophis with OSL')
 corto.Shading.create_osl_shader(material, scattering_function, albedo, disk_function_path, phase_function_path)

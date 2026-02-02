@@ -15,6 +15,17 @@ float LommelSeeliger (float alpha, float A_LS, float beta, float gamma, float de
 // --- (3) McEwen ---
 // No phase function
 
+// --- (4) SimplifiedHapke (Henyey-Greenstein) ---
+float SimplifiedHapke (float alpha, float g)
+{
+	// g is the asymmetry factor: 
+	// g = 0 : isotropic scattering
+	// g > 0 : forward scattering
+	// g < 0 : backward scattering
+	
+    return (1 - g*g) / pow(1 + 2*g*cos(alpha) + g*g, 1.5);
+}
+
 ///// Shader /////
 
 shader phaseFunction (
@@ -29,6 +40,7 @@ shader phaseFunction (
 	//1: Lambertian
 	//2: Lommel-Seeliger
 	//3: McEwen
+	//4: SimplifiedHapke (Henyey-Greenstein)
 
 	int function = 1,
 
@@ -49,6 +61,9 @@ shader phaseFunction (
     }
 	else if (function == 3) { 
 		PhaseValue = DiskFunction;
+    }
+	else if (function == 4) { 
+		PhaseValue = DiskFunction * SimplifiedHapke(Alpha, 0);
     }
     else {
         PhaseValue = DiskFunction; // fallback
