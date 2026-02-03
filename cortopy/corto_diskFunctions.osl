@@ -5,6 +5,7 @@
 //2: Lommel-Seeliger
 //3: McEwen
 //4: SimplifiedHapke
+//5: Hapke
 
 // --- (1) Lambertian ---
 float Lambertian(float i, float e)
@@ -35,12 +36,12 @@ float SimplifiedHapke (float i, float e)
 }
 
 // --- (5) Hapke ---
-float Hapke(float i, float e, float omega)
+float Hapke(float i, float e, float a)
 {
     float mu0 = cos(i);
     float mu  = cos(e);
-    float H_mu0 = (1 + 2*mu0) / (1 + 2*mu0 * sqrt(1 - omega));
-    float H_mu  = (1 + 2*mu)  / (1 + 2*mu  * sqrt(1 - ß));
+    float H_mu0 = (1 + 2*mu0) / (1 + 2*mu0 * sqrt(1 - a));
+    float H_mu  = (1 + 2*mu)  / (1 + 2*mu  * sqrt(1 - a));
     return (mu0 / (mu0 + mu)) * H_mu0 * H_mu;
 }
 
@@ -57,6 +58,9 @@ shader diskFunction(
     // Photometric function selector
     int function = 1,
 
+    // Albedo 
+    float albedo = 0,
+
     // Outputs
     output float Value = 0.0,  // selected disk function value
     output float Alpha = 0.0   // i + e
@@ -65,21 +69,21 @@ shader diskFunction(
     Alpha = i + e;
 
     if (function == 1) {
-        Value = Lambertian(i, e);
+        Value = albedo * Lambertian(i, e);
     } 
     else if (function == 2) {
-        Value = LommelSeeliger(i, e);
+        Value = albedo * LommelSeeliger(i, e);
     }
     else if (function == 3) {
-        Value = McEwen(i, e);
+        Value = albedo * McEwen(i, e);
     }
     else if (function == 4) {
-        Value = SimplifiedHapke(i, e);
+        Value = albedo * SimplifiedHapke(i, e);
     }
     else if (function == 5) {
-        Value = Hapke(i, e, 0.1);
+        Value = Hapke(i, e, albedo);
     }
     else {
-        Value = 1.0;
+        Value = albedo;
     }
 }

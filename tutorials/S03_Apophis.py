@@ -45,29 +45,39 @@ ENV = corto.Environment(cam, body, sun, rendering_engine)
 disk_function_path = os.path.join(os.getcwd(),"cortopy/corto_diskFunctions.osl")
 phase_function_path = os.path.join(os.getcwd(),"cortopy/corto_phaseFunctions.osl")
 
-albedo = 0.2
-scattering_function = "Lambertian"
+geometric_albedo = 0.2
+#scattering_function = "Lambertian"
+#scattering_function = "McEwen"
+
 scattering_function = "LommelSeeliger"
-scattering_function = "McEwen"
-scattering_function = "SimplifiedHapke" #TODO: add g parameter to the OSL shader and generalize this as shader settings (needed for phase functions)
-scattering_function = "Hapke" #TODO: add g parameter to the OSL shader and generalize this as shader settings (needed for phase functions)
+p0,p1,p2,p3 = 0.0270, -3.395e-2, 2.577e-4, -1.579e-6 # (A_LS, beta, gamma, delta) coefficients for Bennu, Golish et al. 2021 https://doi.org/10.1016/j.icarus.2020.113724
+osl_coeffs = {"scattering_function": scattering_function, "p0": p0, "p1": p1, "p2": p2, "p3": p3}
+
+scattering_function = "SimplifiedHapke"
+p0 = 0.156 # (g) random coefficient
+osl_coeffs = {"scattering_function": scattering_function, "p0": p0}
+
+scattering_function = "Hapke"
+p0,p1,p2 = 0.156, 2, 0.2 # (g, B0, h) random coefficients
+osl_coeffs = {"scattering_function": scattering_function, "p0": p0, "p1": p1, "p2": p2}
+
 
 material = corto.Shading.create_new_material('Apophis with OSL')
-corto.Shading.create_osl_shader(material, scattering_function, albedo, disk_function_path, phase_function_path)
+corto.Shading.create_osl_shader(material, scattering_function, geometric_albedo, disk_function_path, phase_function_path, osl_coeffs)
 corto.Shading.assign_material_to_object(material, body)
 
 # ### (4) GENERATION OF IMG-LBL PAIRS ###
 body.set_scale(np.array([3, 3, 3])) # adjust body scale for better test renderings
 
-settings_osl = {}
+osl_geometry_settings = {}
 
 n_img = 1 # Render the first "n_img" images
 for idx in range(0,n_img):
     ENV.PositionAll(State,index=idx)
     _, pos_cam, pos_sun = ENV.get_positions() # TODO: add a check on pos_bod such that the vectors are all body-referenced for the OSL shader
-    settings_osl["cam_pos"] = pos_cam
-    settings_osl["sun_pos"] = pos_sun
-    corto.Shading.update_osl_shader(material, settings_osl) # Update OSL shading properties
+    osl_geometry_settings["cam_pos"] = pos_cam
+    osl_geometry_settings["sun_pos"] = pos_sun
+    corto.Shading.update_osl_geometry(material, osl_geometry_settings) # Update OSL shading properties
     ENV.RenderOne(cam, State, index=idx)
 
 # Save .blend as debug

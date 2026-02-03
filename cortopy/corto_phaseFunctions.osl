@@ -4,10 +4,14 @@
 // No phase function
 
 // --- (2) Lommel-Seeliger ---
-float LommelSeeliger (float alpha, float A_LS, float beta, float gamma, float delta) {
+float LommelSeeliger (float alpha, float p0, float p1, float p2, float p3) {
+
+	float A_LS = p0;
+	float beta = p1;
+	float gamma = p2;
+	float delta = p3;
 
 	float exponent = (beta * alpha) + (gamma * pow(alpha, 2)) + (delta * pow(alpha, 3));
-
 	return A_LS * M_PI * exp(exponent);
 
 }
@@ -16,18 +20,20 @@ float LommelSeeliger (float alpha, float A_LS, float beta, float gamma, float de
 // No phase function
 
 // --- (4) SimplifiedHapke (Henyey-Greenstein) ---
-float SimplifiedHapke (float alpha, float g)
+float SimplifiedHapke (float alpha, float p0)
 {
 	// g is the asymmetry factor: 
 	// 	g = 0 : isotropic scattering
 	// 	g > 0 : forward scattering
 	// 	g < 0 : backward scattering
 	
+	float g = p0;
+
     return (1 - g*g) / pow(1 + 2*g*cos(alpha) + g*g, 1.5);
 }
 
 // --- (5) Hapke ---
-float Hapke(float alpha, float g, float B0, float h)
+float Hapke(float alpha, float p0, float p1, float p2)
 {
 	// g is the asymmetry factor: 
 	// 	g = 0 : isotropic scattering
@@ -35,6 +41,10 @@ float Hapke(float alpha, float g, float B0, float h)
 	// 	g < 0 : backward scattering
 	// B0 is the amplitude of the opposition surge
 	// h is the angular width of the surge
+
+	float g = p0;
+	float B0 = p1;
+	float h = p2;
 
     float P = (1 - g*g) / pow(1 + 2*g*cos(alpha) + g*g, 1.5);
     float B = B0 / (1 + tan(alpha/2)/h);
@@ -58,7 +68,15 @@ shader phaseFunction (
 	//4: SimplifiedHapke (Henyey-Greenstein)
 	//5: Hapke
 
+	// diskFunction output
 	int function = 1,
+
+	// Parameters settings
+	float p0 = 0,
+	float p1 = 0,
+	float p2 = 0,
+	float p3 = 0,
+	float p4 = 0,
 
 	// Output
 	output float Output = 0.0,
@@ -73,19 +91,19 @@ shader phaseFunction (
         PhaseValue = DiskFunction;
     }
     else if (function == 2) {
-		PhaseValue = DiskFunction * LommelSeeliger(Alpha, 0.0270, -3.395e-2, 2.577e-4, -1.579e-6);
+		PhaseValue = DiskFunction * LommelSeeliger(Alpha, p0, p1, p2, p3);
     }
 	else if (function == 3) { 
 		PhaseValue = DiskFunction;
     }
 	else if (function == 4) { 
-		PhaseValue = DiskFunction * SimplifiedHapke(Alpha, 0);
+		PhaseValue = DiskFunction * SimplifiedHapke(Alpha, p0);
     }
 	else if (function == 5) { 
-		PhaseValue = DiskFunction * Hapke(Alpha, 0, 1, 0.1);
+		PhaseValue = DiskFunction * Hapke(Alpha, p0, p1, p2);
     }
     else {
-        PhaseValue = DiskFunction; // fallback
+        PhaseValue = 0; // Debug fallback
     }
 
     Output = PhaseValue;

@@ -441,9 +441,10 @@ class Shading:
     def create_osl_shader(
         material,
         function: str, 
-        albedo: float,
+        geometric_albedo: float,
         disk_function_path: str, 
         phase_function_path: str,
+        osl_coeffs: dict = None,
     ):
         """Generate a shader with OSL
 
@@ -453,32 +454,6 @@ class Shading:
         """
         bpy.context.scene.render.engine = 'CYCLES'
         bpy.context.scene.cycles.shading_system = True  # Enable OSL
-
-        def set_osl_external(node, path):
-            abspath = bpy.path.native_pathsep(os.path.abspath(path))
-            if not os.path.isfile(abspath):
-                raise FileNotFoundError(f"OSL not found: {abspath}")
-            node.mode = 'EXTERNAL'
-            node.filepath = abspath
-            node.use_auto_update = True
-
-        def force_compile_script_node(node: bpy.types.ShaderNodeScript):
-            # Nudge Blender that the script changed
-            node.use_auto_update = False
-            node.use_auto_update = True
-
-            # “Flip” mode to force reload
-            m = node.mode
-            node.mode = 'INTERNAL' if m == 'EXTERNAL' else 'EXTERNAL'
-            node.mode = m
-
-            # Reassign the same filepath to mark dirty (safe no-op)
-            if node.mode == 'EXTERNAL':
-                node.filepath = node.filepath
-
-            # Tag the **node tree** (not the node) and update depsgraph
-            node.id_data.update_tag()  # node.id_data is the Material.node_tree
-            bpy.context.view_layer.update()
 
         ## Part 1 - Create all necessary nodes
         output_node = Shading.material_output(material, (2000, 0))
@@ -490,7 +465,6 @@ class Shading:
         subtract_node_2 = Shading.vector_math_node(material, (400, -200))
         normalize_node_2 = Shading.vector_math_node(material, (600, -200))
         normalize_node_1 = Shading.vector_math_node(material, (600, 200))
-        multiply_node = Shading.math_node(material, (1600,0))
         geometry_node = Shading.geometry_node(material, (200,0))
         disk_function_node = Shading.script_node(material, (1200,0))
         phase_function_node = Shading.script_node(material, (1400,0))
@@ -504,17 +478,16 @@ class Shading:
         subtract_node_2.inputs[0].default_value = (3,4,5) # CAM position
         dot_product_node_1.operation = 'DOT_PRODUCT'
         dot_product_node_2.operation = 'DOT_PRODUCT'
-        multiply_node.inputs[1].default_value = albedo
         arcosine_node_1.operation = 'ARCCOSINE'
         arcosine_node_2.operation = 'ARCCOSINE'
         normalize_node_1.operation = 'NORMALIZE'
         normalize_node_2.operation = 'NORMALIZE'
-        multiply_node.operation = 'MULTIPLY'
         disk_function_node.mode = 'EXTERNAL'
         phase_function_node.mode = 'EXTERNAL'
         disk_function_node.filepath = bpy.path.abspath(disk_function_path)
         phase_function_node.filepath = bpy.path.abspath(phase_function_path)
 
+        # Setup scattering function choice in the OSL nodes
         if function == "Lambertian":
             function_id = 1
         elif function == "LommelSeeliger":
@@ -530,6 +503,27 @@ class Shading:
         
         disk_function_node.inputs["function"].default_value = function_id
         phase_function_node.inputs["function"].default_value = function_id
+
+        # Setup albedo input for disk function
+        disk_function_node.inputs["albedo"].default_value = geometric_albedo
+
+        # Setup OSL coefficients (if any)
+        if function != osl_coeffs["scattering_function"]:
+            raise ValueError(
+                f"OSL coefficients provided for {osl_coeffs['scattering_function']}, "
+                f"but shader function is {function}"
+            )
+        if function == "LommelSeeliger":
+            phase_function_node.inputs["p0"].default_value = osl_coeffs["p0"]
+            phase_function_node.inputs["p1"].default_value = osl_coeffs["p1"]
+            phase_function_node.inputs["p2"].default_value = osl_coeffs["p2"]
+            phase_function_node.inputs["p3"].default_value = osl_coeffs["p3"]
+        elif function == "SimplifiedHapke":
+            phase_function_node.inputs["p0"].default_value = osl_coeffs["p0"]
+        elif function == "Hapke":
+            phase_function_node.inputs["p0"].default_value = osl_coeffs["p0"]
+            phase_function_node.inputs["p1"].default_value = osl_coeffs["p1"]
+            phase_function_node.inputs["p2"].default_value = osl_coeffs["p2"]
 
         ## Part 3 - Link nodes toghether
         Shading.link_nodes(material,diffuse_bsdf.outputs["BSDF"],output_node.inputs["Surface"]) # PBSDF to output
@@ -551,11 +545,10 @@ class Shading:
 
         Shading.link_nodes(material,disk_function_node.outputs["Value"],phase_function_node.inputs["DiskFunction"]) # disk_function_node to phase_function_node
         Shading.link_nodes(material,disk_function_node.outputs["Alpha"],phase_function_node.inputs["Alpha"]) # disk_function_node to phase_function_node
-        Shading.link_nodes(material,phase_function_node.outputs["Output"],multiply_node.inputs[0]) # phase_function_node to multiply (albedo)
-        Shading.link_nodes(material,multiply_node.outputs["Value"],diffuse_bsdf.inputs["Color"]) # phase_function_node to multiply (albedo)
+        Shading.link_nodes(material,phase_function_node.outputs["Output"],diffuse_bsdf.inputs["Color"]) # phase_function_node to diffuse BSDF
 
-    def update_osl_shader(material, settings:dict):
-        """Update properties of a OSL shader shader.
+    def update_osl_geometry(material, settings:dict):
+        """Update geometric properties of an OSL shader.
 
         Args:
             material (bpy.data.materials): Material
@@ -564,12 +557,7 @@ class Shading:
         # Update values in the camera and sun positions 
         material.node_tree.nodes["subtract_node_1"].inputs[0].default_value = settings["sun_pos"]
         material.node_tree.nodes["subtract_node_2"].inputs[0].default_value = settings["cam_pos"]
-        # Update values in albedo and scattering function (if available)
-        if "function" in settings:
-            material.node_tree.nodes["phase_function_node"].inputs["function"].default_value = settings["function"]
-        if "albedo" in settings:
-            material.node_tree.nodes["multiply_node"].inputs[1].default_value = settings["albedo"]
-
+       
     def assign_material_to_object(material, body):
         """Assign a material to a body object
 
