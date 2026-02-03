@@ -1,5 +1,15 @@
 ///// Definition of the phase functions /////
 
+// Photometric functions
+//1: Lambertian
+//2: Lommel-Seeliger [Hapke, 1981]
+//3: McEwen [McEwen, 1986]
+//4: SimplifiedHapke [Hapke, 1981]
+//5: Hapke [Hapke, 1981]
+//6: ROLO [Buratti et al., 2011]
+//7: Akimov [Shkuratov et al., 2011]
+//8: Minnaert [Takir et al., 2015]
+
 // --- (1) Lambertian ---
 // No phase function
 
@@ -51,6 +61,63 @@ float Hapke(float alpha, float p0, float p1, float p2)
     return P * B;
 }
 
+// --- (6) ROLO ---
+float Rolo (float alpha, 
+			float p0, 
+			float p1, 
+			float p2, 
+			float p3, 
+			float p4, 
+			float p5, 
+			float p6)
+{
+	
+	float C_0 = p0;
+	float C_1 = p1;
+	float A_0 = p2;
+	float A_1 = p3;
+	float A_2 = p4;
+	float A_3 = p5;
+	float A_4 = p6;
+
+	return C_0 * exp(-C_1 * alpha) + A_0 + A_1 * alpha + A_2 * pow(alpha, 2) + A_3 * pow(alpha, 3) + A_4 * pow(alpha, 4);
+
+}
+
+// --- (7) Akimov ---
+float Akimov (	float alpha, 
+				float p0, 
+				float p1, 
+				float p2, 
+				float p3) 
+{
+	float A_Ak = p0;
+	float beta = p1;
+	float gamma = p2;
+	float delta = p3;
+
+	float exponent = (beta * alpha) + (gamma * pow(alpha, 2)) + (delta * pow(alpha, 3));
+
+	return A_Ak * M_PI * exp(exponent);
+}
+
+// --- (8) Minnaert ---
+float Minnaert (float alpha,
+				float p0, 
+				float p1, 
+				float p2, 
+				float p3) 
+{
+	float A_Min = p0;
+	float beta = p1;
+	float gamma = p2;
+	float delta = p3;
+
+	float exponent = -0.4 * ((beta * alpha) + (gamma * pow(alpha, 2)) + (delta * pow(alpha, 3)));
+
+	return A_Min * M_PI * pow(10, exponent);
+}
+
 ///// Shader /////
 
 shader phaseFunction (
@@ -61,14 +128,16 @@ shader phaseFunction (
 	// Alpha angle (e + i)
 	float Alpha = 0.0,
 
-	// Photometric functions
+	// Photometric function
 	//1: Lambertian
 	//2: Lommel-Seeliger
 	//3: McEwen
-	//4: SimplifiedHapke (Henyey-Greenstein)
+	//4: SimplifiedHapke
 	//5: Hapke
+	//6: ROLO
+	//7: Akimov
+	//8: Minnaert
 
-	// diskFunction output
 	int function = 1,
 
 	// Parameters settings
@@ -77,6 +146,8 @@ shader phaseFunction (
 	float p2 = 0,
 	float p3 = 0,
 	float p4 = 0,
+	float p5 = 0,
+	float p6 = 0,
 
 	// Output
 	output float Output = 0.0,
@@ -101,6 +172,15 @@ shader phaseFunction (
     }
 	else if (function == 5) { 
 		PhaseValue = DiskFunction * Hapke(Alpha, p0, p1, p2);
+    }
+	else if (function == 6) { 
+		PhaseValue = DiskFunction * Rolo(Alpha, p0, p1, p2, p3, p4, p5, p6);
+    }
+	else if (function == 7) { 
+		PhaseValue = DiskFunction * Akimov(Alpha, p0, p1, p2, p3);
+    }
+	else if (function == 8) { 
+		PhaseValue = DiskFunction * Minnaert(Alpha, p0, p1, p2, p3);
     }
     else {
         PhaseValue = 0; // Debug fallback

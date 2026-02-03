@@ -498,6 +498,12 @@ class Shading:
             function_id = 4
         elif function == "Hapke":
             function_id = 5
+        elif function == "ROLO":
+            function_id = 6
+        elif function == "Akimov":
+            function_id = 7
+        elif function == "Minnaert":
+            function_id = 8
         else:
             raise ValueError(f"Unknown scattering function: {function}")
         
@@ -513,17 +519,19 @@ class Shading:
                 f"OSL coefficients provided for {osl_coeffs['scattering_function']}, "
                 f"but shader function is {function}"
             )
-        if function == "LommelSeeliger":
-            phase_function_node.inputs["p0"].default_value = osl_coeffs["p0"]
-            phase_function_node.inputs["p1"].default_value = osl_coeffs["p1"]
-            phase_function_node.inputs["p2"].default_value = osl_coeffs["p2"]
-            phase_function_node.inputs["p3"].default_value = osl_coeffs["p3"]
-        elif function == "SimplifiedHapke":
-            phase_function_node.inputs["p0"].default_value = osl_coeffs["p0"]
-        elif function == "Hapke":
-            phase_function_node.inputs["p0"].default_value = osl_coeffs["p0"]
-            phase_function_node.inputs["p1"].default_value = osl_coeffs["p1"]
-            phase_function_node.inputs["p2"].default_value = osl_coeffs["p2"]
+        
+        PHASE_FUNCTION_PARAMETERS = {
+            "LommelSeeliger":   ("p0", "p1", "p2", "p3"),
+            "SimplifiedHapke":  ("p0",),
+            "Hapke":            ("p0", "p1", "p2"),
+            "ROLO":             ("p0", "p1", "p2", "p3", "p4", "p5", "p6"),
+            "Akimov":           ("p0", "p1", "p2", "p3"),
+            "Minnaert":         ("p0", "p1", "p2", "p3"),
+        }
+        
+        # Assign coefficients to input of the phase function OSL node
+        for p in PHASE_FUNCTION_PARAMETERS[function]:
+            phase_function_node.inputs[p].default_value = osl_coeffs[p]
 
         ## Part 3 - Link nodes toghether
         Shading.link_nodes(material,diffuse_bsdf.outputs["BSDF"],output_node.inputs["Surface"]) # PBSDF to output

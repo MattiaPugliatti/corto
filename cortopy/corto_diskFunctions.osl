@@ -2,10 +2,13 @@
 
 // Photometric functions
 //1: Lambertian
-//2: Lommel-Seeliger
-//3: McEwen
-//4: SimplifiedHapke
-//5: Hapke
+//2: Lommel-Seeliger [Hapke, 1981]
+//3: McEwen [McEwen, 1986]
+//4: SimplifiedHapke [Hapke, 1981]
+//5: Hapke [Hapke, 1981]
+//6: ROLO [Buratti et al., 2011]
+//7: Akimov [Shkuratov et al., 2011]
+//8: Minnaert [Takir et al., 2015]
 
 // --- (1) Lambertian ---
 float Lambertian(float i, float e)
@@ -23,7 +26,7 @@ float LommelSeeliger (float i, float e)
 float McEwen (float i, float e)
 {
 	float alpha = i + e;
-	float beta = exp(-alpha/(60*M_PI/180));
+	float beta = exp(-alpha);
 	float t2 = cos(i) / ( cos(i) + cos(e) );
 	float t1 = cos(i);
 	return (1 - beta)*t1 + beta*t2;
@@ -43,6 +46,39 @@ float Hapke(float i, float e, float a)
     float H_mu0 = (1 + 2*mu0) / (1 + 2*mu0 * sqrt(1 - a));
     float H_mu  = (1 + 2*mu)  / (1 + 2*mu  * sqrt(1 - a));
     return (mu0 / (mu0 + mu)) * H_mu0 * H_mu;
+}
+
+// --- (6) ROLO ---
+float Rolo(float i, float e)
+{
+	return LommelSeeliger(i,e);
+}
+
+// --- (7) Akimov ---
+float Akimov(float i, float e)
+{
+    float alpha = i + e;
+	float l = atan( ( ( cos(i) / cos(e) ) - cos(alpha) ) / sin(alpha) );
+	float cosb = cos(e) / cos(l);
+
+	float t1 = cos( alpha/2 );
+	float t2 = cos( ( M_PI / (M_PI - alpha) ) * ( l - ( alpha / 2 ) ) );
+	float t3 = pow( cosb , ( alpha / ( M_PI - alpha ) ) ) / cos(l);
+	return t1 * t2 * t3;
+}
+
+// --- (8) Minnaert ---
+
+float Minnaert (float i, float e) 
+{
+
+    float k_0 = 5.3e-1;
+    float b = 2.1e-3;
+	float alpha = i + e;
+	float k = k_0 + b * alpha;
+
+	return pow(cos(i), k) * pow( cos(e), (k - 1) );
+
 }
 
 ///// Shader /////
@@ -82,6 +118,15 @@ shader diskFunction(
     }
     else if (function == 5) {
         Value = Hapke(i, e, albedo);
+    }
+    else if (function == 6) {
+        Value =  albedo * Rolo(i, e);
+    }
+    else if (function == 7) {
+        Value =  albedo * Akimov(i, e);
+    }
+    else if (function == 8) {
+        Value =  albedo * Minnaert(i, e);
     }
     else {
         Value = albedo;
