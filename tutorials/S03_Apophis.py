@@ -44,12 +44,15 @@ disk_function_path = os.path.join(os.getcwd(),"cortopy/corto_diskFunctions.osl")
 phase_function_path = os.path.join(os.getcwd(),"cortopy/corto_phaseFunctions.osl")
 
 
-# All coefficients are taken as example from Golish et al. 2021 https://doi.org/10.1016/j.icarus.2020.113724
+# All coefficients are taken as example from Golish et al. 2021 https://doi.org/10.1016/j.icarus.2020.113724. 
+# All coefficients are taken for the pancromatic camera (646nm) but can be easily changed for the other cameras by looking at the tables in the paper.
+# Comment and uncomment the scattering function and coefficients you want to test. 
+
 scattering_function = "Lambertian"
-geometric_albedo = 0.2
+geometric_albedo = 0.045
 
 scattering_function = "McEwen"
-geometric_albedo = 0.2
+geometric_albedo = 0.045
 
 scattering_function = "LommelSeeliger"
 geometric_albedo = 0.2
@@ -57,28 +60,28 @@ p0,p1,p2,p3 = 0.0270, -3.395e-2, 2.577e-4, -1.579e-6 # (A_LS, beta, gamma, delta
 osl_coeffs = {"scattering_function": scattering_function, "p0": p0, "p1": p1, "p2": p2, "p3": p3}
 
 scattering_function = "SimplifiedHapke"
-geometric_albedo = 0.2
-p0 = 0.156 # (g) random coefficient
+geometric_albedo = 0.045
+p0 = 0.156 # (g) random coefficient!
 osl_coeffs = {"scattering_function": scattering_function, "p0": p0}
 
 scattering_function = "Hapke"
-geometric_albedo = 0.2
-p0,p1,p2 = 0.156, 2, 0.2 # (g, B0, h) random coefficients
+geometric_albedo = 0.045
+p0,p1,p2 = 0.156, 2, 0.2 # (g, B0, h) random coefficients!
 osl_coeffs = {"scattering_function": scattering_function, "p0": p0, "p1": p1, "p2": p2}
 
 scattering_function = "ROLO"
-geometric_albedo = 0.2
-p0,p1,p2,p3,p4,p5,p6 = 0.01, 2.72e-1, 2.72e-2, 2.72e-3, 2.72e-4, 2.72e-5, 2.72e-7 # (C0,C1, A0, A1, A2, A3, A4) random coefficients
+geometric_albedo = 0.045
+p0,p1,p2,p3,p4,p5,p6 = 0.0101, 2.729e-1, 7.936e-2, -2.191e-3, 3.691e-5, -3.854e-7, 1.671e-9 # (C0,C1, A0, A1, A2, A3, A4)
 osl_coeffs = {"scattering_function": scattering_function, "p0": p0, "p1": p1, "p2": p2, "p3": p3, "p4": p4, "p5": p5, "p6": p6}
 
 scattering_function = "Akimov"
-geometric_albedo = 0.2
-p0,p1,p2,p3 = 0.0136,  -3.38e-2, 3.025e-4, -1.898e-6 # (A_AK, beta, gamma, delta) random coefficients
+geometric_albedo = 0.043
+p0,p1,p2,p3 = 0.0136,  -3.38e-2, 3.025e-4, -1.898e-6 # (A_AK, beta, gamma, delta) 
 osl_coeffs = {"scattering_function": scattering_function, "p0": p0, "p1": p1, "p2": p2, "p3": p3}
 
 scattering_function = "Minnaert"
-geometric_albedo = 0.2
-p0,p1,p2,p3 = 0.0136,  -3.38e-2, 3.025e-4, -1.898e-6 # (A_min, beta, gamma, delta) random coefficients
+geometric_albedo = 0.044
+p0,p1,p2,p3 = 0.0139,  3.807e-2, -3.408e-4, 1.977e-6 # (A_min, beta, gamma, delta)
 osl_coeffs = {"scattering_function": scattering_function, "p0": p0, "p1": p1, "p2": p2, "p3": p3}
 
 material = corto.Shading.create_new_material('Apophis with OSL')
