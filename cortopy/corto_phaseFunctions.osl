@@ -19,11 +19,26 @@ float LommelSeeliger (float alpha, float A_LS, float beta, float gamma, float de
 float SimplifiedHapke (float alpha, float g)
 {
 	// g is the asymmetry factor: 
-	// g = 0 : isotropic scattering
-	// g > 0 : forward scattering
-	// g < 0 : backward scattering
+	// 	g = 0 : isotropic scattering
+	// 	g > 0 : forward scattering
+	// 	g < 0 : backward scattering
 	
     return (1 - g*g) / pow(1 + 2*g*cos(alpha) + g*g, 1.5);
+}
+
+// --- (5) Hapke ---
+float Hapke(float alpha, float g, float B0, float h)
+{
+	// g is the asymmetry factor: 
+	// 	g = 0 : isotropic scattering
+	// 	g > 0 : forward scattering
+	// 	g < 0 : backward scattering
+	// B0 is the amplitude of the opposition surge
+	// h is the angular width of the surge
+
+    float P = (1 - g*g) / pow(1 + 2*g*cos(alpha) + g*g, 1.5);
+    float B = B0 / (1 + tan(alpha/2)/h);
+    return P * B;
 }
 
 ///// Shader /////
@@ -41,6 +56,7 @@ shader phaseFunction (
 	//2: Lommel-Seeliger
 	//3: McEwen
 	//4: SimplifiedHapke (Henyey-Greenstein)
+	//5: Hapke
 
 	int function = 1,
 
@@ -64,6 +80,9 @@ shader phaseFunction (
     }
 	else if (function == 4) { 
 		PhaseValue = DiskFunction * SimplifiedHapke(Alpha, 0);
+    }
+	else if (function == 5) { 
+		PhaseValue = DiskFunction * Hapke(Alpha, 0, 1, 0.1);
     }
     else {
         PhaseValue = DiskFunction; // fallback

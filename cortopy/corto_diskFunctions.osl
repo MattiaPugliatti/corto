@@ -34,6 +34,16 @@ float SimplifiedHapke (float i, float e)
 	return LommelSeeliger(i,e);
 }
 
+// --- (5) Hapke ---
+float Hapke(float i, float e, float omega)
+{
+    float mu0 = cos(i);
+    float mu  = cos(e);
+    float H_mu0 = (1 + 2*mu0) / (1 + 2*mu0 * sqrt(1 - omega));
+    float H_mu  = (1 + 2*mu)  / (1 + 2*mu  * sqrt(1 - ß));
+    return (mu0 / (mu0 + mu)) * H_mu0 * H_mu;
+}
+
 ///// Shader /////
 
 shader diskFunction(
@@ -65,6 +75,9 @@ shader diskFunction(
     }
     else if (function == 4) {
         Value = SimplifiedHapke(i, e);
+    }
+    else if (function == 5) {
+        Value = Hapke(i, e, 0.1);
     }
     else {
         Value = 1.0;

@@ -15,6 +15,8 @@ sys.path.append(os.getcwd())
 import cortopy as corto
 import numpy as np
 
+#TODO: move albedo from Blender to OSL shader input of the disk function, so I can use it in Hapke
+#TODO: Choose a strategy for the extra parameters in Hapke and in general for any coefficients we may want to have as input
 ## Clean all existing/Default objects in the scene 
 corto.Utils.clean_scene()
 
@@ -48,6 +50,7 @@ scattering_function = "Lambertian"
 scattering_function = "LommelSeeliger"
 scattering_function = "McEwen"
 scattering_function = "SimplifiedHapke" #TODO: add g parameter to the OSL shader and generalize this as shader settings (needed for phase functions)
+scattering_function = "Hapke" #TODO: add g parameter to the OSL shader and generalize this as shader settings (needed for phase functions)
 
 material = corto.Shading.create_new_material('Apophis with OSL')
 corto.Shading.create_osl_shader(material, scattering_function, albedo, disk_function_path, phase_function_path)

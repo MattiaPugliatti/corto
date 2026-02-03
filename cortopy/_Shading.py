@@ -523,6 +523,8 @@ class Shading:
             function_id = 3
         elif function == "SimplifiedHapke":
             function_id = 4
+        elif function == "Hapke":
+            function_id = 5
         else:
             raise ValueError(f"Unknown scattering function: {function}")
         
