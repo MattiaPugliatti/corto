@@ -57,7 +57,7 @@ geometric_albedo = 0.045
 osl_coeffs = {"scattering_function": scattering_function}
 
 scattering_function = "LommelSeeliger"
-geometric_albedo = 0.2
+geometric_albedo = 0.042
 p0,p1,p2,p3 = 0.0270, -3.395e-2, 2.577e-4, -1.579e-6 # (A_LS, beta, gamma, delta)
 osl_coeffs = {"scattering_function": scattering_function, "p0": p0, "p1": p1, "p2": p2, "p3": p3}
 
