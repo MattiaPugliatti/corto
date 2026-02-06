@@ -1,5 +1,5 @@
 """
-Tutorial script to render images of a sphere with different BRDF models. 
+Tutorial script to render images of a sphere with different shaders. 
 
 To run this tutorial, you first need to put data in the input folder. 
 You can download the tutorial data from:
@@ -19,7 +19,7 @@ corto.Utils.clean_scene()
 ### (1) DEFINE INPUT ### 
 scenario_name = "S00_Calibration" # Name of the scenario folder
 scene_name = "scene_CYCLES.json" # name of the scene input, fast rendering setup
-geometry_name = "geometry.json" # name of the geometry input
+geometry_name = "geometry_calib.json" # name of the geometry input
 body_name = "Sphere_HiRes.obj" # name of the body input
 
 # Load inputs and settings into the State object
@@ -92,7 +92,7 @@ body.set_scale(np.array([0.1, 0.1, 0.1])) # adjust body scale for better test re
 
 osl_geometry_settings = {}
 
-n_img = 1 # Render the first "n_img" images
+n_img = 25 # Render the first "n_img" images
 for idx in range(0,n_img):
     ENV.PositionAll(State,index=idx)
     _, pos_cam, pos_sun = ENV.get_positions() # TODO: add a check on pos_bod such that the vectors are all body-referenced for the OSL shader
