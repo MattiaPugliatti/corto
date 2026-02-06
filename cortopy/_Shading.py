@@ -521,6 +521,8 @@ class Shading:
             )
         
         PHASE_FUNCTION_PARAMETERS = {
+            "Lambertian":       (),
+            "McEwen":           (),
             "LommelSeeliger":   ("p0", "p1", "p2", "p3"),
             "SimplifiedHapke":  ("p0",),
             "Hapke":            ("p0", "p1", "p2"),
