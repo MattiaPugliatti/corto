@@ -6,10 +6,18 @@ import matplotlib.pyplot as plt
 # ==============================
 # CONFIG
 # ==============================
+BASE = os.getcwd()
 
-folder_lamb = os.path.join(os.getcwd(), "input/SphereCalib/S00_Calibration_Lambertian/img")
-folder_mcewen = os.path.join(os.getcwd(), "input/SphereCalib/S00_Calibration_McEwen/img")
-folder_LS = os.path.join(os.getcwd(), "input/SphereCalib/S00_Calibration_LommelSeeliger/img")
+CALIB_DATA = {
+    "Lambertian": os.path.join(BASE, "input/SphereCalib/S00_Calibration_Lambertian/img"),
+    "McEwen": os.path.join(BASE, "input/SphereCalib/S00_Calibration_McEwen/img"),
+    "Akimov": os.path.join(BASE, "input/SphereCalib/S00_Calibration_Akimov/img"),
+    "LommelSeeliger": os.path.join(BASE, "input/SphereCalib/S00_Calibration_LommelSeeliger/img"),
+    "Minnaert": os.path.join(BASE, "input/SphereCalib/S00_Calibration_Minnaert/img"),
+    "ROLO": os.path.join(BASE, "input/SphereCalib/S00_Calibration_ROLO/img"),
+    "SimplifiedHapke": os.path.join(BASE, "input/SphereCalib/S00_Calibration_SimplifiedHapke/img"),
+    "Hapke": os.path.join(BASE, "input/SphereCalib/S00_Calibration_Hapke/img"),
+}
 
 N_EXPECTED = 25
 phase_angles = np.linspace(0, 120, N_EXPECTED) # Expected phase angles for the rendered images (check the scenario settings)
@@ -86,23 +94,23 @@ def collect_metrics(images):
 # LOOP to collect metrics
 # ==============================
 
-means_all = []
-peaks_all = []
-fluxes_ad_all = []
-bright_means_all = []
-profile_all = []
+RESULTS = {}
 
-folders_list = [folder_lamb, folder_mcewen, folder_LS]
-scattering_models = ["Lambertian", "McEwen", "LommelSeeliger"]
+for model, folder in CALIB_DATA.items():
+    print(f"Processing {model}")
+    print("Path:", folder)
 
-for folder in folders_list:
     images = load_images(folder)
+
     means, peaks, fluxes_ad, bright_means, profile = collect_metrics(images)
-    means_all.append(means)
-    peaks_all.append(peaks)
-    fluxes_ad_all.append(fluxes_ad)
-    bright_means_all.append(bright_means)
-    profile_all.append(profile)
+
+    RESULTS[model] = {
+        "means": means,
+        "peaks": peaks,
+        "flux": fluxes_ad,
+        "bright": bright_means,
+        "profile": profile
+    }
 
 # ==============================
 # PLOTS
@@ -110,20 +118,20 @@ for folder in folders_list:
 
 plt.figure()
 plt.subplot(3,1,1)
-for i, model in enumerate(scattering_models):
-    plt.plot(phase_angles, means_all[i], label=f"({model})")
+for model, data in RESULTS.items():
+    plt.plot(phase_angles, data["means"], label=model)
 plt.grid('minor')
 plt.legend()
 plt.title("Mean Radiance over Phase Angle")
 plt.subplot(3,1,2) 
-for i, model in enumerate(scattering_models):
-    plt.plot(phase_angles, peaks_all[i], label=f"({model})")
+for model, data in RESULTS.items():
+    plt.semilogy(phase_angles, data["peaks"], label=model)
 plt.grid('minor')
 plt.legend()
 plt.title("Peak Radiance over Phase Angle")
 plt.subplot(3,1,3)
-for i, model in enumerate(scattering_models):
-    plt.plot(phase_angles, fluxes_ad_all[i], label=f"({model})")
+for model, data in RESULTS.items():
+    plt.plot(phase_angles, data["flux"], label=model)
 plt.grid('minor')
 plt.legend()
 plt.title("Normalized Flux over Phase Angle")
@@ -131,7 +139,3 @@ plt.xlabel("Phase Angle [deg]")
 plt.tight_layout()
 
 plt.show()
-
-# ==============================
-# SUMMARY OUTPUT
-# ==============================

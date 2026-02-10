@@ -45,9 +45,9 @@ phase_function_path = os.path.join(os.getcwd(),"cortopy/corto_phaseFunctions.osl
 # All coefficients are taken for the pancromatic camera (646nm) but can be easily changed for the other cameras by looking at the tables in the paper.
 # Comment and uncomment the scattering function and coefficients you want to test. 
 
-# scattering_function = "Lambertian"
-# geometric_albedo = 0.045
-# osl_coeffs = {"scattering_function": scattering_function}
+scattering_function = "Lambertian"
+geometric_albedo = 0.045
+osl_coeffs = {"scattering_function": scattering_function}
 
 # scattering_function = "McEwen"
 # geometric_albedo = 0.045
@@ -68,10 +68,10 @@ phase_function_path = os.path.join(os.getcwd(),"cortopy/corto_phaseFunctions.osl
 # p0,p1,p2 = 0.156, 2, 0.2 # (g, B0, h) random coefficients!
 # osl_coeffs = {"scattering_function": scattering_function, "p0": p0, "p1": p1, "p2": p2}
 
-scattering_function = "ROLO"
-geometric_albedo = 0.045
-p0,p1,p2,p3,p4,p5,p6 = 0.0101, 2.729e-1, 7.936e-2, -2.191e-3, 3.691e-5, -3.854e-7, 1.671e-9 # (C0,C1, A0, A1, A2, A3, A4)
-osl_coeffs = {"scattering_function": scattering_function, "p0": p0, "p1": p1, "p2": p2, "p3": p3, "p4": p4, "p5": p5, "p6": p6}
+# scattering_function = "ROLO"
+# geometric_albedo = 0.045
+# p0,p1,p2,p3,p4,p5,p6 = 0.0101, 2.729e-1, 7.936e-2, -2.191e-3, 3.691e-5, -3.854e-7, 1.671e-9 # (C0,C1, A0, A1, A2, A3, A4)
+# osl_coeffs = {"scattering_function": scattering_function, "p0": p0, "p1": p1, "p2": p2, "p3": p3, "p4": p4, "p5": p5, "p6": p6}
 
 # scattering_function = "Akimov"
 # geometric_albedo = 0.043
