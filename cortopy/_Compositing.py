@@ -296,3 +296,91 @@ class Compositing:
         Compositing.link_nodes(tree, render_node.outputs["IndexOB"], maskID_node.inputs["ID value"])
         Compositing.link_nodes(tree, maskID_node.outputs["Alpha"], output_node_2.inputs[0])
 
+    def create_lunar_tile_labels(tree,render_node, state:State):
+        """method to create a lunar tile tree
+
+        Args:
+            tree (Compositing.tree): tree
+            render_node (Compositing.node): render node to link 
+            state (corto.State): corto state, for path handling
+        """
+
+        # Step 2: Enable UV Pass in Rendering
+        # Enable UV pass on the active view layer
+        bpy.context.view_layer.use_pass_uv = True  # Ensure UV pass is enabled for the active view layer
+        Rendering.activate_depth_pass()
+
+        # Step 3: Add Crater Mask Input Node
+        latlon_mask_node = Compositing.create_node("CompositorNodeImage", tree, (-400, 350))
+        latlon_mask_node.image = bpy.data.images.load(state.path["LatLonMask_path"])  # Load crater mask image
+
+        # Step 3: Add Crater Mask Input Node
+        crater_mask_node = Compositing.create_node("CompositorNodeImage", tree, (-400, 0))
+        crater_mask_node.image = bpy.data.images.load(state.path["CraterMask_path"])  # Load crater mask image
+        #crater_mask_node.colorspace_settings.name = 'Non-Color'
+
+        value_node1 = Compositing.create_node("CompositorNodeValue", tree, (-400, -400))
+        value_node1.outputs[0].default_value = 20
+
+        value_node2 = Compositing.create_node("CompositorNodeValue", tree, (-400, -500))
+
+        divide_node = Compositing.math_node(tree, (-250,-350))
+        divide_node.operation = 'DIVIDE'
+
+        value_node3 = Compositing.create_node("CompositorNodeValue", tree, (-250, -500))
+        value_node3.outputs[0].default_value = 0.01
+
+        multiply_node = Compositing.math_node(tree, (-50,-400))
+        multiply_node.operation = 'MULTIPLY'
+
+        # Step 4: Add Map UV Node
+        map_uv_node = Compositing.create_node("CompositorNodeMapUV", tree, (-200, 0))
+        map_uv_node2 = Compositing.create_node("CompositorNodeMapUV", tree, (-200, 350))
+        map_uv_node2.filter_type = 'NEAREST'
+
+        compare_node = Compositing.math_node(tree, (-50,200))
+        compare_node.operation = 'GREATER_THAN'
+        #compare_node.inputs[1].default_value = 0.01
+
+        # Step 5: Add Map to mask
+        add_node = Compositing.create_node("CompositorNodeMixRGB", tree, (100, 200))
+        add_node.blend_type = 'ADD'
+
+        # Step 6: Add File Output Node
+        output_node = Compositing.file_output_node(tree, (400, 0))
+        output_node.format.color_mode = 'BW' 
+        output_node.format.color_depth = '8'  # Use 8-bit 
+        output_node.base_path = os.path.join(state.path["output_path"], "crater_masks_png")
+        output_node.file_slots[0].path = "######"
+
+        output_node2 = Compositing.file_output_node(tree, (400, -200))
+        output_node2.format.file_format = 'OPEN_EXR'  # Set file format to OpenEXR
+        output_node2.format.color_mode = 'RGBA'  # Use Black & White (single channel)
+        output_node2.format.color_depth = '32'  # Use 32-bit float precision
+        output_node2.base_path = os.path.join(state.path["output_path"], "depth_exr")
+        output_node2.file_slots[0].path = "######"  # Filename pattern
+
+        output_node3 = Compositing.file_output_node(tree, (400, 200))
+        output_node3.format.file_format = 'OPEN_EXR'  # Set file format to OpenEXR
+        output_node3.format.color_mode = 'RGBA'  # Use Black & White (single channel)
+        output_node3.format.color_depth = '32'  # Use 32-bit float precision
+        output_node3.base_path = os.path.join(state.path["output_path"], "lat_lon_exr")
+        output_node3.file_slots[0].path = "######"  # Filename pattern
+
+        # Step 7: Link Nodes
+        Compositing.link_nodes(tree, render_node.outputs["UV"], map_uv_node.inputs["UV"])  # Link UV output to Map UV
+        Compositing.link_nodes(tree, crater_mask_node.outputs["Image"], map_uv_node.inputs["Image"])  # Link crater mask to Map UV
+        Compositing.link_nodes(tree, map_uv_node.outputs["Image"], compare_node.inputs[0])  
+        Compositing.link_nodes(tree, value_node1.outputs[0], divide_node.inputs[0])
+        Compositing.link_nodes(tree, value_node2.outputs[0], divide_node.inputs[1])
+        Compositing.link_nodes(tree, divide_node.outputs[0], multiply_node.inputs[0])
+        Compositing.link_nodes(tree, value_node3.outputs[0], multiply_node.inputs[1])
+        Compositing.link_nodes(tree, multiply_node.outputs[0], compare_node.inputs[1])
+        Compositing.link_nodes(tree, compare_node.outputs["Value"], add_node.inputs[1])  
+        Compositing.link_nodes(tree, render_node.outputs["Image"], add_node.inputs[2])
+        Compositing.link_nodes(tree, add_node.outputs["Image"], output_node.inputs[0])
+        Compositing.link_nodes(tree, render_node.outputs["Depth"], output_node2.inputs[0])
+        Compositing.link_nodes(tree, render_node.outputs["UV"], map_uv_node2.inputs["UV"])  # Link UV output to Map UV
+        Compositing.link_nodes(tree, latlon_mask_node.outputs["Image"], map_uv_node2.inputs["Image"])  # Link crater mask to Map UV
+        Compositing.link_nodes(tree, map_uv_node2.outputs["Image"], output_node3.inputs[0])     
+

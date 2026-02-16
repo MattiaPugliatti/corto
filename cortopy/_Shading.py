@@ -430,12 +430,44 @@ class Shading:
         # Displace props
         displacement_node.inputs["Midlevel"].default_value = settings["displacement"]["clouds_midlevel"]
         displacement_node.inputs["Scale"].default_value =settings["displacement"]["clouds_scale"]
-        
+
+        ## Part 3 - Link nodes toghether
         Shading.link_nodes(material,clouds_color.outputs["Color"],displacement_node.inputs["Height"])
         Shading.link_nodes(material,subsurface_shader.outputs["BSSRDF"],mix_shader.inputs[2])
         Shading.link_nodes(material,transparent_shader.outputs["BSDF"],mix_shader.inputs[1])
         Shading.link_nodes(material,clouds_color.outputs["Color"],mix_shader.inputs["Fac"])
         Shading.link_nodes(material,mix_shader.outputs["Shader"],output_node.inputs["Surface"])
+        Shading.link_nodes(material,displacement_node.outputs["Displacement"],output_node.inputs["Displacement"])
+
+    def create_lunar_shader(material, 
+                            state:State):
+        ## Part 1 - Create all necessary nodes
+        mix_shader1_node = Shading.mix_shader_node(material, location = (800,-400))
+        mix_shader2_node = Shading.mix_shader_node(material, location = (1200,-400))
+        output_node = Shading.material_output(material, location = (2000, -400))
+        displacement_node = Shading.displacement_node(material, location = (1200, -600))
+        texture_basecolor_node = Shading.texture_node(material, state.path["texture_path"], colorspace_name='sRGB', location=(0, 200))
+        texture_dem_node = Shading.texture_node(material, state.path["DEM_path"], colorspace_name='Non-Color', location=(800, -200))
+        diffuse_BSDF_node = Shading.diffuse_BSDF(material, location = (400, -200))
+        principled_BSDF_node = Shading.principled_BSDF(material, location=(400, -600))
+        ## Part 2 - Setup nodes properties
+        texture_basecolor_node.interpolation = 'Cubic'
+        texture_dem_node.interpolation = 'Cubic'
+        diffuse_BSDF_node.inputs[1].default_value = 0.95
+        mix_shader1_node.inputs[0].default_value = 0.65
+        principled_BSDF_node.inputs['Roughness'].default_value = 0.25
+        mix_shader2_node.inputs[0].default_value = 0.25
+        displacement_node.inputs["Midlevel"].default_value = 0.5
+        displacement_node.inputs["Scale"].default_value = 3.5
+
+        ## Part 3 - Link nodes toghether
+        Shading.link_nodes(material,texture_basecolor_node.outputs["Color"],diffuse_BSDF_node.inputs["Color"])
+        Shading.link_nodes(material,texture_basecolor_node.outputs["Color"],principled_BSDF_node.inputs["Base Color"])
+        Shading.link_nodes(material,diffuse_BSDF_node.outputs["BSDF"],mix_shader1_node.inputs[1])
+        Shading.link_nodes(material,principled_BSDF_node.outputs["BSDF"],mix_shader1_node.inputs[2])
+        Shading.link_nodes(material,mix_shader1_node.outputs["Shader"],mix_shader2_node.inputs[2])
+        Shading.link_nodes(material,mix_shader2_node.outputs["Shader"],output_node.inputs["Surface"])
+        Shading.link_nodes(material,texture_dem_node.outputs["Color"],displacement_node.inputs["Height"])
         Shading.link_nodes(material,displacement_node.outputs["Displacement"],output_node.inputs["Displacement"])
 
     def create_osl_shader(
@@ -996,7 +1028,6 @@ class Shading:
                 uv_layer[loop_index].uv = (uv[0], uv[1])
         print(f"UV data imported to {body.name}")
 
-# --- Auto-generate convenience classmethods like Shading.principled_bsdf(...), Shading.texture_noise(...)
 
 def _make_helper(alias):
     def _helper(cls, material, location=(0, 0)):
