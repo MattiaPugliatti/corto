@@ -40,7 +40,7 @@ rendering_engine = corto.Rendering(State.properties_rendering)
 ENV = corto.Environment(cam, body, sun, rendering_engine)
 
 ### (3) MATERIAL PROPERTIES ###
-material = corto.Shading.load_material('S05_Didymos_material', State)
+material = corto.Shading.load_material_nodetree('S05_Didymos_material', State)
 corto.Shading.assign_material_to_object(material, body)
 
 ### (4) COMPOSITING PROPERTIES ###

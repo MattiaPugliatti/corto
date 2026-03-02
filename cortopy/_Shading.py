@@ -8,7 +8,6 @@ import os
 from cortopy import State
 from cortopy import Body
 
-
 class Shading:
     """
     Shading class
@@ -927,71 +926,139 @@ class Shading:
         bpy.ops.object.mode_set(mode="OBJECT")
         print("UV Unwrapping and texture application completed!")
 
-    def load_material(material_name: str, state: State):
-        """This method load a shading tree serialized in a .json format and stores it into a new material
-        Args:
-            material_name (str): name of the material 
-            state (corto.State): State object, for path handling
+    @staticmethod
+    def save_material_nodetree(material: bpy.types.Material, output_path: str):
+        """Serialize and save a material node tree with all important properties"""
+        if not material or not material.use_nodes:
+            raise ValueError("Material must exist and use nodes")
 
-        Returns:
-            _type_: _description_
-        """
-        # TODO: add error check on existence of path in state.path[] dict
-
-        # Path to the JSON file that contains the node group data
-        json_path = state.path["material_name"]
-        # Load the JSON data
-        with open(json_path, "r") as json_file:
-            node_data = json.load(json_file)
-
-        # Create a new material (or use an existing one)
-        if material_name not in bpy.data.materials:
-            material = bpy.data.materials.new(name=material_name)
-        else:
-            material = bpy.data.materials[material_name]
-
-        material.use_nodes = True
         node_tree = material.node_tree
 
-        # Clear any existing nodes (if any)
+        def convert_value(value):
+            import bpy
+            if isinstance(value, bpy.types.bpy_prop_array):
+                return list(value)
+            if hasattr(value, "r"):  # Blender Color
+                return [value.r, value.g, value.b, getattr(value, "a", 1.0)]
+            if isinstance(value, bpy.types.Image):
+                return value.filepath  # store image path
+            return value
+
+        def serialize_node(node):
+            """Serialize a node including its color, inputs, outputs, and properties."""
+            data = {
+                "name": node.name,
+                "type": node.bl_idname,
+                "location": list(node.location),
+                "inputs": {},
+                "outputs": {},
+                "properties": {}
+            }
+
+            # Inputs
+            for inp in node.inputs:
+                if hasattr(inp, "default_value"):
+                    data["inputs"][inp.name] = convert_value(inp.default_value)
+
+            # Outputs
+            for out in node.outputs:
+                if hasattr(out, "default_value"):
+                    data["outputs"][out.name] = convert_value(out.default_value)
+
+            # Node properties (like color, custom floats, etc.)
+            for prop_name in node.bl_rna.properties.keys():
+                if prop_name in {"rna_type", "name", "location"}:
+                    continue  # skip built-in
+                try:
+                    val = getattr(node, prop_name)
+                    data["properties"][prop_name] = convert_value(val)
+                except Exception:
+                    pass  # some props are read-only or complex
+
+            return data
+
+        def serialize_link(link):
+            return {
+                "from_node": link.from_node.name,
+                "from_socket": link.from_socket.name,
+                "to_node": link.to_node.name,
+                "to_socket": link.to_socket.name
+            }
+
+        node_data = {
+            "material_name": material.name,
+            "nodes": [serialize_node(n) for n in node_tree.nodes],
+            "links": [serialize_link(l) for l in node_tree.links]
+        }
+
+        with open(output_path, "w") as f:
+            json.dump(node_data, f, indent=4)
+
+        print(f"Saved material '{material.name}' to {output_path}")
+
+    @staticmethod
+    def load_material_nodetree(material_name: str, state: State):
+        json_path = state.path['material_name']
+        """Load a material from a JSON file with nodes and links"""
+        if not os.path.exists(json_path):
+            raise FileNotFoundError(f"{json_path} does not exist")
+
+        with open(json_path, "r") as f:
+            node_data = json.load(f)
+
+        if material_name in bpy.data.materials:
+            material = bpy.data.materials[material_name]
+        else:
+            material = bpy.data.materials.new(material_name)
+        material.use_nodes = True
+        node_tree = material.node_tree
         nodes = node_tree.nodes
         nodes.clear()
-        # Dictionary to hold the created nodes by their names for linking purposes
         node_map = {}
 
-        # Function to recreate nodes from JSON data
-        def create_node(node_info):
-            # Create a new node in the node tree
-            new_node = node_tree.nodes.new(type=node_info["type"])
-            new_node.name = node_info["name"]
-            new_node.location = node_info["location"]
+        # Recreate nodes
+        for n_data in node_data["nodes"]:
+            node = nodes.new(type=n_data["type"])
+            node.name = n_data["name"]
+            node.location = n_data["location"]
+
             # Restore inputs
-            for input_name, input_value in node_info["inputs"].items():
-                if input_name in new_node.inputs and input_value is not None:
-                    new_node.inputs[input_name].default_value = input_value
-            # Add the node to the node_map for future linking
-            node_map[new_node.name] = new_node
+            for inp_name, val in n_data["inputs"].items():
+                if inp_name in node.inputs and val is not None:
+                    try:
+                        node.inputs[inp_name].default_value = val
+                    except Exception:
+                        pass
 
-        # Recreate all nodes from the JSON data
-        for node_info in node_data["nodes"]:
-            create_node(node_info)
+            # Restore special properties
+            props = n_data.get("properties", {})
+            if "image_path" in props:
+                image_path = props["image_path"]
+                if os.path.exists(image_path):
+                    image = bpy.data.images.load(image_path)
+                    node.image = image
+            if "color" in props:
+                node.color = props["color"]
 
-        # Function to recreate links between nodes
-        def create_link(link_info):
-            from_node = node_map[link_info["from_node"]]
-            to_node = node_map[link_info["to_node"]]
-            from_socket = from_node.outputs.get(link_info["from_socket"])
-            to_socket = to_node.inputs.get(link_info["to_socket"])
+            for prop_name, val in props.items():
+                if prop_name not in {"image_path", "image_name", "color"}:
+                    try:
+                        setattr(node, prop_name, val)
+                    except Exception:
+                        pass
+
+            node_map[node.name] = node
+
+        # Recreate links
+        for l_data in node_data["links"]:
+            from_node = node_map[l_data["from_node"]]
+            to_node = node_map[l_data["to_node"]]
+            from_socket = from_node.outputs.get(l_data["from_socket"])
+            to_socket = to_node.inputs.get(l_data["to_socket"])
             if from_socket and to_socket:
                 node_tree.links.new(from_socket, to_socket)
 
-        # Recreate all links from the JSON data
-        for link_info in node_data["links"]:
-            create_link(link_info)
-
-        print(
-            f"Shading tree successfully imported into the material '{material_name}'."
-        )
+        print(f"Loaded material '{material_name}' from {json_path}")
         return material
 
     def load_uv_data(body: Body, state: State, id_body: int = None):
@@ -1027,7 +1094,6 @@ class Shading:
             for loop_index, uv in zip(poly.loop_indices, poly_uvs):
                 uv_layer[loop_index].uv = (uv[0], uv[1])
         print(f"UV data imported to {body.name}")
-
 
 def _make_helper(alias):
     def _helper(cls, material, location=(0, 0)):
