@@ -31,6 +31,8 @@ class Shading:
         "mix_node": "ShaderNodeMix",
         "geometry_node": "ShaderNodeNewGeometry",
         "script_node": "ShaderNodeScript",
+        "combine_XYZ_node":"ShaderNodeCombineXYZ",
+
         
         # Shaders
         "diffuse_BSDF": "ShaderNodeBsdfDiffuse",
@@ -43,6 +45,9 @@ class Shading:
 
         # Outputs
         "material_output": "ShaderNodeOutputMaterial",
+
+        # Groups
+        "group_node": "ShaderNodeGroup"
     }
 
     # *************************************************************************
@@ -439,7 +444,27 @@ class Shading:
         Shading.link_nodes(material,displacement_node.outputs["Displacement"],output_node.inputs["Displacement"])
 
     def create_lunar_shader(material, 
-                            state:State):
+                            state:State,
+                            function: str, 
+                            geometric_albedo: float,
+                            disk_function_path: str, 
+                            phase_function_path: str,
+                            osl_coeffs: dict = None,
+                            ):
+        """Generate a shader with OSL
+
+        TODO: add comments and docstring
+
+        """
+
+        node_group = Shading.create_osl_group(
+            function, 
+            geometric_albedo,
+            disk_function_path, 
+            phase_function_path,
+            osl_coeffs,
+        )
+        
         ## Part 1 - Create all necessary nodes
         mix_shader1_node = Shading.mix_shader_node(material, location = (800,-400))
         mix_shader2_node = Shading.mix_shader_node(material, location = (1200,-400))
@@ -447,9 +472,11 @@ class Shading:
         displacement_node = Shading.displacement_node(material, location = (1200, -600))
         texture_basecolor_node = Shading.texture_node(material, state.path["texture_path"], colorspace_name='sRGB', location=(0, 200))
         texture_dem_node = Shading.texture_node(material, state.path["DEM_path"], colorspace_name='Non-Color', location=(800, -200))
+        group_node = Shading.group_node(material, (1000,0))
         diffuse_BSDF_node = Shading.diffuse_BSDF(material, location = (400, -200))
         principled_BSDF_node = Shading.principled_BSDF(material, location=(400, -600))
         ## Part 2 - Setup nodes properties
+        group_node.node_tree = node_group
         texture_basecolor_node.interpolation = 'Cubic'
         texture_dem_node.interpolation = 'Cubic'
         diffuse_BSDF_node.inputs[1].default_value = 0.95
@@ -458,147 +485,17 @@ class Shading:
         mix_shader2_node.inputs[0].default_value = 0.25
         displacement_node.inputs["Midlevel"].default_value = 0.5
         displacement_node.inputs["Scale"].default_value = 3.5
-
         ## Part 3 - Link nodes toghether
         Shading.link_nodes(material,texture_basecolor_node.outputs["Color"],diffuse_BSDF_node.inputs["Color"])
         Shading.link_nodes(material,texture_basecolor_node.outputs["Color"],principled_BSDF_node.inputs["Base Color"])
         Shading.link_nodes(material,diffuse_BSDF_node.outputs["BSDF"],mix_shader1_node.inputs[1])
         Shading.link_nodes(material,principled_BSDF_node.outputs["BSDF"],mix_shader1_node.inputs[2])
+        Shading.link_nodes(material,group_node.outputs["Shader"], mix_shader2_node.inputs[1])
         Shading.link_nodes(material,mix_shader1_node.outputs["Shader"],mix_shader2_node.inputs[2])
         Shading.link_nodes(material,mix_shader2_node.outputs["Shader"],output_node.inputs["Surface"])
         Shading.link_nodes(material,texture_dem_node.outputs["Color"],displacement_node.inputs["Height"])
         Shading.link_nodes(material,displacement_node.outputs["Displacement"],output_node.inputs["Displacement"])
 
-    def create_osl_shader(
-        material,
-        function: str, 
-        geometric_albedo: float,
-        disk_function_path: str, 
-        phase_function_path: str,
-        osl_coeffs: dict = None,
-    ):
-        """Generate a shader with OSL
-
-        Args:
-            material (bpy.data.materials): material 
-
-        """
-        bpy.context.scene.render.engine = 'CYCLES'
-        bpy.context.scene.cycles.shading_system = True  # Enable OSL
-
-        ## Part 1 - Create all necessary nodes
-        output_node = Shading.material_output(material, (2000, 0))
-        dot_product_node_1 =  Shading.vector_math_node(material, (800, +200))
-        dot_product_node_2 =  Shading.vector_math_node(material, (800, -200))
-        arcosine_node_1 = Shading.math_node(material, (1000, +200))
-        arcosine_node_2 = Shading.math_node(material, (1000, -200))
-        subtract_node_1 = Shading.vector_math_node(material, (400, 200))
-        subtract_node_2 = Shading.vector_math_node(material, (400, -200))
-        normalize_node_2 = Shading.vector_math_node(material, (600, -200))
-        normalize_node_1 = Shading.vector_math_node(material, (600, 200))
-        geometry_node = Shading.geometry_node(material, (200,0))
-        disk_function_node = Shading.script_node(material, (1200,0))
-        phase_function_node = Shading.script_node(material, (1400,0))
-        diffuse_bsdf = Shading.diffuse_BSDF(material, (1800,0))
-        ## Part 2 - Setup nodes properties
-        subtract_node_1.operation = 'SUBTRACT'
-        subtract_node_1.name = 'subtract_node_1' # assign name to be able to update 
-        subtract_node_1.inputs[0].default_value = (0,1,2) # SUN position
-        subtract_node_2.operation = 'SUBTRACT'
-        subtract_node_2.name = 'subtract_node_2' # assign name to be able to update 
-        subtract_node_2.inputs[0].default_value = (3,4,5) # CAM position
-        dot_product_node_1.operation = 'DOT_PRODUCT'
-        dot_product_node_2.operation = 'DOT_PRODUCT'
-        arcosine_node_1.operation = 'ARCCOSINE'
-        arcosine_node_2.operation = 'ARCCOSINE'
-        normalize_node_1.operation = 'NORMALIZE'
-        normalize_node_2.operation = 'NORMALIZE'
-        disk_function_node.mode = 'EXTERNAL'
-        phase_function_node.mode = 'EXTERNAL'
-        disk_function_node.filepath = bpy.path.abspath(disk_function_path)
-        phase_function_node.filepath = bpy.path.abspath(phase_function_path)
-
-        # Setup scattering function choice in the OSL nodes
-        if function == "Lambertian":
-            function_id = 1
-        elif function == "LommelSeeliger":
-            function_id = 2
-        elif function == "McEwen":
-            function_id = 3
-        elif function == "SimplifiedHapke":
-            function_id = 4
-        elif function == "Hapke":
-            function_id = 5
-        elif function == "ROLO":
-            function_id = 6
-        elif function == "Akimov":
-            function_id = 7
-        elif function == "Minnaert":
-            function_id = 8
-        else:
-            raise ValueError(f"Unknown scattering function: {function}")
-        
-        disk_function_node.inputs["function"].default_value = function_id
-        phase_function_node.inputs["function"].default_value = function_id
-
-        # Setup albedo input for disk function
-        disk_function_node.inputs["albedo"].default_value = geometric_albedo
-
-        # Setup OSL coefficients (if any)
-        if function != osl_coeffs["scattering_function"]:
-            raise ValueError(
-                f"OSL coefficients provided for {osl_coeffs['scattering_function']}, "
-                f"but shader function is {function}"
-            )
-        
-        PHASE_FUNCTION_PARAMETERS = {
-            "Lambertian":       (),
-            "McEwen":           (),
-            "LommelSeeliger":   ("p0", "p1", "p2", "p3"),
-            "SimplifiedHapke":  ("p0",),
-            "Hapke":            ("p0", "p1", "p2"),
-            "ROLO":             ("p0", "p1", "p2", "p3", "p4", "p5", "p6"),
-            "Akimov":           ("p0", "p1", "p2", "p3"),
-            "Minnaert":         ("p0", "p1", "p2", "p3"),
-        }
-        
-        # Assign coefficients to input of the phase function OSL node
-        for p in PHASE_FUNCTION_PARAMETERS[function]:
-            phase_function_node.inputs[p].default_value = osl_coeffs[p]
-
-        ## Part 3 - Link nodes toghether
-        Shading.link_nodes(material,diffuse_bsdf.outputs["BSDF"],output_node.inputs["Surface"]) # PBSDF to output
-        # Compute emission angle (e) from camera position (input[0] to subtract_node_2)
-        Shading.link_nodes(material,geometry_node.outputs["Position"],subtract_node_2.inputs[1]) # Geometry to subtract node
-        Shading.link_nodes(material,subtract_node_2.outputs["Vector"],normalize_node_2.inputs["Vector"]) # subtract to normalize
-        Shading.link_nodes(material,normalize_node_2.outputs["Vector"],dot_product_node_2.inputs[0]) # normalize to dot_product_2
-        Shading.link_nodes(material,geometry_node.outputs["True Normal"],dot_product_node_2.inputs[1]) # geometry to dot_product_2
-        Shading.link_nodes(material,dot_product_node_2.outputs["Value"],arcosine_node_2.inputs["Value"]) # dot_product_2 to arcosine_2
-        Shading.link_nodes(material,arcosine_node_2.outputs["Value"],disk_function_node.inputs["e"]) # arcosine_node_2 to disk_function
-
-        # Compute incident angle (i) from Sun position
-        Shading.link_nodes(material,geometry_node.outputs["Position"],subtract_node_1.inputs[1]) # Geometry to subtract node
-        Shading.link_nodes(material,subtract_node_1.outputs["Vector"],normalize_node_1.inputs["Vector"]) # subtract to normalize
-        Shading.link_nodes(material,normalize_node_1.outputs["Vector"],dot_product_node_1.inputs[0]) # normalize to dot_product_2
-        Shading.link_nodes(material,geometry_node.outputs["True Normal"],dot_product_node_1.inputs[1]) # geometry to dot_product_2
-        Shading.link_nodes(material,dot_product_node_1.outputs["Value"],arcosine_node_1.inputs["Value"]) # dot_product_2 to arcosine_2
-        Shading.link_nodes(material,arcosine_node_1.outputs["Value"],disk_function_node.inputs["i"]) # arcosine_node_2 to disk_function
-
-        Shading.link_nodes(material,disk_function_node.outputs["Value"],phase_function_node.inputs["DiskFunction"]) # disk_function_node to phase_function_node
-        Shading.link_nodes(material,disk_function_node.outputs["Alpha"],phase_function_node.inputs["Alpha"]) # disk_function_node to phase_function_node
-        Shading.link_nodes(material,phase_function_node.outputs["Output"],diffuse_bsdf.inputs["Color"]) # phase_function_node to diffuse BSDF
-
-    def update_osl_geometry(material, settings:dict):
-        """Update geometric properties of an OSL shader.
-
-        Args:
-            material (bpy.data.materials): Material
-            settings (dict): Dictionary with settings for the update
-        """
-        # Update values in the camera and sun positions 
-        material.node_tree.nodes["subtract_node_1"].inputs[0].default_value = settings["sun_pos"]
-        material.node_tree.nodes["subtract_node_2"].inputs[0].default_value = settings["cam_pos"]
-       
     def assign_material_to_object(material, body):
         """Assign a material to a body object
 
@@ -617,36 +514,63 @@ class Shading:
         print("Material created and assigned to the active object.")
 
     @classmethod
-    def node(cls, key_or_bl_idname: str, material: bpy.types.Material, location=(0, 0)):
+    def node(cls, key_or_bl_idname: str, tree_or_material: bpy.types.Material, location=(0, 0)):
         """
-        Create a node by alias or by raw Blender bl_idname.
-        """
-        """Generic method to create a node in the tree of a material
-
+        Create a node in either:
+            - a Material
+            - a NodeTree
+            - a NodeGroup (which is a NodeTree)
+        
         Args:
-            name (str): name of the node
-            material (bpy.data.materials): material where to assign the node
-            location (tuple, optional): location of the node in the nodetree. Defaults to (0, 0).
+            key_or_bl_idname (str)
+            tree_or_material: bpy.types.Material OR bpy.types.NodeTree
+            location (tuple)
 
         Returns:
             node: node in the nodetree of the material
         """        
+        # Normalize input to a NodeTree
+        if isinstance(tree_or_material, bpy.types.Material):
+            node_tree = tree_or_material.node_tree
 
+        elif isinstance(tree_or_material, bpy.types.NodeTree):
+            node_tree = tree_or_material
+
+        else:
+            raise TypeError(
+                "Expected bpy.types.Material or bpy.types.NodeTree, "
+                f"got {type(tree_or_material)}"
+            )
+
+        # Create node
         bl_idname = cls.NODE_TYPES.get(key_or_bl_idname, key_or_bl_idname)
-        n = material.node_tree.nodes.new(type=bl_idname)
-        n.location = location
-        return n
+
+        node = node_tree.nodes.new(type=bl_idname)
+        node.location = location
+
+        return node
     
-    def link_nodes(material, node_output, node_input):
+    @classmethod
+    def link_nodes(cls, tree_or_material, node_output, node_input):
         """Generic method to link two nodes toghether
 
         Args:
-            material (bpy.data.materials):  material in which the two needs are contained
+            tree_or_material (bpy.types.Material or bpy.types.NodeTree):  material or node tree in which the two needs are contained
             node_output (material.node_tree.nodes): value from output node 
             node_input (material.node_tree.nodes): value from input node  
         """        
-        material.node_tree.links.new(node_output, node_input)
-
+        # Normalize input to NodeTree
+        if isinstance(tree_or_material, bpy.types.Material):
+            node_tree = tree_or_material.node_tree
+        elif isinstance(tree_or_material, bpy.types.NodeTree):
+            node_tree = tree_or_material
+        else:
+            raise TypeError(
+                "Expected bpy.types.Material or bpy.types.NodeTree, "
+                f"got {type(tree_or_material)}"
+            )
+        # Create link
+        node_tree.links.new(node_output, node_input)
 
     def texture_node(material, texture_path, colorspace_name='sRGB', location=(0, 0)):
         """method to create a texture node
@@ -1095,6 +1019,516 @@ class Shading:
                 uv_layer[loop_index].uv = (uv[0], uv[1])
         print(f"UV data imported to {body.name}")
 
+    def create_node_group(
+        group_name = "GroupName", 
+        input_dict = None, 
+    ):
+        """method to create a node group
+
+        Args:
+            group_name (str): name of the node group
+            input_dict (dict): dictionary of input sockets
+
+        Returns:
+            node_group: the created node group
+        """
+        # Create default output dictionary 
+        output_dict = {"Shader": {"socket_type": "NodeSocketShader"}}
+                       
+        # Avoid duplicates
+        if group_name in bpy.data.node_groups:
+            return bpy.data.node_groups[group_name]
+    
+        # Create a node group
+        node_group = bpy.data.node_groups.new(group_name, 'ShaderNodeTree')
+
+        # Create group input & output nodes        
+        group_input = node_group.nodes.new("NodeGroupInput")
+        group_output = node_group.nodes.new("NodeGroupOutput")
+        group_input.location = (0, 0)
+        group_output.location = (800, 0)#TODO: make this dynamic based on the number of nodes inside the group
+
+        # Loop through input and output dictionaries to create sockets
+        for name, properties in input_dict.items():
+            socket_type = properties.get("socket_type", "NodeSocketFloat")
+            socket = node_group.interface.new_socket(
+                name=name,
+                in_out='INPUT',
+                socket_type=socket_type
+            )
+            # Assign default value if provided
+            if "value" in properties:
+                try:
+                    socket.default_value = properties["value"]
+                except:
+                    pass  # Some socket types don't support default_value
+        for name, properties in output_dict.items():
+            socket_type = properties.get("socket_type", "NodeSocketShader")
+            node_group.interface.new_socket(
+                name=name,
+                in_out='OUTPUT',
+                socket_type=socket_type
+            )
+
+        return node_group
+            
+    def create_shader_AB1(
+        material,
+        PBSDF_color_RGB=np.array([1, 0, 0]),
+        PBSDF_metallic: float = 0,
+        ):
+
+        # Create group (or reuse if exists)
+        input_dict = {
+            "Base Color": {
+                "socket_type": "NodeSocketColor",
+                "value": (1, 0, 0, 1),
+            },
+            "Metallic": {
+                "socket_type": "NodeSocketFloat",
+                "value": 0.0,
+            },
+        }
+        node_group = Shading.create_node_group("OSL group", input_dict)
+
+        # CREATE CONTENT INSIDE THE GROUP
+        # Create nodes (PART1)
+        group_input_node = node_group.nodes["Group Input"]
+        group_output_node = node_group.nodes["Group Output"]
+        principled_BSDF_node = Shading.principled_BSDF(node_group, (0, 0))
+        # Properties node (PART2)
+        # Link nodes (PART3)
+        Shading.link_nodes(node_group, group_input_node.outputs["Base Color"], principled_BSDF_node.inputs["Base Color"])
+        Shading.link_nodes(node_group, group_input_node.outputs["Metallic"], principled_BSDF_node.inputs["Metallic"])
+        Shading.link_nodes(node_group, principled_BSDF_node.outputs["BSDF"], group_output_node.inputs["Shader"])
+
+        # CREATE CONTENT OUTSIDE THE GROUP
+
+        # Create nodes (PART1)
+        group_node = Shading.group_node(material, (0,0))
+        output_node = Shading.material_output(material, (250, 0))
+        # Properties node (PART2)
+        group_node.node_tree = node_group
+        group_node.inputs["Base Color"].default_value = (
+            PBSDF_color_RGB[0],
+            PBSDF_color_RGB[1],
+            PBSDF_color_RGB[2],
+            1.0,
+        )
+        group_node.inputs["Metallic"].default_value = PBSDF_metallic
+        # Link nodes (PART3)
+        Shading.link_nodes(material, group_node.outputs["Shader"], output_node.inputs["Surface"])
+
+    def create_osl_group(
+        function: str, 
+        geometric_albedo: float,
+        disk_function_path: str, 
+        phase_function_path: str,
+        osl_coeffs: dict = None,
+        ):
+        """Generate a shader with OSL
+
+        TODO: add comments and docstring
+
+        """
+
+        # OSL enabled on CYCLES only
+        bpy.context.scene.render.engine = 'CYCLES'
+        bpy.context.scene.cycles.shading_system = True 
+
+        ####-----#### 
+        # Part A - Create all necessary nodes within the GROUP
+        ####-----#### 
+
+        ## Part 1A - Create all necessary nodes
+
+        # Create group (or reuse if exists)
+        input_dict = {
+            "geometric_albedo": {
+                "socket_type": "NodeSocketFloat",
+                "value": geometric_albedo,
+            },
+            "Sun_X": {
+                "socket_type": "NodeSocketFloat",
+                "value": 1.0,
+            },
+            "Sun_Y": {
+                "socket_type": "NodeSocketFloat",
+                "value": 2.0,
+            },
+            "Sun_Z": {
+                "socket_type": "NodeSocketFloat",
+                "value": 3.0,
+            },     
+            "Cam_X": {
+                "socket_type": "NodeSocketFloat",
+                "value": 4.0,
+            },
+            "Cam_Y": {
+                "socket_type": "NodeSocketFloat",
+                "value": 5.0,
+            },
+            "Cam_Z": {
+                "socket_type": "NodeSocketFloat",
+                "value": 6.0,
+            }
+        }
+        node_group = Shading.create_node_group("OSL group", input_dict)
+        group_input_node = node_group.nodes["Group Input"]
+        group_output_node = node_group.nodes["Group Output"]
+        group_input_node.location = (-400,0)
+        group_output_node.location = (2000,0)
+        # Create all other nodes 
+        combine_XYZ_node_1 = Shading.combine_XYZ_node(node_group,(0,100))
+        combine_XYZ_node_2 = Shading.combine_XYZ_node(node_group,(0,-100))
+        dot_product_node_1 =  Shading.vector_math_node(node_group, (800, +200))
+        dot_product_node_2 =  Shading.vector_math_node(node_group, (800, -200))
+        arcosine_node_1 = Shading.math_node(node_group, (1000, +200))
+        arcosine_node_2 = Shading.math_node(node_group, (1000, -200))
+        subtract_node_1 = Shading.vector_math_node(node_group, (400, 200))
+        subtract_node_2 = Shading.vector_math_node(node_group, (400, -200))
+        normalize_node_2 = Shading.vector_math_node(node_group, (600, -200))
+        normalize_node_1 = Shading.vector_math_node(node_group, (600, 200))
+        geometry_node = Shading.geometry_node(node_group, (200,0))
+        disk_function_node = Shading.script_node(node_group, (1200,0))
+        phase_function_node = Shading.script_node(node_group, (1400,0))
+        diffuse_bsdf = Shading.diffuse_BSDF(node_group, (1800,0))
+
+        ## Part 2A - Setup nodes properties
+        subtract_node_1.operation = 'SUBTRACT'
+        subtract_node_1.name = 'subtract_node_1' # assign name to be able to update 
+        subtract_node_2.operation = 'SUBTRACT'
+        subtract_node_2.name = 'subtract_node_2' # assign name to be able to update 
+        dot_product_node_1.operation = 'DOT_PRODUCT'
+        dot_product_node_2.operation = 'DOT_PRODUCT'
+        arcosine_node_1.operation = 'ARCCOSINE'
+        arcosine_node_2.operation = 'ARCCOSINE'
+        normalize_node_1.operation = 'NORMALIZE'
+        normalize_node_2.operation = 'NORMALIZE'
+        disk_function_node.mode = 'EXTERNAL'
+        phase_function_node.mode = 'EXTERNAL'
+        disk_function_node.filepath = bpy.path.abspath(disk_function_path)
+        phase_function_node.filepath = bpy.path.abspath(phase_function_path)
+        # Setup scattering function choice in the OSL nodes
+        if function == "Lambertian":
+            function_id = 1
+        elif function == "LommelSeeliger":
+            function_id = 2
+        elif function == "McEwen":
+            function_id = 3
+        elif function == "SimplifiedHapke":
+            function_id = 4
+        elif function == "Hapke":
+            function_id = 5
+        elif function == "ROLO":
+            function_id = 6
+        elif function == "Akimov":
+            function_id = 7
+        elif function == "Minnaert":
+            function_id = 8
+        else:
+            raise ValueError(f"Unknown scattering function: {function}")
+        
+        disk_function_node.inputs["function"].default_value = function_id
+        phase_function_node.inputs["function"].default_value = function_id
+
+        # Setup albedo input for disk function
+        disk_function_node.inputs["albedo"].default_value = geometric_albedo
+
+        # Setup OSL coefficients (if any)
+        if function != osl_coeffs["scattering_function"]:
+            raise ValueError(
+                f"OSL coefficients provided for {osl_coeffs['scattering_function']}, "
+                f"but shader function is {function}"
+            )
+        
+        PHASE_FUNCTION_PARAMETERS = {
+            "Lambertian":       (),
+            "McEwen":           (),
+            "LommelSeeliger":   ("p0", "p1", "p2", "p3"),
+            "SimplifiedHapke":  ("p0",),
+            "Hapke":            ("p0", "p1", "p2"),
+            "ROLO":             ("p0", "p1", "p2", "p3", "p4", "p5", "p6"),
+            "Akimov":           ("p0", "p1", "p2", "p3"),
+            "Minnaert":         ("p0", "p1", "p2", "p3"),
+        }
+        
+        # Assign coefficients to input of the phase function OSL node
+        for p in PHASE_FUNCTION_PARAMETERS[function]:
+            phase_function_node.inputs[p].default_value = osl_coeffs[p]
+
+        ## Part 3A - Link nodes toghether
+
+        # CAM and SUN vectors 
+        Shading.link_nodes(node_group,group_input_node.outputs["Sun_X"],combine_XYZ_node_1.inputs[0]) # GROUP input to combine XYZ
+        Shading.link_nodes(node_group,group_input_node.outputs["Sun_Y"],combine_XYZ_node_1.inputs[1]) # GROUP input to combine XYZ
+        Shading.link_nodes(node_group,group_input_node.outputs["Sun_Z"],combine_XYZ_node_1.inputs[2]) # GROUP input to combine XYZ
+        Shading.link_nodes(node_group,group_input_node.outputs["Cam_X"],combine_XYZ_node_2.inputs[0]) # GROUP input to combine XYZ
+        Shading.link_nodes(node_group,group_input_node.outputs["Cam_Y"],combine_XYZ_node_2.inputs[1]) # GROUP input to combine XYZ
+        Shading.link_nodes(node_group,group_input_node.outputs["Cam_Z"],combine_XYZ_node_2.inputs[2]) # GROUP input to combine XYZ
+        Shading.link_nodes(node_group,combine_XYZ_node_1.outputs["Vector"],subtract_node_1.inputs[0]) # Combine XYZ to subtract vector
+        Shading.link_nodes(node_group,combine_XYZ_node_2.outputs["Vector"],subtract_node_2.inputs[0]) # Combine XYZ to subtract vector
+        # function and geometric albedo links 
+        Shading.link_nodes(node_group,group_input_node.outputs["geometric_albedo"],disk_function_node.inputs["albedo"]) # GROUP input to combine XYZ
+        # Compute emission angle (e) from camera position (input[0] to subtract_node_2)
+        Shading.link_nodes(node_group,geometry_node.outputs["Position"],subtract_node_2.inputs[1]) # Geometry to subtract node
+        Shading.link_nodes(node_group,subtract_node_2.outputs["Vector"],normalize_node_2.inputs["Vector"]) # subtract to normalize
+        Shading.link_nodes(node_group,normalize_node_2.outputs["Vector"],dot_product_node_2.inputs[0]) # normalize to dot_product_2
+        Shading.link_nodes(node_group,geometry_node.outputs["True Normal"],dot_product_node_2.inputs[1]) # geometry to dot_product_2
+        Shading.link_nodes(node_group,dot_product_node_2.outputs["Value"],arcosine_node_2.inputs["Value"]) # dot_product_2 to arcosine_2
+        Shading.link_nodes(node_group,arcosine_node_2.outputs["Value"],disk_function_node.inputs["e"]) # arcosine_node_2 to disk_function
+        # Compute incident angle (i) from Sun position
+        Shading.link_nodes(node_group,geometry_node.outputs["Position"],subtract_node_1.inputs[1]) # Geometry to subtract node
+        Shading.link_nodes(node_group,subtract_node_1.outputs["Vector"],normalize_node_1.inputs["Vector"]) # subtract to normalize
+        Shading.link_nodes(node_group,normalize_node_1.outputs["Vector"],dot_product_node_1.inputs[0]) # normalize to dot_product_2
+        Shading.link_nodes(node_group,geometry_node.outputs["True Normal"],dot_product_node_1.inputs[1]) # geometry to dot_product_2
+        Shading.link_nodes(node_group,dot_product_node_1.outputs["Value"],arcosine_node_1.inputs["Value"]) # dot_product_2 to arcosine_2
+        Shading.link_nodes(node_group,arcosine_node_1.outputs["Value"],disk_function_node.inputs["i"]) # arcosine_node_2 to disk_function
+        # Disk and Phase functions to material output
+        Shading.link_nodes(node_group,disk_function_node.outputs["Value"],phase_function_node.inputs["DiskFunction"]) # disk_function_node to phase_function_node
+        Shading.link_nodes(node_group,disk_function_node.outputs["Alpha"],phase_function_node.inputs["Alpha"]) # disk_function_node to phase_function_node
+        Shading.link_nodes(node_group, phase_function_node.outputs["Output"], diffuse_bsdf.inputs["Color"])
+        Shading.link_nodes(node_group, diffuse_bsdf.outputs["BSDF"], group_output_node.inputs["Shader"])
+
+        return node_group
+    
+    def create_osl_shader(
+        material,
+        function: str, 
+        geometric_albedo: float,
+        disk_function_path: str, 
+        phase_function_path: str,
+        osl_coeffs: dict = None,
+        ):
+        """Generate a shader with OSL
+
+        TODO: add comments and docstring
+
+        """
+        ####-----#### 
+        # Part a - Create all necessary nodes within the GROUP
+        ####-----#### 
+
+        node_group = Shading.create_osl_group(
+            function, 
+            geometric_albedo,
+            disk_function_path, 
+            phase_function_path,
+            osl_coeffs,
+        )
+
+        ####-----#### 
+        # Part B - Create all necessary nodes outside the GROUP
+        ####-----#### 
+
+        ## Part 1B - Create all necessary nodes
+        group_node = Shading.group_node(material, (0,0))
+        output_node = Shading.material_output(material, (250, 0))
+        ## Part 2B - Setup nodes properties
+        group_node.node_tree = node_group
+        ## Part 3B - Link nodes toghether
+        Shading.link_nodes(material, group_node.outputs["Shader"], output_node.inputs["Surface"])
+
+    # def create_osl_shader(
+    #     material,
+    #     function: str, 
+    #     geometric_albedo: float,
+    #     disk_function_path: str, 
+    #     phase_function_path: str,
+    #     osl_coeffs: dict = None,
+    #     ):
+    #     """Generate a shader with OSL
+
+    #     TODO: add comments and docstring
+
+    #     """
+
+    #     # OSL enabled on CYCLES only
+    #     bpy.context.scene.render.engine = 'CYCLES'
+    #     bpy.context.scene.cycles.shading_system = True 
+
+    #     ####-----#### 
+    #     # Part A - Create all necessary nodes within the GROUP
+    #     ####-----#### 
+
+    #     ## Part 1A - Create all necessary nodes
+
+    #     # Create group (or reuse if exists)
+    #     input_dict = {
+    #         "geometric_albedo": {
+    #             "socket_type": "NodeSocketFloat",
+    #             "value": geometric_albedo,
+    #         },
+    #         "Sun_X": {
+    #             "socket_type": "NodeSocketFloat",
+    #             "value": 1.0,
+    #         },
+    #         "Sun_Y": {
+    #             "socket_type": "NodeSocketFloat",
+    #             "value": 2.0,
+    #         },
+    #         "Sun_Z": {
+    #             "socket_type": "NodeSocketFloat",
+    #             "value": 3.0,
+    #         },     
+    #         "Cam_X": {
+    #             "socket_type": "NodeSocketFloat",
+    #             "value": 4.0,
+    #         },
+    #         "Cam_Y": {
+    #             "socket_type": "NodeSocketFloat",
+    #             "value": 5.0,
+    #         },
+    #         "Cam_Z": {
+    #             "socket_type": "NodeSocketFloat",
+    #             "value": 6.0,
+    #         }
+    #     }
+    #     node_group = Shading.create_node_group("OSL group", input_dict)
+    #     group_input_node = node_group.nodes["Group Input"]
+    #     group_output_node = node_group.nodes["Group Output"]
+    #     group_input_node.location = (-400,0)
+    #     group_output_node.location = (2000,0)
+    #     # Create all other nodes 
+    #     combine_XYZ_node_1 = Shading.combine_XYZ_node(node_group,(0,100))
+    #     combine_XYZ_node_2 = Shading.combine_XYZ_node(node_group,(0,-100))
+    #     dot_product_node_1 =  Shading.vector_math_node(node_group, (800, +200))
+    #     dot_product_node_2 =  Shading.vector_math_node(node_group, (800, -200))
+    #     arcosine_node_1 = Shading.math_node(node_group, (1000, +200))
+    #     arcosine_node_2 = Shading.math_node(node_group, (1000, -200))
+    #     subtract_node_1 = Shading.vector_math_node(node_group, (400, 200))
+    #     subtract_node_2 = Shading.vector_math_node(node_group, (400, -200))
+    #     normalize_node_2 = Shading.vector_math_node(node_group, (600, -200))
+    #     normalize_node_1 = Shading.vector_math_node(node_group, (600, 200))
+    #     geometry_node = Shading.geometry_node(node_group, (200,0))
+    #     disk_function_node = Shading.script_node(node_group, (1200,0))
+    #     phase_function_node = Shading.script_node(node_group, (1400,0))
+    #     diffuse_bsdf = Shading.diffuse_BSDF(node_group, (1800,0))
+
+    #     ## Part 2A - Setup nodes properties
+    #     subtract_node_1.operation = 'SUBTRACT'
+    #     subtract_node_1.name = 'subtract_node_1' # assign name to be able to update 
+    #     subtract_node_2.operation = 'SUBTRACT'
+    #     subtract_node_2.name = 'subtract_node_2' # assign name to be able to update 
+    #     dot_product_node_1.operation = 'DOT_PRODUCT'
+    #     dot_product_node_2.operation = 'DOT_PRODUCT'
+    #     arcosine_node_1.operation = 'ARCCOSINE'
+    #     arcosine_node_2.operation = 'ARCCOSINE'
+    #     normalize_node_1.operation = 'NORMALIZE'
+    #     normalize_node_2.operation = 'NORMALIZE'
+    #     disk_function_node.mode = 'EXTERNAL'
+    #     phase_function_node.mode = 'EXTERNAL'
+    #     disk_function_node.filepath = bpy.path.abspath(disk_function_path)
+    #     phase_function_node.filepath = bpy.path.abspath(phase_function_path)
+    #     # Setup scattering function choice in the OSL nodes
+    #     if function == "Lambertian":
+    #         function_id = 1
+    #     elif function == "LommelSeeliger":
+    #         function_id = 2
+    #     elif function == "McEwen":
+    #         function_id = 3
+    #     elif function == "SimplifiedHapke":
+    #         function_id = 4
+    #     elif function == "Hapke":
+    #         function_id = 5
+    #     elif function == "ROLO":
+    #         function_id = 6
+    #     elif function == "Akimov":
+    #         function_id = 7
+    #     elif function == "Minnaert":
+    #         function_id = 8
+    #     else:
+    #         raise ValueError(f"Unknown scattering function: {function}")
+        
+    #     disk_function_node.inputs["function"].default_value = function_id
+    #     phase_function_node.inputs["function"].default_value = function_id
+
+    #     # Setup albedo input for disk function
+    #     disk_function_node.inputs["albedo"].default_value = geometric_albedo
+
+    #     # Setup OSL coefficients (if any)
+    #     if function != osl_coeffs["scattering_function"]:
+    #         raise ValueError(
+    #             f"OSL coefficients provided for {osl_coeffs['scattering_function']}, "
+    #             f"but shader function is {function}"
+    #         )
+        
+    #     PHASE_FUNCTION_PARAMETERS = {
+    #         "Lambertian":       (),
+    #         "McEwen":           (),
+    #         "LommelSeeliger":   ("p0", "p1", "p2", "p3"),
+    #         "SimplifiedHapke":  ("p0",),
+    #         "Hapke":            ("p0", "p1", "p2"),
+    #         "ROLO":             ("p0", "p1", "p2", "p3", "p4", "p5", "p6"),
+    #         "Akimov":           ("p0", "p1", "p2", "p3"),
+    #         "Minnaert":         ("p0", "p1", "p2", "p3"),
+    #     }
+        
+    #     # Assign coefficients to input of the phase function OSL node
+    #     for p in PHASE_FUNCTION_PARAMETERS[function]:
+    #         phase_function_node.inputs[p].default_value = osl_coeffs[p]
+
+    #     ## Part 3A - Link nodes toghether
+
+    #     # CAM and SUN vectors 
+    #     Shading.link_nodes(node_group,group_input_node.outputs["Sun_X"],combine_XYZ_node_1.inputs[0]) # GROUP input to combine XYZ
+    #     Shading.link_nodes(node_group,group_input_node.outputs["Sun_Y"],combine_XYZ_node_1.inputs[1]) # GROUP input to combine XYZ
+    #     Shading.link_nodes(node_group,group_input_node.outputs["Sun_Z"],combine_XYZ_node_1.inputs[2]) # GROUP input to combine XYZ
+    #     Shading.link_nodes(node_group,group_input_node.outputs["Cam_X"],combine_XYZ_node_2.inputs[0]) # GROUP input to combine XYZ
+    #     Shading.link_nodes(node_group,group_input_node.outputs["Cam_Y"],combine_XYZ_node_2.inputs[1]) # GROUP input to combine XYZ
+    #     Shading.link_nodes(node_group,group_input_node.outputs["Cam_Z"],combine_XYZ_node_2.inputs[2]) # GROUP input to combine XYZ
+    #     Shading.link_nodes(node_group,combine_XYZ_node_1.outputs["Vector"],subtract_node_1.inputs[0]) # Combine XYZ to subtract vector
+    #     Shading.link_nodes(node_group,combine_XYZ_node_2.outputs["Vector"],subtract_node_2.inputs[0]) # Combine XYZ to subtract vector
+    #     # function and geometric albedo links 
+    #     Shading.link_nodes(node_group,group_input_node.outputs["geometric_albedo"],disk_function_node.inputs["albedo"]) # GROUP input to combine XYZ
+    #     # Compute emission angle (e) from camera position (input[0] to subtract_node_2)
+    #     Shading.link_nodes(node_group,geometry_node.outputs["Position"],subtract_node_2.inputs[1]) # Geometry to subtract node
+    #     Shading.link_nodes(node_group,subtract_node_2.outputs["Vector"],normalize_node_2.inputs["Vector"]) # subtract to normalize
+    #     Shading.link_nodes(node_group,normalize_node_2.outputs["Vector"],dot_product_node_2.inputs[0]) # normalize to dot_product_2
+    #     Shading.link_nodes(node_group,geometry_node.outputs["True Normal"],dot_product_node_2.inputs[1]) # geometry to dot_product_2
+    #     Shading.link_nodes(node_group,dot_product_node_2.outputs["Value"],arcosine_node_2.inputs["Value"]) # dot_product_2 to arcosine_2
+    #     Shading.link_nodes(node_group,arcosine_node_2.outputs["Value"],disk_function_node.inputs["e"]) # arcosine_node_2 to disk_function
+    #     # Compute incident angle (i) from Sun position
+    #     Shading.link_nodes(node_group,geometry_node.outputs["Position"],subtract_node_1.inputs[1]) # Geometry to subtract node
+    #     Shading.link_nodes(node_group,subtract_node_1.outputs["Vector"],normalize_node_1.inputs["Vector"]) # subtract to normalize
+    #     Shading.link_nodes(node_group,normalize_node_1.outputs["Vector"],dot_product_node_1.inputs[0]) # normalize to dot_product_2
+    #     Shading.link_nodes(node_group,geometry_node.outputs["True Normal"],dot_product_node_1.inputs[1]) # geometry to dot_product_2
+    #     Shading.link_nodes(node_group,dot_product_node_1.outputs["Value"],arcosine_node_1.inputs["Value"]) # dot_product_2 to arcosine_2
+    #     Shading.link_nodes(node_group,arcosine_node_1.outputs["Value"],disk_function_node.inputs["i"]) # arcosine_node_2 to disk_function
+    #     # Disk and Phase functions to material output
+    #     Shading.link_nodes(node_group,disk_function_node.outputs["Value"],phase_function_node.inputs["DiskFunction"]) # disk_function_node to phase_function_node
+    #     Shading.link_nodes(node_group,disk_function_node.outputs["Alpha"],phase_function_node.inputs["Alpha"]) # disk_function_node to phase_function_node
+    #     Shading.link_nodes(node_group, phase_function_node.outputs["Output"], diffuse_bsdf.inputs["Color"])
+    #     Shading.link_nodes(node_group, diffuse_bsdf.outputs["BSDF"], group_output_node.inputs["Shader"])
+
+    #     ####-----#### 
+    #     # Part B - Create all necessary nodes outside the GROUP
+    #     ####-----#### 
+
+    #     ## Part 1B - Create all necessary nodes
+    #     group_node = Shading.group_node(material, (0,0))
+    #     output_node = Shading.material_output(material, (250, 0))
+    #     ## Part 2B - Setup nodes properties
+    #     group_node.node_tree = node_group
+    #     ## Part 3B - Link nodes toghether
+    #     Shading.link_nodes(material, group_node.outputs["Shader"], output_node.inputs["Surface"])
+
+    def update_osl_geometry(node_tree, settings:dict):
+        """Update geometric properties of an OSL shader.
+
+        Args:
+            material (bpy.data.materials): Material
+            settings (dict): Dictionary with settings for the update
+        """
+        # Update values in the camera and sun positions 
+        node_tree.node_tree.nodes["Group"].inputs['Sun_X'].default_value = settings["sun_pos"][0]
+        node_tree.node_tree.nodes["Group"].inputs['Sun_Y'].default_value = settings["sun_pos"][1]
+        node_tree.node_tree.nodes["Group"].inputs['Sun_Z'].default_value = settings["sun_pos"][2]
+        node_tree.node_tree.nodes["Group"].inputs['Cam_X'].default_value = settings["cam_pos"][0]
+        node_tree.node_tree.nodes["Group"].inputs['Cam_Y'].default_value = settings["cam_pos"][1]
+        node_tree.node_tree.nodes["Group"].inputs['Cam_Z'].default_value = settings["cam_pos"][2]
+
+        
 def _make_helper(alias):
     def _helper(cls, material, location=(0, 0)):
         return cls.node(alias, material, location)

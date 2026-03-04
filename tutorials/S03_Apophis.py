@@ -98,10 +98,11 @@ osl_geometry_settings = {}
 n_img = 5 # Render the first "n_img" images
 for idx in range(0,n_img):
     ENV.PositionAll(State,index=idx)
+    # Update OSL shading properties (CAM and SUN GEOMETRY)
     _, pos_cam, pos_sun = ENV.get_positions() # TODO: add a check on pos_bod such that the vectors are all body-referenced for the OSL shader
     osl_geometry_settings["cam_pos"] = pos_cam
     osl_geometry_settings["sun_pos"] = pos_sun
-    corto.Shading.update_osl_geometry(material, osl_geometry_settings) # Update OSL shading properties
+    corto.Shading.update_osl_geometry(material, osl_geometry_settings)
     ENV.RenderOne(cam, State, index=idx)
 
 # Save .blend as debug
