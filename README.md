@@ -8,7 +8,7 @@ At the current stage, the tool is made available with some toy-problem or tutori
 <p align="center">
   <img src="docs/img/000000.png" width="33%" />
   <img src="docs/img/000002.png" width="33%" />
-  <img src="docs/img/000002.png" width="33%" />
+  <img src="docs/img/000004.png" width="33%" />
 </p>
 
 # Setup
