@@ -15,6 +15,9 @@ sys.path.append(os.getcwd())
 
 import cortopy as corto
 import numpy as np 
+import pandas as pd
+import OpenEXR
+import Imath
 
 ## Clean all existing/Default objects in the scene 
 corto.Utils.clean_scene()
@@ -80,10 +83,6 @@ tree = corto.Compositing.create_compositing()
 render_node = corto.Compositing.rendering_node(tree, (-400, -200))  # Render Layers node
 corto.Compositing.create_lunar_tile_labels(tree,render_node, State)
 
-### WIP 
-'''
-# Load filtered craters
-filtered_craters = pd.read_csv(State.path["filteredcraters_path"])
 
 # Load the lat/lon mask (EXR format)
 def read_exr_lat_lon(exr_path):
@@ -92,12 +91,9 @@ def read_exr_lat_lon(exr_path):
     dw = header['dataWindow']
     width = dw.max.x - dw.min.x + 1
     height = dw.max.y - dw.min.y + 1
-
     FLOAT = Imath.PixelType(Imath.PixelType.FLOAT)
-
     lat_data = np.frombuffer(exr_file.channel('R', FLOAT), dtype=np.float32).reshape(height, width)
     lon_data = np.frombuffer(exr_file.channel('G', FLOAT), dtype=np.float32).reshape(height, width)
-
     return lat_data, lon_data
 
 def classify_crater_size(diameter_km):
@@ -118,91 +114,75 @@ def latlon_to_pixel(lat, lon, lat_mask, lon_mask):
     y, x = np.unravel_index(np.argmin(distance), distance.shape)  # Find closest pixel
     return x, y
 
-# region depth map
-txtname = '{num:06d}'
+def function_to_generate_labels(k, State, depth_dir, YOLO1_dir, YOLO2_dir):
+    filtered_craters = pd.read_csv(State.path["filteredcraters_path"])
+    # region depth map
+    txtname = '{num:06d}'
+    # Path to the saved EXR depth file
+    exr_path = os.path.join(os.path.join(State.path["output_path"], "depth_exr"), txtname.format(num=(k+0)) + '.exr')
+    # Open the EXR file
+    exr = OpenEXR.InputFile(exr_path)
+    # Get image resolution
+    header = exr.header()
+    dw = header['dataWindow']
+    width = dw.max.x - dw.min.x + 1
+    height = dw.max.y - dw.min.y + 1
+    # Define pixel type
+    pt = Imath.PixelType(Imath.PixelType.FLOAT)
+    # Retrieve Blender object associated with the body
+    with open(State.path["info_path"], "r") as file:
+        lines = file.readlines()
+    scale_factor_in_blender = float(lines[5].strip())
+    # Read depth channel
+    depth_str = exr.channel('V', pt)  # 'V' channel contains depth
+    depth_np = np.frombuffer(depth_str, dtype=np.float32).reshape(height, width) * scale_factor_in_blender
+    altimeter_data2 = np.sum(depth_np[int(np.round(width/2)-2):int(np.round(width/2)+2), int(np.round(height/2)-2):int(np.round(height/2)+2)]) / 16
+    # Save as TXT
+    txt_path = os.path.join(depth_dir, txtname.format(num=(k+0)) + '.txt') #exr_path.replace('.exr', '.txt')
+    np.savetxt(txt_path, depth_np, fmt='%.5f', delimiter=' ')
+    np.savetxt(os.path.join(State.path["output_path"],'altimeter', txtname.format(num=(k+0)) + '.txt'), [altimeter_data2], delimiter=' ',fmt='%.5f') 
 
-# Path to the saved EXR depth file
-exr_path = os.path.join(output_node2.base_path, txtname.format(num=(k+0)) + '.exr')
-
-# Open the EXR file
-exr = OpenEXR.InputFile(exr_path)
-
-# Get image resolution
-header = exr.header()
-dw = header['dataWindow']
-width = dw.max.x - dw.min.x + 1
-height = dw.max.y - dw.min.y + 1
-
-# Define pixel type
-pt = Imath.PixelType(Imath.PixelType.FLOAT)
-
-# Read depth channel
-depth_str = exr.channel('R', pt)  # 'R' channel contains depth
-depth_np = np.frombuffer(depth_str, dtype=np.float32).reshape(height, width) * scale_factor_in_blender
-
-altimeter_data2 = np.sum(depth_np[int(np.round(width/2)-2):int(np.round(width/2)+2), int(np.round(height/2)-2):int(np.round(height/2)+2)]) / 16
-# Save as TXT
-txt_path = os.path.join(depth_dir, txtname.format(num=(k+0)) + '.txt')#exr_path.replace('.exr', '.txt')
-np.savetxt(txt_path, depth_np, fmt='%.5f', delimiter=' ')
-
-rendering_name = '{}'.format(str(int(k)).zfill(6))
-np.savetxt(os.path.join(State.path["output_path"],'altimeter', txtname.format(num=(k+0)) + '.txt'), [altimeter_data2], delimiter=' ',fmt='%.5f') 
-
-# endregion
-
-exr_path2 = os.path.join(output_node3.base_path, txtname.format(num=(k+0)) + '.exr')
-lat_mask, lon_mask = read_exr_lat_lon(exr_path2)
-
-# Image size (same as lat-lon mask)
-height, width = lat_mask.shape
-
-km2pixel_scale = 512 / ((1737.4 * np.cos(np.radians((lat_mask.max() + lat_mask.min()) / 2)) * 2 * np.pi / 360) * (lon_mask.max() - lon_mask.min()))
-
-# Iterate over craters and save YOLO segmentation labels
-for _, crater in filtered_craters.iterrows():
-    
-    # Check if crater center is within render bounds
-    crater_lat, crater_lon = crater['LAT_ELLI_IMG'], crater['LON_ELLI_IMG']
-    if (crater_lat < lat_mask.min() or crater_lat > lat_mask.max() or
-        crater_lon < lon_mask.min() or crater_lon > lon_mask.max()):
-        continue  # Skip crater if outside render bounds
-
-    # Convert crater center lat/lon to pixel coordinates
-    center_x, center_y = latlon_to_pixel(crater['LAT_ELLI_IMG'], crater['LON_ELLI_IMG'], lat_mask, lon_mask)
-    # Generate ellipse rim points
-    num_points = 100  # Number of points along the ellipse
-    theta = np.linspace(0, 2 * np.pi, num_points)
-
-    # Compute ellipse axes in pixels
-    semi_major_axis = int(km2pixel_scale * crater['DIAM_ELLI_MAJOR_IMG'] / 2)
-    semi_minor_axis = int(km2pixel_scale * crater['DIAM_ELLI_MINOR_IMG'] / 2)
-    angle = np.radians(-crater['DIAM_ELLI_ANGLE_IMG'])  # Convert to radians
-
-    ellipse_x = semi_major_axis * np.cos(theta)
-    ellipse_y = semi_minor_axis * np.sin(theta)
-
-    # Rotate ellipse points
-    rot_matrix = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
-    rotated_points = np.dot(rot_matrix, np.vstack([ellipse_x, ellipse_y]))
-
-    # Convert ellipse rim points to pixel coordinates
-    final_x = rotated_points[0, :] + center_x
-    final_y = rotated_points[1, :] + center_y
-
-    # Normalize coordinates (0 to 1)
-    yolo_coords = [f"{max(0, min(x/width, 1)):.6f} {max(0, min(y/height, 1)):.6f}" for x, y in zip(final_x, final_y)]
-    # Format as YOLO segmentation: class_id x1 y1 x2 y2 ... xn yn
-    yolo_label = f"0 {' '.join(yolo_coords)}"  # Class 0 (crater)
-    yolo_label_classes = f"{classify_crater_size(crater['DIAM_ELLI_MAJOR_IMG'])} {' '.join(yolo_coords)}"  # Class 0 (crater)
-    # Save to a text file
-    output_label_path = os.path.join(YOLO1_dir, txtname.format(num=(k+0)) + '.txt')
-    with open(output_label_path, "a") as f:  # ✅ Use "a" to append instead of "w"
-        f.write(yolo_label + "\n")  # ✅ Add a newline after each crater
-
-    output_label_classes_path = os.path.join(YOLO2_dir, txtname.format(num=(k+0)) + '.txt')
-    with open(output_label_classes_path, "a") as f:  # ✅ Use "a" to append instead of "w"
-        f.write(yolo_label_classes + "\n")  # ✅ Add a newline after each crater
-'''
+    exr_path2 = os.path.join(os.path.join(State.path["output_path"], "lat_lon_exr"), txtname.format(num=(k+0)) + '.exr')
+    lat_mask, lon_mask = read_exr_lat_lon(exr_path2)
+    # Image size (same as lat-lon mask)
+    height, width = lat_mask.shape
+    km2pixel_scale = 512 / ((1737.4 * np.cos(np.radians((lat_mask.max() + lat_mask.min()) / 2)) * 2 * np.pi / 360) * (lon_mask.max() - lon_mask.min()))
+    # Iterate over craters and save YOLO segmentation labels
+    for _, crater in filtered_craters.iterrows():
+        # Check if crater center is within render bounds
+        crater_lat, crater_lon = crater['LAT_ELLI_IMG'], crater['LON_ELLI_IMG']
+        if (crater_lat < lat_mask.min() or crater_lat > lat_mask.max() or
+            crater_lon < lon_mask.min() or crater_lon > lon_mask.max()):
+            continue  # Skip crater if outside render bounds
+        # Convert crater center lat/lon to pixel coordinates
+        center_x, center_y = latlon_to_pixel(crater['LAT_ELLI_IMG'], crater['LON_ELLI_IMG'], lat_mask, lon_mask)
+        # Generate ellipse rim points
+        num_points = 100  # Number of points along the ellipse
+        theta = np.linspace(0, 2 * np.pi, num_points)
+        # Compute ellipse axes in pixels
+        semi_major_axis = int(km2pixel_scale * crater['DIAM_ELLI_MAJOR_IMG'] / 2)
+        semi_minor_axis = int(km2pixel_scale * crater['DIAM_ELLI_MINOR_IMG'] / 2)
+        angle = np.radians(-crater['DIAM_ELLI_ANGLE_IMG'])  # Convert to radians
+        ellipse_x = semi_major_axis * np.cos(theta)
+        ellipse_y = semi_minor_axis * np.sin(theta)
+        # Rotate ellipse points
+        rot_matrix = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
+        rotated_points = np.dot(rot_matrix, np.vstack([ellipse_x, ellipse_y]))
+        # Convert ellipse rim points to pixel coordinates
+        final_x = rotated_points[0, :] + center_x
+        final_y = rotated_points[1, :] + center_y
+        # Normalize coordinates (0 to 1)
+        yolo_coords = [f"{max(0, min(x/width, 1)):.6f} {max(0, min(y/height, 1)):.6f}" for x, y in zip(final_x, final_y)]
+        # Format as YOLO segmentation: class_id x1 y1 x2 y2 ... xn yn
+        yolo_label = f"0 {' '.join(yolo_coords)}"  # Class 0 (crater)
+        yolo_label_classes = f"{classify_crater_size(crater['DIAM_ELLI_MAJOR_IMG'])} {' '.join(yolo_coords)}"  # Class 0 (crater)
+        # Save to a text file
+        output_label_path = os.path.join(YOLO1_dir, txtname.format(num=(k+0)) + '.txt')
+        with open(output_label_path, "a") as f:  # ✅ Use "a" to append instead of "w"
+            f.write(yolo_label + "\n")  # ✅ Add a newline after each crater
+        output_label_classes_path = os.path.join(YOLO2_dir, txtname.format(num=(k+0)) + '.txt')
+        with open(output_label_classes_path, "a") as f:  # ✅ Use "a" to append instead of "w"
+            f.write(yolo_label_classes + "\n")  # ✅ Add a newline after each crater
 
 ### (5) GENERATION OF IMG-LBL PAIRS ###
 osl_geometry_settings = {}
@@ -216,6 +196,7 @@ for idx in range(0,n_img):
     osl_geometry_settings["sun_pos"] = pos_sun
     corto.Shading.update_osl_geometry(material, osl_geometry_settings)
     ENV.RenderOne(cam, State, index=idx, depth_flag = True)
+    Generate_Lables_test(idx, State, depth_dir, YOLO1_dir, YOLO2_dir)
 
 # Save .blend as debug
 corto.Utils.save_blend(State)
