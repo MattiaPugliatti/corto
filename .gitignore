@@ -9,3 +9,4 @@ monet/input/*
 monet/output/*
 cortopy.egg-info
 cortopy/*.oso
+*.json
