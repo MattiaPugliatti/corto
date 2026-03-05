@@ -19,7 +19,8 @@ corto.Utils.clean_scene()
 ### (1) DEFINE INPUT ### 
 scenario_name = "S00_Calibration" # Name of the scenario folder
 scene_name = "scene_CYCLES.json" # name of the scene input, fast rendering setup
-geometry_name = "geometry_calib.json" # name of the geometry input
+# geometry_name = "geometry_calib.json" # name of the geometry input
+geometry_name = "geometry_generated_0_180.json" # name of the geometry input
 body_name = "Sphere_HiRes.obj" # name of the body input
 
 # Load inputs and settings into the State object
@@ -45,9 +46,9 @@ phase_function_path = os.path.join(os.getcwd(),"cortopy/corto_phaseFunctions.osl
 # All coefficients are taken for the pancromatic camera (646nm) but can be easily changed for the other cameras by looking at the tables in the paper.
 # Comment and uncomment the scattering function and coefficients you want to test. 
 
-scattering_function = "Lambertian"
-geometric_albedo = 0.045
-osl_coeffs = {"scattering_function": scattering_function}
+# scattering_function = "Lambertian"
+# geometric_albedo = 0.045
+# osl_coeffs = {"scattering_function": scattering_function}
 
 # scattering_function = "McEwen"
 # geometric_albedo = 0.045
@@ -58,10 +59,10 @@ osl_coeffs = {"scattering_function": scattering_function}
 # p0,p1,p2,p3 = 0.0270, -3.395e-2, 2.577e-4, -1.579e-6 # (A_LS, beta, gamma, delta)
 # osl_coeffs = {"scattering_function": scattering_function, "p0": p0, "p1": p1, "p2": p2, "p3": p3}
 
-# scattering_function = "SimplifiedHapke"
-# geometric_albedo = 0.045
-# p0 = 0.156 # (g) random coefficient!
-# osl_coeffs = {"scattering_function": scattering_function, "p0": p0}
+scattering_function = "SimplifiedHapke"
+geometric_albedo = 0.045
+p0 = 0.156 # (g) random coefficient!
+osl_coeffs = {"scattering_function": scattering_function, "p0": p0}
 
 # scattering_function = "Hapke"
 # geometric_albedo = 0.045
@@ -92,7 +93,7 @@ body.set_scale(np.array([0.1, 0.1, 0.1])) # adjust body scale for better test re
 
 osl_geometry_settings = {}
 
-n_img = 25 # Render the first "n_img" images
+n_img = 60 # Render the first "n_img" images
 for idx in range(0,n_img):
     ENV.PositionAll(State,index=idx)
     _, pos_cam, pos_sun = ENV.get_positions() # TODO: add a check on pos_bod such that the vectors are all body-referenced for the OSL shader

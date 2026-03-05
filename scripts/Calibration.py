@@ -19,8 +19,8 @@ CALIB_DATA = {
     "Hapke": os.path.join(BASE, "input/SphereCalib/S00_Calibration_Hapke/img"),
 }
 
-N_EXPECTED = 25
-phase_angles = np.linspace(0, 120, N_EXPECTED) # Expected phase angles for the rendered images (check the scenario settings)
+N_EXPECTED = 60
+phase_angles = np.linspace(0, 180, N_EXPECTED) # Expected phase angles for the rendered images (check the scenario settings)
 
 # ==============================
 # FUN DEFS
@@ -119,19 +119,29 @@ for model, folder in CALIB_DATA.items():
 plt.figure()
 plt.subplot(3,1,1)
 for model, data in RESULTS.items():
-    plt.plot(phase_angles, data["means"], label=model)
+    plt.plot(phase_angles[0:-1], data["means"][0:-1], label=model)
 plt.grid('minor')
 plt.legend()
 plt.title("Mean Radiance over Phase Angle")
 plt.subplot(3,1,2) 
 for model, data in RESULTS.items():
-    plt.semilogy(phase_angles, data["peaks"], label=model)
+    plt.semilogy(phase_angles[0:-1], data["peaks"][0:-1], label=model)
 plt.grid('minor')
 plt.legend()
 plt.title("Peak Radiance over Phase Angle")
 plt.subplot(3,1,3)
 for model, data in RESULTS.items():
-    plt.plot(phase_angles, data["flux"], label=model)
+    plt.plot(phase_angles[0:-1], data["flux"][0:-1], label=model)
+plt.grid('minor')
+plt.legend()
+plt.title("Normalized Flux over Phase Angle")
+plt.xlabel("Phase Angle [deg]")
+plt.tight_layout()
+
+
+plt.figure()
+for model, data in RESULTS.items():
+    plt.semilogy(phase_angles[0:-1], data["flux"][0:-1], label=model)
 plt.grid('minor')
 plt.legend()
 plt.title("Normalized Flux over Phase Angle")
