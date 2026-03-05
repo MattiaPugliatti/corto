@@ -10,11 +10,11 @@ import json
 # USER INPUT
 # ==============================
 
-N = 25  # number of poses
+N = 60  # number of poses
 min_phase_deg = 0
-max_phase_deg = 120
+max_phase_deg = 180
 
-camera_position = np.array([10.0, 0.0, 0.0]) # in [BU]
+camera_position = np.array([100.0, 0.0, 0.0]) # in [BU]
 camera_quat = np.array([0.5, 0.5, 0.5, 0.5]) # W, X, Y, Z
 
 body_position = np.array([0.0, 0.0, 0.0]) # W, X, Y, Z
