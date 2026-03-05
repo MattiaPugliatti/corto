@@ -196,7 +196,7 @@ for idx in range(0,n_img):
     osl_geometry_settings["sun_pos"] = pos_sun
     corto.Shading.update_osl_geometry(material, osl_geometry_settings)
     ENV.RenderOne(cam, State, index=idx, depth_flag = True)
-    Generate_Lables_test(idx, State, depth_dir, YOLO1_dir, YOLO2_dir)
+    function_to_generate_labels(idx, State, depth_dir, YOLO1_dir, YOLO2_dir)
 
 # Save .blend as debug
 corto.Utils.save_blend(State)
