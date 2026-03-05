@@ -1,14 +1,15 @@
 from __future__ import annotations
+import sys
 from typing import Any, List, Mapping, Optional, Tuple, Union, overload
 
 import bpy
 import os
-import cortopy as corto
-from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import subprocess
 import shutil
+import cortopy as corto
+from datetime import datetime
 
 class Utils:
     """
@@ -178,4 +179,20 @@ class Utils:
             print(f"[{idx}/{total}] Moved: {filename} -> {dest_dir}")
         print(f"\n✅ Done! {total} .png files moved to '{dest_dir}'")
 
-    
+    def run_script(script_name: str):
+
+        env = os.environ.copy()
+        env["MPLBACKEND"] = "Agg"   # disables GUI plots
+
+        result = subprocess.run(
+            [sys.executable, script_name],
+            capture_output=True,
+            text=True,
+            env=env
+        )
+
+        assert result.returncode == 0, (
+            f"\nScript failed: {script_name}"
+            f"\nSTDOUT:\n{result.stdout}"
+            f"\nSTDERR:\n{result.stderr}"
+        )

@@ -171,6 +171,9 @@ for ii_body in range(len(unique_body_names)):
 
 ### (5) GENERATE IMG-LBL PAIRS ###
 
+# Override for test rendering
+idx_start, idx_end = 0, 5 #NOTE: REMOVE THIS TO RENDER THE FULL DATASET, THIS IS JUST FOR TESTING PURPOSES
+
 for idx in range(idx_start,idx_end):
     id_body = body_name_list.index(settings_body_dyn[idx]["body_name"]) # Get the body's index from the body's name list
     # Extract dedicated env, body, and state objects
