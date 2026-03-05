@@ -70,13 +70,75 @@ This should allow the installation to complete if all compatibility requirements
 # Folders descriptions
 (cortopy) all classes of the corto library are included in this folder
 
+(docs) all documentation associated with the corto library 
+
 (input) input folder, here is were you need to position all necessary input to run a scenario
 
 (monet) this folder contains the monet tool. Refer to the specific readme within this folder to run monet and generate proceedural asteroid models
 
+(output) this is the output folder in which the image-label pairs are going to be saved. It's going to be populated once you ran a script or a tutorial
+
 (scripts) all sorts of useful scripts are grouped here
 
-(tutorials) the tutorial scripts for Eros, Itokawa, Bennu, Didymos, and the Moon are contained here
+(test) test folder for CI/CD
+
+(tutorials) folder containing several tutorials. They are meant to showcase high-level functionalities and the user should use them for imitation learning.
+
+# Tutorial summary 
+
+- basics_Generated_Cloud_input.py : it can be used to showcase the generation of a geometry input in the form of a point cloud
+
+- basics_GeneratedPA_input.py : it can be used to showcase the generation of a geometry input of a camera at a fixed distance and varying phase angles. It's useful to generate input for the calibration tutorial
+
+- basics_Visualize_DepthMap.py : it can be used to visualize the depthmap generated from another tutorial
+
+- S00_Calibration.py : it generates images of a sphere seen from a camera at a fixed distance with varying phase angles. You can modify the specific scattering law to use in the OSL shader.
+
+- S01a_Eros.py : it's the high-fidelity, slower version that you can use to generate image-label pairs of the asteroid Eros. It uses CYCLES.
+
+-S01b_Eros.py : it's the lower-fidelity, faster verion that you can use to generate images of the asteroid Eros. It uses EEVEE.
+
+-S02_Itokawa.py : it generates image-label pairs for the Itokawa scenario. 
+
+-S03_Apophis.py : it generates image-label pairs for the Apophis scenario using OSL shaders.
+
+-S04_Bennu.py: it generates image-label pairs for the Bennu scenario. 
+
+-S05a_Didymos_Milani.py: it generates image-label pairs for the Didymos scenario. It has been used for the training of the image processing of Milani (it uses older shape models).
+
+-S05b_Didymos.py : it generate image-label pairs for the Didymos scenario.
+
+-S06a_Moon.py : it generates image-label pairs of the Moon in a full-disk scenario. Useful for far and medium navigation regimes (approach, far orbits). 
+
+-S06b_Moon.py : it generates image-label pairs of a tile of the Lunar surface. Useful for close navigation regimes (low orbits, landings).
+
+-S07_Mars_Phobos_Deimos.py : it generates image-label pairs for the Mars, Phobos, Deimos multi-body scenario. 
+
+-S08_Earth.py : it generates image-label pairs with Earth as a target body. 
+
+-S09_Frankenstein_Asteroids : it generate image-label pairs for a variety of asteroids with procedurally generated artificial textures. 
+
+-S10_Spacecraft.py : it generates image-label pairs about artificial spacecraft. 
+
+
+The characteristics for the Scenarios from S00 to S10 are summarized in the following table
+
+| Name of the Scenario | Target Body | Shader Used | Texture Map Used | Labels | Note |
+|----------------------|-------------|-------------|------------------|--------|------|
+| S00_Calibration.py | Sphere | OSL| NO | TODO | Generates images of a sphere with varying phase angles. Scattering law can be modified in the OSL shader. |
+| S01a_Eros.py | Eros | branch & albedo mix | YES | Depth, Mask, Mask w. Shadows, Slopes | High-fidelity, slower version (CYCLES)|
+| S01b_Eros.py | Eros | branch & albedo mix  | YES | NO | Lower-fidelity, faster version (EEVEE) |
+| S02_Itokawa.py | Itokawa | branch & albedo mix | YES | Depth, Mask, Mask w. Shadows | - |
+| S03_Apophis.py | Apophis | OSL | NO | NO | Scattering law can be modified in the OSL shader. |
+| S04_Bennu.py | Bennu | branch & albedo mix | YES | Depth, Mask, Mask w. Shadows, Slopes | - |
+| S05a_Didymos_Milani.py | Didymos | load material nodetree | NO | Depth, Mask, Mask w. Shadows, Slopes | Uses older shape models. The scenario is the same one used to develop Milani's IP & GNC |
+| S05b_Didymos.py | Didymos | load material nodetree | NO | Depth, Mask, Mask w. Shadows, Slopes | Uses updated shape models.|
+| S06a_Moon.py | Moon | branch & albedo & displacement mix | YES | Depth, Slopes | Useful for Full-disk lunar rendering.|
+| S06b_Moon.py | Moon Surface Tile | lunar | YES | Depth, YOLOv1 (craters), YOLOv2 (craters) | Useful for close-range navigation. Developed by Omar Elzeiny. |
+| S07_Mars_Phobos_Deimos.py | Mars, Phobos, and Deimos | create_branch_albedo_mix (x3) | YES | Depth, Slopes, Mask, Mask w. Shadows | Example of a multi-body architecture. |
+| S08_Earth.py | Earth | Earth, Atmosphere, Clouds | YES | NO | Example of a multi-body architecture for a celestial body with an atmosphere. |
+| S09_Frankenstein_Asteroids.py | Multiple Asteroids | Randomized texture PBSDF | NO | Mask, Mask w. Shadows | Showcases domain randomization via procedully generated asteroid textures. |
+| S10_Spacecraft.py | Dawn | None (loaded from object) | YES | NO | - |
 
 # How to run a tutorial script (Visual Studio Code reccomended)
 
@@ -94,6 +156,7 @@ This should allow the installation to complete if all compatibility requirements
 
 # How to run your own script 
 To shape your own scenario, you can imitate the ones provided in the tutorials. In case you are happy with one of the scenarios, you can always change the inputs and or the tutorial script. Otherwise, if you want to use this library for a different target, you can also imitate how the tutorials script build on it.
+
 
 # Changelog
 
