@@ -32,7 +32,8 @@ class Shading:
         "geometry_node": "ShaderNodeNewGeometry",
         "script_node": "ShaderNodeScript",
         "combine_XYZ_node":"ShaderNodeCombineXYZ",
-
+        "hue_saturation_node": "ShaderNodeHueSaturation",
+        
         # Shaders
         "diffuse_BSDF": "ShaderNodeBsdfDiffuse",
         "principled_BSDF": "ShaderNodeBsdfPrincipled",
