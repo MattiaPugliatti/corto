@@ -1,5 +1,5 @@
 """
-Tutorial script to render images of the S07_Mars_Phobos_Deimos scenario. 
+Tutorial script to render images of the S07a_Mars_Phobos_Deimos scenario. 
 
 NOTE: play with the albedo map you would like to use
 
