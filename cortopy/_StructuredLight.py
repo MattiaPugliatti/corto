@@ -94,14 +94,24 @@ class StructuredLight:
     inside the rendering loop.
     """
 
-    # Names used for the five Blender light objects
-    _LIGHT_NAMES = [
-        "SL_centre",
-        "SL_top",
-        "SL_bottom",
-        "SL_left",
-        "SL_right",
-    ]
+    # Dictionary mapping pattern names to methods
+    _PATTERN_SPECS = {
+        "cross":            "_light_specs_cross",
+        "grid3x3":          "_light_specs_grid3x3",
+        "ring":             "_light_specs_ring",
+        "ring_with_centre": "_light_specs_ring_with_centre",
+        "two_rings":        "_light_specs_two_rings",
+        "diagonal_cross":   "_light_specs_diagonal_cross",
+        "star8":            "_light_specs_star8",
+        "line_h":           "_light_specs_line_h",
+        "line_v":           "_light_specs_line_v",
+        "triangle":         "_light_specs_triangle",
+    }
+    
+    @property
+    def _light_names(self):
+        """Derive light names from the current pattern at runtime."""
+        return [name for name, *_ in self._light_specs(0.0)]
 
     _DEFAULTS = dict(
         offset_m      = 0.05,    # m – cross arm length (centre → outer light)
@@ -110,7 +120,8 @@ class StructuredLight:
         energy        = 1000.0,   # W  – light power
         color         = (1.0, 0.0, 0.0),  # RGB – red
         projector_distance_m    = 0.0,    # 0 = at camera origin
-        projector_distance_frac = None,   # None = use projector_distance_m   
+        projector_distance_frac = None,   # None = use projector_distance_m
+        pattern = "cross",
         )
 
     def __init__(self, state):
@@ -134,6 +145,8 @@ class StructuredLight:
         energy:        float = 500.0,
         projector_distance_m:    float = 0.0,
         projector_distance_frac: float | None = None,
+        target_name: str | None = None,
+        pattern: str = "cross",
     ):
         """Set the geometric and photometric properties of the projector.
 
@@ -163,12 +176,21 @@ class StructuredLight:
                 the camera-to-target distance. Requires target_name to be
                 passed to setup(). Overrides projector_distance_m.
         """
+
+
+        if pattern not in self._PATTERN_SPECS:
+                raise ValueError(
+                    f"[StructuredLight] Unknown pattern '{pattern}'. "
+                    f"Valid options: {list(self._PATTERN_SPECS)}"
+                )        
         self.offset_m      = offset_m
         self.cant_deg      = cant_deg
         self.spot_size_deg = spot_size_deg
         self.energy        = energy
         self.projector_distance_m    = projector_distance_m
         self.projector_distance_frac = projector_distance_frac
+        self.target_name = target_name
+        self.pattern = pattern
 
     def set_color(self, r: float = 1.0, g: float = 0.0, b: float = 0.0):
         """Set the light colour (default: red).
@@ -201,6 +223,7 @@ class StructuredLight:
         self._target_name = target_name
         # ── Resolve the Blender camera object from cam.name ───────────
         cam_obj = bpy.data.objects.get(cam.name)
+        self._cam_name = cam.name
         if cam_obj is None:
             raise RuntimeError(
                 f"[StructuredLight] No Blender object named '{cam.name}' "
@@ -218,18 +241,9 @@ class StructuredLight:
         # Each entry: (name, local_pos (x,y,z), local_rot_euler (rx,ry,rz) deg)
         # Camera local axes: +X right, +Y up, -Z into scene.
         # Outer lights are offset in the local XY plane and canted outward.
-        offset_m = self.offset_m
-        cant_deg = self.cant_deg
-        light_specs = [
-            ("SL_centre", ( 0,  0, 0), ( 0,  0, 0)),
-            ("SL_top",    ( 0,  offset_m, 0), (-cant_deg,  0, 0)),  # pitch beam upward
-            ("SL_bottom", ( 0, -offset_m, 0), ( cant_deg,  0, 0)),  # pitch beam downward
-            ("SL_right",  ( offset_m,  0, 0), ( 0,  cant_deg, 0)),  # yaw beam rightward
-            ("SL_left",   (-offset_m,  0, 0), ( 0, -cant_deg, 0)),  # yaw beam leftward
-        ]
+        z_offset = self._resolve_z_offset()
  
-        for name, (lx, ly, lz), (rx, ry, rz) in light_specs:
- 
+        for name, (lx, ly, lz), (rx, ry, rz) in self._light_specs(z_offset): 
             existing_obj  = bpy.data.objects.get(name)
             existing_data = bpy.data.lights.get(name)
  
@@ -292,7 +306,7 @@ class StructuredLight:
         """
         import bpy
         removed = []
-        for name in self._LIGHT_NAMES:
+        for name in self._light_names:
             obj = bpy.data.objects.get(name)
             if obj is not None:
                 bpy.data.objects.remove(obj, do_unlink=True)
@@ -318,7 +332,7 @@ class StructuredLight:
         Args:
             state: corto State object (carries output_path).
             index (int): frame index used to name the output file.
-        """
+        """        
         if not self._lights_created:
             raise RuntimeError(
                 "[StructuredLight] Call setup() before process_one()."
@@ -329,6 +343,11 @@ class StructuredLight:
         out_dir = os.path.join(state.path["output_path"], "structured_light", "images")
         os.makedirs(out_dir, exist_ok=True)
         out_path = os.path.join(out_dir, f"{index:06d}.png")
+
+        # ── Reposition lights for this frame BEFORE rendering ─────────
+        # Must happen after ENV.PositionAll() has updated the camera pose,
+        # so the camera-to-target distance reflects the current frame.
+        self._update_fractional_positions()
 
         try:
             # ── Enable lights ─────────────────────────────────────────
@@ -354,7 +373,7 @@ class StructuredLight:
 
         finally:
             # Always disable lights even if render raised an exception
-            self._set_lights_visible(True)
+            self._set_lights_visible(True)#TODO: fix this to False once Debugging is completed
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -366,7 +385,7 @@ class StructuredLight:
         Uses fractional mode if projector_distance_frac is set and a
         target object is available; otherwise uses projector_distance_m.
         """
-        if self.projector_distance_frac is not None and self._target_name:
+        if (self.projector_distance_frac is not None and self._target_name is not None):
             return self._cam_target_distance() * self.projector_distance_frac
         return self.projector_distance_m
 
@@ -398,10 +417,140 @@ class StructuredLight:
                     math.radians(ry),
                     math.radians(rz),
                 )
-                
+
+    def _light_specs(self, z_offset: float):
+        method_name = self._PATTERN_SPECS.get(self.pattern, "_light_specs_cross")
+        return getattr(self, method_name)(z_offset)
+
+    def _light_specs_cross(self, z_offset: float):
+        """5-point cross: centre + 4 cardinal arms + diagonal point.
+        Good for: simple depth from symmetry, low light count."""
+        offset_m = self.offset_m
+        cant_deg = self.cant_deg
+        return [
+            ("SL_centre", ( 0,  0, -z_offset), ( 0,  0, 0)),
+            ("SL_top",    ( 0,  offset_m, -z_offset), (-cant_deg,  0, 0)),
+            ("SL_bottom", ( 0, -offset_m, -z_offset), ( cant_deg,  0, 0)),
+            ("SL_right",  ( offset_m,  0, -z_offset), ( 0,  cant_deg, 0)),
+            ("SL_left",   (-offset_m,  0, -z_offset), ( 0, -cant_deg, 0)),
+            ("SL_top-left",   (-offset_m,  offset_m, -z_offset), ( -cant_deg, -cant_deg, 0)),
+        ]
+
+    def _light_specs_grid3x3(self, z_offset: float):
+        """3×3 uniform grid (9 points).
+        Good for: dense planar coverage, surface normal estimation."""
+        o, c = self.offset_m, self.cant_deg
+        positions = [
+            (-o,  o), ( 0,  o), ( o,  o),
+            (-o,  0), ( 0,  0), ( o,  0),
+            (-o, -o), ( 0, -o), ( o, -o),
+        ]
+        specs = []
+        for i, (x, y) in enumerate(positions):
+            # cant outward from optical axis in X and Y independently
+            rx = -c * (y / o) if o != 0 else 0
+            ry =  c * (x / o) if o != 0 else 0
+            specs.append((f"SL_{i}", (x, y, -z_offset), (rx, ry, 0)))
+        return specs
+
+    def _light_specs_ring(self, z_offset: float, n_points: int = 8):
+        """N points on a circle, no centre.
+        Good for: rotationally symmetric targets, crater/pit detection."""
+        o, c = self.offset_m, self.cant_deg
+        specs = []
+        for i in range(n_points):
+            angle = 2 * math.pi * i / n_points
+            x = o * math.cos(angle)
+            y = o * math.sin(angle)
+            rx = -c * math.sin(angle)   # cant away from axis in Y
+            ry =  c * math.cos(angle)   # cant away from axis in X
+            specs.append((f"SL_ring{i}", (x, y, -z_offset), (rx, ry, 0)))
+        return specs
+
+    def _light_specs_ring_with_centre(self, z_offset: float, n_points: int = 6):
+        """Centre + N-point ring.
+        Good for: combining ring coverage with a central reference dot."""
+        specs = [("SL_centre", (0, 0, -z_offset), (0, 0, 0))]
+        specs += self._light_specs_ring(z_offset, n_points=n_points)
+        return specs
+
+    def _light_specs_two_rings(self, z_offset: float):
+        """Inner ring (4 pts) + outer ring (8 pts), no centre.
+        Good for: wide-area coverage with variable density."""
+        o, c = self.offset_m, self.cant_deg
+        specs = []
+        for ring_scale, n_pts, tag in [(0.5, 4, "i"), (1.0, 8, "o")]:
+            r = o * ring_scale
+            cant = c * ring_scale
+            for i in range(n_pts):
+                angle = 2 * math.pi * i / n_pts
+                x  =  r * math.cos(angle)
+                y  =  r * math.sin(angle)
+                rx = -cant * math.sin(angle)
+                ry =  cant * math.cos(angle)
+                specs.append((f"SL_{tag}{i}", (x, y, -z_offset), (rx, ry, 0)))
+        return specs
+
+    def _light_specs_diagonal_cross(self, z_offset: float):
+        """X-pattern (45° rotated cross), no centre.
+        Good for: pairing with the cardinal cross for a full 8-point star."""
+        o, c = self.offset_m, self.cant_deg
+        s = o / math.sqrt(2)       # diagonal offset to keep radius = offset_m
+        cd = c / math.sqrt(2)
+        return [
+            ("SL_tr", ( s,  s, -z_offset), (-cd,  cd, 0)),
+            ("SL_tl", (-s,  s, -z_offset), (-cd, -cd, 0)),
+            ("SL_br", ( s, -s, -z_offset), ( cd,  cd, 0)),
+            ("SL_bl", (-s, -s, -z_offset), ( cd, -cd, 0)),
+        ]
+
+    def _light_specs_star8(self, z_offset: float):
+        """Cardinal cross + diagonal X = 8-point star with centre.
+        Good for: maximum directional coverage at moderate light count."""
+        specs  = [("SL_centre", (0, 0, -z_offset), (0, 0, 0))]
+        specs += self._light_specs_cross(z_offset)[1:]           # drop duplicate centre
+        specs += self._light_specs_diagonal_cross(z_offset)
+        return specs
+
+    def _light_specs_line_h(self, z_offset: float, n_points: int = 5):
+        """Horizontal line of N evenly spaced points.
+        Good for: 1-D profilometry, scanning a surface ridge or step."""
+        o, c = self.offset_m, self.cant_deg
+        specs = []
+        for i in range(n_points):
+            t = (i / (n_points - 1) - 0.5) * 2   # -1 … +1
+            x = o * t
+            ry = c * t
+            specs.append((f"SL_h{i}", (x, 0, -z_offset), (0, ry, 0)))
+        return specs
+
+    def _light_specs_line_v(self, z_offset: float, n_points: int = 5):
+        """Vertical line of N evenly spaced points.
+        Good for: same as line_h but oriented along the vertical axis."""
+        o, c = self.offset_m, self.cant_deg
+        specs = []
+        for i in range(n_points):
+            t = (i / (n_points - 1) - 0.5) * 2
+            y = o * t
+            rx = -c * t
+            specs.append((f"SL_v{i}", (0, y, -z_offset), (rx, 0, 0)))
+        return specs
+
+    def _light_specs_triangle(self, z_offset: float):
+        """Equilateral triangle of 3 points, apex up.
+        Good for: minimal unambiguous orientation cue (3 pts fully constrain a plane)."""
+        o, c = self.offset_m, self.cant_deg
+        angles = [math.pi / 2, math.pi / 2 + 2 * math.pi / 3, math.pi / 2 + 4 * math.pi / 3]
+        return [
+            (f"SL_t{i}",
+            (o * math.cos(a), o * math.sin(a), -z_offset),
+            (-c * math.sin(a), c * math.cos(a), 0))
+            for i, a in enumerate(angles)
+        ]
+
     def _set_lights_visible(self, visible: bool):
         """Enable or disable all structured-light objects in the scene."""
-        for name in self._LIGHT_NAMES:
+        for name in self._light_names:
             obj = bpy.data.objects.get(name)
             if obj is not None:
                 obj.hide_render   = not visible
@@ -409,7 +558,7 @@ class StructuredLight:
 
     def _remove_lights(self):
         """Delete all structured-light objects and their data blocks."""
-        for name in self._LIGHT_NAMES:
+        for name in self._light_names:
             obj = bpy.data.objects.get(name)
             if obj is not None:
                 bpy.data.objects.remove(obj, do_unlink=True)

@@ -73,7 +73,7 @@ tof.set_noise(sigma_thermal=0.005, sigma_wiggling_k=0.003)
 tof.set_artefacts(multipath_strength=0.02, flying_pixel_radius=2)
 
 sl = corto.StructuredLight(State)
-sl.set_projector(offset_m=2, cant_deg=0.0, spot_size_deg=0.1, energy=1000.0)
+sl.set_projector(offset_m=0.05, cant_deg=5.0, spot_size_deg=0.1, energy=1000.0, projector_distance_m = 10, pattern="triangle")
 sl.set_color(r=1.0, g=0.0, b=0.0) # red
 sl.setup(State, cam)
 
@@ -86,18 +86,21 @@ n_img = 1 # Render the first "n_img" images
 for idx in range(0,n_img):
     ENV.PositionAll(State,index=idx)
     ENV.RenderOne(cam, State, index=idx)
+
+    # Structured Light projection
+    #TODO: running process_one at the end messes up again the render and generate double depths exr etc. 
+    #TODO: the light scaling according to distance to target is not working properly.
+    sl.process_one(State, index=idx)
+
     # LiDAR processing
     cam_obj = bpy.data.objects['WFOV_Camera']
     R = np.array(cam_obj.matrix_world)[:3, :3].astype(np.float32)
     lidar.set_camera_rotation(R)
     lidar.process_one(State, index=idx, cam=cam)
-    # # ToF processing
+
+    # ToF processing
     tof.set_camera_rotation(R)
     tof.process_one(State, index=idx, cam=cam)
-    # # Structured Light processing
-    #TODO: running process_one at the end messes up again the render and generate double depths exr etc. 
-    #TODO: the light scaling according to distance to target is not working properly.
-    # sl.process_one(State, index=idx)
 
 # Save .blend as debug
 corto.Utils.save_blend(State)
