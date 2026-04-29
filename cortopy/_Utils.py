@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import subprocess
 import shutil
 import cortopy as corto
+import imageio.v3 as iio
+
 from datetime import datetime
 
 class Utils:
@@ -78,7 +80,7 @@ class Utils:
             print(f"Error creating folder: {e}")   
 
     @staticmethod
-    def visualize_depth_map(path: str):
+    def visualize_depth_txt(path: str):
         """
         Visualize a depth map saved as a .txt 
         
@@ -100,6 +102,33 @@ class Utils:
         plt.show()
         return plt
     
+    @staticmethod
+    def visualize_depth_exr(path: str):
+        """
+        Visualize a depth map saved as a .exr file.
+
+        Args:
+            path (str): The path of the .exr depth map
+        """
+
+        depth = iio.imread(sys.path, plugin="EXR-FI")
+        # If multi-channel (H, W, C), take the first channel
+        if depth.ndim == 3:
+            depth = depth[:, :, 0]
+        # Define a threshold above which values are invalid (e.g. inf, nan, or 0)
+        invalid_mask = (depth == 0) | np.isinf(depth) | np.isnan(depth)
+        # Mask the depth map
+        masked_depth = np.ma.masked_where(invalid_mask, depth)
+        # Compute min and max of the masked (valid) depth
+        dmin = np.min(masked_depth)
+        dmax = np.max(masked_depth)
+
+        plt.figure()
+        plt.imshow(masked_depth, vmin=dmin, vmax=dmax, cmap="inferno", origin="lower")
+        plt.colorbar()
+        plt.show()
+        return plt
+
     @staticmethod
     def long_run_override(idx_start:int, idx_end:int, script_path: str):
         """

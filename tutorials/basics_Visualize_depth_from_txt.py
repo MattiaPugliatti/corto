@@ -12,4 +12,4 @@ depth_map_path = "/Users/mapu7335/Repos/corto/corto/output/S01_Eros/depth_txt/00
 # depth_map_path = "/Users/mapu7335/Repos/corto/corto/output/S06_Moon/depth_txt/000001.txt"
 # depth_map_path = "/Users/mapu7335/Repos/corto/corto/output/S07_Mars_Phobos_Deimos/depth_txt/000001.txt"
 
-corto.Utils.visualize_depth_map(depth_map_path)
+corto.Utils.visualize_depth_txt(depth_map_path)

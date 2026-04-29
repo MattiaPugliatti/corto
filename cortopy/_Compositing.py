@@ -222,6 +222,7 @@ class Compositing:
         Compositing.link_nodes(tree, denoise_node.outputs["Image"], gamma_node.inputs["Image"])
         Compositing.link_nodes(tree, gamma_node.outputs["Image"], composite_node.inputs["Image"])
 
+    @staticmethod
     def create_img_branch(tree,render_node, state:State):
         """method to create a simple image tree (for EEVEE)
 
@@ -234,6 +235,7 @@ class Compositing:
         # Link nodes toghether
         Compositing.link_nodes(tree, render_node.outputs["Image"], composite_node.inputs["Image"])
 
+    @staticmethod
     def create_depth_branch(tree,render_node,state:State):
         """method to create a simple depth tree 
 
@@ -247,11 +249,12 @@ class Compositing:
         depth_node.format.file_format = 'OPEN_EXR'  # Set file format to OpenEXR
         depth_node.format.color_mode = 'RGBA'  
         depth_node.format.color_depth = '32'  # Use 32-bit float precision
-        depth_node.base_path = os.path.join(state.path["output_path"], "depth_exr")
-        depth_node.file_slots[0].path = "######"  # Filename pattern
+        depth_node.base_path = state.path["output_path"]
+        depth_node.file_slots[0].path = "\depth_exr\######"
         # Depth branch
         Compositing.link_nodes(tree, render_node.outputs["Depth"], depth_node.inputs["Image"])
 
+    @staticmethod
     def create_slopes_branch(tree,render_node,state:State):
         """method to create a slopes tree
 
@@ -262,12 +265,119 @@ class Compositing:
         """
         # Create an output node
         normal_node = Compositing.normal_node(tree,(400,-200))
-        normal_node.format.color_depth = '16'
-        normal_node.base_path = os.path.join(state.path["output_path"])
-        normal_node.file_slots[0].path = "\slopes\######"
+        normal_node.name = 'OpenEXR Slopes'
+        normal_node.format.file_format = 'OPEN_EXR'  # Set file format to OpenEXR
+        normal_node.format.color_mode = 'RGBA'
+        normal_node.format.color_depth = '32'
+        normal_node.base_path = state.path["output_path"]
+        normal_node.file_slots[0].path = "\slopes_exr\######"
         # Normal branch 
         Compositing.link_nodes(tree, render_node.outputs["Normal"], normal_node.inputs["Image"])
 
+    @staticmethod
+    def create_lidar_depth_branch(tree, render_node, state: State):
+        """Create a dedicated 32-bit EXR depth output node for LiDAR post-processing.
+ 
+        Mirrors create_depth_branch but routes to a separate lidar/depth_exr
+        subfolder so the LiDAR point-cloud generator can find its inputs
+        independently of the standard depth output.
+ 
+        Args:
+            tree (Compositing.tree): compositing node tree
+            render_node (Compositing.node): Render Layers node to link from
+            state (corto.State): corto state, for path handling
+        """
+        lidar_depth_node = Compositing.depth_node(tree, (400, 0))
+        combine_node = tree.nodes.new("CompositorNodeCombineColor")
+        combine_node.location = (200, 0)
+
+        lidar_depth_node.name = "LiDAR Depth EXR"
+        lidar_depth_node.format.file_format = "OPEN_EXR"
+        lidar_depth_node.format.color_mode  = "RGBA"
+        lidar_depth_node.format.color_depth = "32"   # float32 mandatory for metric depth
+        lidar_depth_node.base_path          = os.path.join(state.path["output_path"])
+        lidar_depth_node.file_slots[0].path = "\lidar\\depth_exr\######"
+ 
+        Compositing.link_nodes(tree, render_node.outputs["Depth"],combine_node.inputs["Red"])
+        Compositing.link_nodes(tree, combine_node.outputs["Image"],lidar_depth_node.inputs["Image"])
+
+    @staticmethod
+    def create_lidar_normal_branch(tree, render_node, state: State):
+        """Create a dedicated EXR normal output node for LiDAR intensity modelling.
+ 
+        The normal pass is used downstream to compute the surface incidence
+        angle per beam, which drives both the intensity channel and the
+        missing-return (grazing angle) mask.
+ 
+        Args:
+            tree (Compositing.tree): compositing node tree
+            render_node (Compositing.node): Render Layers node to link from
+            state (corto.State): corto state, for path handling
+        """
+        lidar_normal_node = Compositing.normal_node(tree, (400, -300))
+        lidar_normal_node.name = "LiDAR Normal EXR"
+        lidar_normal_node.format.file_format = "OPEN_EXR"
+        lidar_normal_node.format.color_mode  = "RGB"
+        lidar_normal_node.format.color_depth = "16"
+        lidar_normal_node.base_path          = os.path.join(state.path["output_path"])
+        lidar_normal_node.file_slots[0].path = "\lidar\\normal_exr\######"
+
+        Compositing.link_nodes(tree, render_node.outputs["Normal"],lidar_normal_node.inputs["Image"])
+
+    @staticmethod
+    def create_tof_branch(tree, render_node, state: State):
+        """Create all EXR output nodes required for ToF camera post-processing.
+
+        A Time-of-Flight sensor needs three render passes:
+          - Depth  (32-bit float)  : metric Z distance per pixel
+          - Normal (16-bit float)  : surface normals for incidence angle
+          - DiffCol (16-bit float) : diffuse albedo for intensity modelling
+
+        All outputs are routed to <output_path>/tof/ so the ToF class can
+        find them independently of the standard depth / slope outputs.
+
+        Args:
+            tree (Compositing.tree): compositing node tree
+            render_node (Compositing.node): Render Layers node to link from
+            state (corto.State): corto state, for path handling
+        """
+        # ── Depth pass (32-bit – mandatory for metric accuracy) ───────
+        tof_depth_node = Compositing.depth_node(tree, (400, 100))
+        tof_depth_node.name                    = "ToF Depth EXR"
+        tof_depth_node.format.file_format      = "OPEN_EXR"
+        tof_depth_node.format.color_mode       = "RGBA"
+        tof_depth_node.format.color_depth      = "32"
+        tof_depth_node.base_path          = os.path.join(state.path["output_path"])
+        tof_depth_node.file_slots[0].path = "\\tof\depth_exr\######"
+
+        Compositing.link_nodes(tree, render_node.outputs["Depth"], tof_depth_node.inputs["Image"])
+
+        # ── Normal pass (16-bit) ──────────────────────────────────────
+        tof_normal_node = Compositing.normal_node(tree, (400, -150))
+        tof_normal_node.name                   = "ToF Normal EXR"
+        tof_normal_node.format.file_format     = "OPEN_EXR"
+        tof_normal_node.format.color_mode      = "RGB"
+        tof_normal_node.format.color_depth     = "16"
+        tof_normal_node.base_path          = os.path.join(state.path["output_path"])
+        tof_normal_node.file_slots[0].path = "\\tof\\normal_exr\######"
+
+        Compositing.link_nodes(tree, render_node.outputs["Normal"], tof_normal_node.inputs["Image"])
+
+        # ── Diffuse colour / albedo pass (16-bit) ─────────────────────
+        # Requires "Diffuse Color" to be enabled in View Layer properties.
+        # If the output socket does not exist this step is silently skipped.
+        if "DiffCol" in render_node.outputs:
+            tof_albedo_node = Compositing.depth_node(tree, (400, -400))
+            tof_albedo_node.name               = "ToF Albedo EXR"
+            tof_albedo_node.format.file_format = "OPEN_EXR"
+            tof_albedo_node.format.color_mode  = "RGB"
+            tof_albedo_node.format.color_depth = "16"
+            tof_albedo_node.base_path          = os.path.join(state.path["output_path"])
+            tof_albedo_node.file_slots[0].path = "\\tof\albedo_exr\######"
+
+            Compositing.link_nodes(tree, render_node.outputs["DiffCol"], tof_albedo_node.inputs["Image"])
+
+    @staticmethod
     def create_maskID_branch(tree,render_node,state:State):
         """method to create a ID mask tree
 
@@ -296,6 +406,7 @@ class Compositing:
         Compositing.link_nodes(tree, render_node.outputs["IndexOB"], maskID_node.inputs["ID value"])
         Compositing.link_nodes(tree, maskID_node.outputs["Alpha"], output_node_2.inputs[0])
 
+    @staticmethod
     def create_lunar_tile_labels(tree,render_node, state:State):
         """method to create a lunar tile tree
 
