@@ -33,7 +33,9 @@ class Shading:
         "script_node": "ShaderNodeScript",
         "combine_XYZ_node":"ShaderNodeCombineXYZ",
         "hue_saturation_node": "ShaderNodeHueSaturation",
-        
+        "rgb_to_bw_node": "ShaderNodeRGBToBW",
+        "brght_contrast_node":"ShaderNodeBrightContrast",
+
         # Shaders
         "diffuse_BSDF": "ShaderNodeBsdfDiffuse",
         "principled_BSDF": "ShaderNodeBsdfPrincipled",
@@ -1045,6 +1047,127 @@ class Shading:
         node_tree.node_tree.nodes["Group"].inputs['Cam_Y'].default_value = settings["cam_pos"][1]
         node_tree.node_tree.nodes["Group"].inputs['Cam_Z'].default_value = settings["cam_pos"][2]
 
+
+    def create_phobos_opt_shader(
+        material: bpy.types.Material, 
+        state: State, 
+        settings:dict = None , 
+        id_body: int = None
+        ):
+
+        if id_body is not None:
+            # Convert id_body to string to concatenate with the path key
+            albedo_path_key = f"albedo_path_{id_body}"
+        else:
+            # Default texture key if id_body is not provided
+            albedo_path_key = "albedo_path"
+        if albedo_path_key not in state.path:
+            raise Exception('No albedo texture found at the specified path')
+
+        ## Part 1 - Create all necessary nodes
+        uv_map_node = Shading.uv_map_node(material, (-600, 0))
+        albedo_texture = Shading.texture_node(material, state.path[albedo_path_key], location=(-400, 0))
+        mix_node = Shading.mix_node(material, (400, 0))
+        mix_shader_node = Shading.mix_shader_node(material, (400, 0))
+        diffuse_BSDF_node = Shading.diffuse_BSDF(material, (0, 200))
+        principled_BSDF_node = Shading.principled_BSDF(material, (0, 0))
+        material_node = Shading.material_output(material, (600, 0))
+        value_node = Shading.value_node(material, (600, 0))
+        rgb_to_bw_node = Shading.rgb_to_bw_node(material, (600, 0))
+            
+        ## Part 2 - Setup nodes properties
+        mix_node.data_type = 'FLOAT'
+        value_node.outputs[0].default_value = settings['base_gray']
+        mix_node.inputs['Factor'].default_value = settings['tex_mix']
+        diffuse_BSDF_node.inputs['Roughness'].default_value = settings['oren_rough']
+        principled_BSDF_node.inputs['Roughness'].default_value = settings['princ_rough']
+        principled_BSDF_node.inputs['IOR'].default_value = settings['ior']
+        mix_shader_node.inputs[0].default_value = settings['shader_mix']
+
+        ## Part 3 - Link nodes toghether
+        Shading.link_nodes(material, uv_map_node.outputs["UV"], albedo_texture.inputs["Vector"])
+        Shading.link_nodes(material, albedo_texture.outputs['Color'],   rgb_to_bw_node.inputs['Color'])
+        Shading.link_nodes(material, rgb_to_bw_node.outputs['Val'],   mix_node.inputs['A'])
+        Shading.link_nodes(material, value_node.outputs['Value'],   mix_node.inputs['B'])
+        Shading.link_nodes(material, mix_node.outputs['Result'], diffuse_BSDF_node.inputs['Color'])
+        Shading.link_nodes(material, mix_node.outputs['Result'], principled_BSDF_node.inputs['Base Color'])
+        Shading.link_nodes(material, albedo_texture.outputs["Color"], principled_BSDF_node.inputs["Base Color"])
+        Shading.link_nodes(material, diffuse_BSDF_node.outputs["BSDF"], mix_shader_node.inputs[1])
+        Shading.link_nodes(material, principled_BSDF_node.outputs["BSDF"], mix_shader_node.inputs[2])
+        Shading.link_nodes(material, mix_shader_node.outputs["Shader"], material_node.inputs["Surface"])
+
+    def create_mars_opt_shader(
+        material: bpy.types.Material, 
+        state: State, 
+        settings:dict = None , 
+        id_body: int = None
+    ):
+        # TODO: find a way to add this
+        # # Fix albedo colorspace: CORTO defaults to sRGB, must be Non-Color
+        # for _akey in ['albedo_path_2', 'albedo_path_3']:
+        #     _img_name = os.path.basename(State.path.get(_akey, ''))
+        #     if _img_name and _img_name in bpy.data.images:
+        #         bpy.data.images[_img_name].colorspace_settings.name = 'Non-Color'
+        #         print(f"  Albedo colorspace → Non-Color: {_img_name}")
+
+        if id_body is not None:
+            # Convert id_body to string to concatenate with the path key
+            albedo_path_key = f"albedo_path_{id_body}"
+        else:
+            # Default texture key if id_body is not provided
+            albedo_path_key = "albedo_path"
+        if albedo_path_key not in state.path:
+            raise Exception('No albedo texture found at the specified path')
+        
+        ## Part 1 - Create all necessary nodes
+        uv_map_node = Shading.uv_map_node(material, (-600, 0))
+        albedo_texture = Shading.texture_node(material, state.path[albedo_path_key], location=(-400, 0))
+        mix_node = Shading.mix_node(material, (400, 0))
+        mix_shader_node = Shading.mix_shader_node(material, (400, 0))
+        diffuse_BSDF_node = Shading.diffuse_BSDF(material, (0, 200))
+        principled_BSDF_node = Shading.principled_BSDF(material, (0, 0))
+        material_node = Shading.material_output(material, (600, 0))
+        value_node = Shading.value_node(material, (600, 0))
+        rgb_to_bw_node = Shading.rgb_to_bw_node(material, (600, 0))
+        brght_contrast_node = Shading.brght_contrast_node(material, (600, 0))
+        shader_multiply_node = Shading.vector_math_node(material, (600, 0))
+
+        ## Part 2 - Setup nodes properties
+        shader_multiply_node.operation = 'MULTIPLY'
+        diffuse_BSDF_node.inputs['Roughness'].default_value = 0.9
+        principled_BSDF_node.inputs['Roughness'].default_value = 0.85
+        if 'IOR' in principled_BSDF_node.inputs:
+            principled_BSDF_node.inputs['IOR'].default_value = 1.50
+        for _sp in ('Specular IOR Level', 'Specular'):
+            if _sp in principled_BSDF_node.inputs:
+                principled_BSDF_node.inputs[_sp].default_value = 0.50
+                break
+        for _sl in ('Metallic', 'Clearcoat', 'Sheen', 'Coat Weight'):
+            if _sl in principled_BSDF_node.inputs:
+                principled_BSDF_node.inputs[_sl].default_value = 0.0
+        value_node.outputs[0].default_value = settings['base_gray']
+        mix_node.inputs['Factor'].default_value = settings['tex_mix']
+        diffuse_BSDF_node.inputs['Roughness'].default_value = settings['oren_rough']
+        principled_BSDF_node.inputs['Roughness'].default_value = settings['princ_rough']
+        principled_BSDF_node.inputs['IOR'].default_value = settings['ior']
+        mix_shader_node.inputs[0].default_value = settings['shader_mix']
+        brght_contrast_node.inputs['Contrast'].default_value = settings["contrast"]
+        shader_multiply_node.inputs[1].default_value[0] = settings["albedo_mul"]
+        shader_multiply_node.inputs[1].default_value[1] = settings["albedo_mul"]
+        shader_multiply_node.inputs[1].default_value[2] = settings["albedo_mul"]
+        mix_shader_node.inputs[0].default_value = 0.1
+
+        ## Part 3 - Link nodes toghether #TODO: implementation not completed!
+        Shading.link_nodes(material, uv_map_node.outputs["UV"], albedo_texture.inputs["Vector"])
+        Shading.link_nodes(material, albedo_texture.outputs['Color'],   rgb_to_bw_node.inputs['Color'])
+        Shading.link_nodes(material, rgb_to_bw_node.outputs['Val'],   mix_node.inputs['A'])
+        Shading.link_nodes(material, value_node.outputs['Value'],   mix_node.inputs['B'])
+        Shading.link_nodes(material, mix_node.outputs['Result'], diffuse_BSDF_node.inputs['Color'])
+        Shading.link_nodes(material, mix_node.outputs['Result'], principled_BSDF_node.inputs['Base Color'])
+        Shading.link_nodes(material, albedo_texture.outputs["Color"], principled_BSDF_node.inputs["Base Color"])
+        Shading.link_nodes(material, diffuse_BSDF_node.outputs["BSDF"], mix_shader_node.inputs[1])
+        Shading.link_nodes(material, principled_BSDF_node.outputs["BSDF"], mix_shader_node.inputs[2])
+        Shading.link_nodes(material, mix_shader_node.outputs["Shader"], material_node.inputs["Surface"])
 
     def assign_material_to_object(
         material:bpy.types.Material, 
