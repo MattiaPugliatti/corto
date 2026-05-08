@@ -106,6 +106,7 @@ class StructuredLight:
         "line_h":           "_light_specs_line_h",
         "line_v":           "_light_specs_line_v",
         "triangle":         "_light_specs_triangle",
+        "gridNxN":         "_light_specs_grid_nxn",
     }
     
     @property
@@ -451,6 +452,28 @@ class StructuredLight:
             rx = -c * (y / o) if o != 0 else 0
             ry =  c * (x / o) if o != 0 else 0
             specs.append((f"SL_{i}", (x, y, -z_offset), (rx, ry, 0)))
+        return specs
+
+    def _light_specs_grid_nxn(self, z_offset: float, n: int = 5):
+        """N×N uniform grid (n² points).
+        Good for: dense planar coverage, surface normal estimation.
+        n must be odd to include a center point (e.g. 3, 5, 7)."""
+        o, c = self.offset_m, self.cant_deg
+
+        if n % 2 == 0:
+            raise ValueError(f"n must be odd to include a center point, got {n}")
+
+        half = n // 2
+        steps = [i * o / half for i in range(-half, half + 1)] if half != 0 else [0]
+
+        specs = []
+        i = 0
+        for y in reversed(steps):       # top → bottom (matches original row order)
+            for x in steps:             # left → right
+                rx = -c * (y / o) if o != 0 else 0
+                ry =  c * (x / o) if o != 0 else 0
+                specs.append((f"SL_{i}", (x, y, -z_offset), (rx, ry, 0)))
+                i += 1
         return specs
 
     def _light_specs_ring(self, z_offset: float, n_points: int = 8):
