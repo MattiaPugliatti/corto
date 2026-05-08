@@ -24,7 +24,7 @@ corto.Utils.clean_scene()
 scenario_name = "S07_Mars_Phobos_Deimos" # Name of the scenario folder
 scene_name = "scene_optimized.json" # name of the scene input
 geometry_name = "geometry_optimized.json" # name of the geometry input
-setup_fidelity = 'hires' # "lowres" or "hires"
+setup_fidelity = 'lowres' # "lowres" or "hires"
 
 if setup_fidelity == 'lowres': # LOW-RES setup
     body_name = ["g_phobos_287m_spc_0000n00000_v002.obj",
