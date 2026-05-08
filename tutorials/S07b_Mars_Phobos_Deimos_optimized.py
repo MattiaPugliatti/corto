@@ -24,7 +24,7 @@ corto.Utils.clean_scene()
 scenario_name = "S07_Mars_Phobos_Deimos" # Name of the scenario folder
 scene_name = "scene_optimized.json" # name of the scene input
 geometry_name = "geometry_optimized.json" # name of the geometry input
-setup_fidelity = 'lowres' # "lowres" or "hires"
+setup_fidelity = 'hires' # "lowres" or "hires"
 
 if setup_fidelity == 'lowres': # LOW-RES setup
     body_name = ["g_phobos_287m_spc_0000n00000_v002.obj",
@@ -33,11 +33,11 @@ if setup_fidelity == 'lowres': # LOW-RES setup
     # Load inputs and settings into the State object
     State = corto.State(scene = scene_name, geometry = geometry_name, body = body_name, scenario = scenario_name)
     # Add extra inputs 
-    State.add_path('albedo_path_1',os.path.join(State.path["input_path"],'body','albedo','Phobos grayscale.jpg'))
+    State.add_path('albedo_path_1',os.path.join(State.path["input_path"],'body','albedo','Phobos Grayscale.jpg'))
     State.add_path('uv_data_path_1',os.path.join(State.path["input_path"],'body','uv data','g_phobos_287m_spc_0000n00000_v002.json'))
     State.add_path('albedo_path_2',os.path.join(State.path["input_path"],'body','albedo','Mars_MOC_f32.tif'))
     State.add_path('uv_data_path_2',os.path.join(State.path["input_path"],'body','uv data','Mars_65k.json'))
-    State.add_path('displacement_path_2', os.path.join(State.path["input_path"], 'body', 'displacement', 'Mars_MOLA_DEM_f32.tif'))
+    State.add_path('displacement_path_2', os.path.join(State.path["input_path"], 'body', 'displacement', 'Mars_MOLA_DEM_f32_8x.tif'))
     State.add_path('albedo_path_3',os.path.join(State.path["input_path"],'body','albedo','Deimos Grayscale.jpg'))
     State.add_path('uv_data_path_3',os.path.join(State.path["input_path"],'body','uv data','g_deimos_162m_spc_0000n00000_v001.json'))
 elif setup_fidelity == 'hires': # HIGH-RES setup (run at your own risk)
@@ -47,11 +47,12 @@ elif setup_fidelity == 'hires': # HIGH-RES setup (run at your own risk)
     # Load inputs and settings into the State object
     State = corto.State(scene = scene_name, geometry = geometry_name, body = body_name, scenario = scenario_name)
     # Add extra inputs 
-    State.add_path('albedo_path_1',os.path.join(State.path["input_path"],'body','albedo','Phobos grayscale.jpg'))
+    State.add_path('albedo_path_1',os.path.join(State.path["input_path"],'body','albedo','Phobos Grayscale.jpg'))
     State.add_path('uv_data_path_1',os.path.join(State.path["input_path"],'body','uv data','g_phobos_018m_spc_0000n00000_v002.json'))
     State.add_path('albedo_path_2',os.path.join(State.path["input_path"],'body','albedo','Mars_MOC_f32.tif'))
     State.add_path('uv_data_path_2',os.path.join(State.path["input_path"],'body','uv data','Mars_65k.json'))
     State.add_path('displacement_path_2', os.path.join(State.path["input_path"], 'body', 'displacement', 'Mars_MOLA_DEM_f32.tif'))
+    # State.add_path('displacement_path_2', os.path.join(State.path["input_path"], 'body', 'displacement', 'Mars_MOLA_DEM_f32_8x.tif'))
     State.add_path('albedo_path_3',os.path.join(State.path["input_path"],'body','albedo','Deimos Grayscale.jpg'))
     State.add_path('uv_data_path_3',os.path.join(State.path["input_path"],'body','uv data','g_deimos_020m_spc_0000n00000_v001.json'))
 
@@ -70,6 +71,10 @@ rendering_engine = corto.Rendering(State.properties_rendering)
 ENV = corto.Environment(cam, [body_1, body_2, body_3], sun, rendering_engine)
 
 ### (3) MATERIAL PROPERTIES ###
+material_1 = corto.Shading.create_new_material('Phobos_Optimized')
+material_2 = corto.Shading.create_new_material('Mars_Standard')
+material_3 = corto.Shading.create_new_material('Deimos_Standard')
+
 settings_phobos_shader = {
     "base_gray": 0.5854006741991221,
     "tex_mix": 0.8253680350717726,
@@ -83,7 +88,6 @@ settings_mars_shader = {
     "displacement": {
         'scale': 0.001, 
         'mid_level': 6690.0, 
-        'colorspace_name': 'Non-Color'
         },
     "albedo": {
         'weight_diffuse': 0.95
@@ -102,29 +106,18 @@ settings_thr_val ={
     "threshold_value": 0.002319883899697151
     }
 
-material_1 = corto.Shading.create_new_material('Phobos_Optimized')
-material_2 = corto.Shading.create_new_material('Mars_Standard')
-material_3 = corto.Shading.create_new_material('Deimos_Standard')
-
-### --- Phobos --- ###
 corto.Shading.create_phobos_opt_shader(material_1, State, settings_phobos_shader, 1)
-# corto.Shading.load_uv_data(body_1, State, 1) # TODO: RUN THIS AFTER DOWNLOADING UV DATA
-corto.Shading.assign_material_to_object(material_1, body_1)
-
-### --- Mars --- ###
 corto.Shading.create_mars_opt_shader(material_2, State, settings_mars_shader, 2)
-# corto.Shading.load_uv_data(body_2, State, 2) # TODO: RUN THIS AFTER DOWNLOADING UV DATA
-corto.Shading.assign_material_to_object(material_2, body_2)
-
-### --- Deimos --- ###
 corto.Shading.create_branch_albedo_mix(material_3, State, settings = None, id_body = 3)
-# corto.Shading.load_uv_data(body_3, State, 3) # TODO: RUN THIS AFTER DOWNLOADING UV DATA
+
+corto.Shading.load_uv_data(body_1, State, 1)
+corto.Shading.assign_material_to_object(material_1, body_1)
+corto.Shading.load_uv_data(body_2, State, 2)
+corto.Shading.assign_material_to_object(material_2, body_2)
+corto.Shading.load_uv_data(body_3, State, 3)
 corto.Shading.assign_material_to_object(material_3, body_3)
 
-corto.Utils.save_blend(State)
-
 ### (4) COMPOSITING PROPERTIES ###
-
 tree = corto.Compositing.create_compositing()
 render_node = corto.Compositing.rendering_node(tree, (0, 0)) # Create Render node
 corto.Compositing.create_img_denoise_branch(tree, render_node) # Create img_denoise branch
@@ -135,6 +128,7 @@ body_1.set_scale(np.array([1, 1, 1]))
 body_2.set_scale(np.array([1, 1, 1]))
 body_3.set_scale(np.array([1, 1, 1]))
 
+# Optional, define sun_energy function to set sun energy per frame (if needed, e.g. for non-constant sun distance)
 def set_sun_energy_idx(sun):
     """Calculate Sun lamp energy from Sun position (inverse-square law)."""
     AU_KM = 149597870.7
@@ -149,8 +143,8 @@ def set_sun_energy_idx(sun):
     energy = SUN_BLENDER_SCALER * irradiance
     sun.set_energy(energy)
 
-# OSIRIS NAC camera config (from mission_config.py)
-OSIRIS_FOV_DEG = 2.0 * math.degrees(math.atan(27.648 / (2.0 * 712.4)))  # 2.2226 deg # TODO, bring it into config file of the scene
+# Optional, switch camera FOV for different frames (e.g. to simulate different cameras)
+OSIRIS_FOV_DEG = 2.0 * math.degrees(math.atan(27.648 / (2.0 * 712.4))) # 2.2226 deg 
 HRSC_FOV = cam.CAM_Blender.data.angle  # save original HRSC FOV 
 
 n_img = 8 # 0-5: HRSC, 6-7: OSIRIS
@@ -159,11 +153,9 @@ for idx in range(0, n_img):
     if idx == 6:
         # Switch to OSIRIS NAC camera
         cam.CAM_Blender.data.angle = math.radians(OSIRIS_FOV_DEG)
-    # Set Sun energy per frame
-    set_sun_energy_idx(sun)
-    # Position and Render
-    ENV.PositionAll(State, index=idx)
-    ENV.RenderOne(cam, State, index=idx, depth_flag=True)
 
-# Save .blend as debug
+    ENV.PositionAll(State, index=idx)
+    set_sun_energy_idx(sun) # Set Sun energy per frame
+    ENV.RenderOne(cam, State, index=idx)
+
 corto.Utils.save_blend(State)
