@@ -1,65 +1,26 @@
 """
-================================
+===================
 Simulated structured-light sensor class for the CORTO rendering pipeline.
-
-Mirrors the LiDAR and ToF class patterns:
-  - Instantiated once before the rendering loop.
-  - Configured via set_* methods.
-  - process_one() called inside the loop after ENV.PositionAll().
 
 Working principle
 -----------------
-Five red spot lights are arranged in a cross pattern and rigidly parented
-to the Blender camera object, so they move with it exactly.  For each
+A pattern of N red spot lights are arranged and rigidly parented
+to the Blender camera object, so they move with it exactly (or scaled).  For each
 frame the sensor:
   1. Enables all five lights.
   2. Calls bpy.ops.render.render() to capture the scene with the
      projected pattern.
   3. Saves the RGB image.
-  4. Disables all five lights, leaving the scene clean for other sensors.
+  4. Disables all five lights, leaving the scene clean for other sensors to be activated.
 
-Light layout (viewed from behind the projector, looking toward target)
------------------------------------------------------------------------
+Typical usage in a rendering script
+-------------------------------------
+see S10_Spacecraft.py for a complete example.
 
-                        [top]
-                          |
-             [left] -- [centre] -- [right]
-                          |
-                       [bottom]
-
-The four outer lights are canted outward by `cant_deg` so their beams
-diverge slightly from the optical axis, spreading the cross pattern over
-a wider area on the target surface.
-
-Cant angle convention
----------------------
-    cant_deg = 0   → all five beams are parallel (pure translation pattern)
-    cant_deg > 0   → outer beams toe outward; pattern spreads with distance
-
-Output
-------
+Output files
+-------------
 One PNG image per frame saved to:
     <output_path>/structured_light/images/<######>.png
-
-Typical usage
--------------
-    import cortopy as corto
-
-    sl = corto.StructuredLight(State)
-    sl.set_projector(
-        offset_m      = 0.05,    # cross arm length (m) – distance from centre to outer light
-        cant_deg      = 5.0,     # outward cant angle of the four outer lights
-        spot_size_deg = 3.0,     # half-angle of each spot cone
-        energy        = 500.0,   # light power (W)
-    )
-    sl.set_color(r=1.0, g=0.0, b=0.0)   # red by default
-    sl.setup(State)                       # creates lights in the Blender scene
-
-    for idx in range(n_img):
-        ENV.PositionAll(State, index=idx)
-        sl.process_one(State, index=idx)
-
-    sl.teardown()   # removes lights from scene (optional, call at end)
 
 Notes
 -----

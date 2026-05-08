@@ -5,71 +5,11 @@ Simulated LiDAR sensor class for the CORTO rendering pipeline.
 Mirrors the Camera class pattern: the LiDAR object is instantiated once,
 configured via set_* methods or directly from the State JSON, and then
 process_one() is called inside the rendering loop after each
-ENV.RenderOne() call to convert the rendered EXR passes into a point cloud.
+ENV.RenderOne() call to convert the rendered EXR passes into a LiDAR point cloud.
 
 Typical usage in a rendering script
 -------------------------------------
-    import cortopy as corto
-
-    # (1) Build the scene as usual
-    ...
-
-    # (2) Set up compositing – add the two LiDAR branches alongside the
-    #     existing depth / slope branches
-    corto.Compositing.create_lidar_depth_branch(tree, render_node, State)
-    corto.Compositing.create_lidar_normal_branch(tree, render_node, State)
-
-    # (3) Instantiate and configure the LiDAR sensor
-    lidar = corto.LiDAR(State)
-    lidar.set_scan_pattern(n_channels=16, v_fov=(-15.0, 15.0),
-                           h_fov=(-60.0, 60.0), h_resolution=0.2)
-    lidar.set_noise(range_sigma=0.02, angle_sigma_deg=0.02)
-    lidar.set_range(max_range=200.0, range_bin_m=0.01)
-    lidar.set_returns(min_intensity=0.01, grazing_deg=80.0)
-
-    # (4) Rendering loop
-    for idx in range(n_img):
-        ENV.PositionAll(State, index=idx)
-        ENV.RenderOne(cam, State, index=idx)
-        lidar.process_one(State, index=idx, cam=cam)   # ← new call
-
-        Bugs fixed
-        ----------
-        BUG 1 – Wrong depth EXR channel name
-            Old: self._load_exr_channel(depth_path, "V")
-            Fix: self._load_exr_channel(depth_path, "R")
-            Reason: Blender writes depth in channel "R" when color_mode="RGBA"
-            (which is what create_lidar_depth_branch sets). "V" does not exist
-            in that file and silently returned zeros, giving r_true = 0 everywhere.
-
-        BUG 2 – World-space normals dotted with camera-space ray vectors
-            Old: cos_inc = dot(-ray_cam_vec, normal_world)
-            Fix: compute cos_inc entirely in world space.
-            Reason: Blender's Normal pass outputs *world-space* unit normals.
-            The ray directions built from pixel coordinates are in *camera space*.
-            Mixing the two coordinate frames gives a physically meaningless dot
-            product and incorrect incidence angles.
-            Fix strategy: for each beam, compute the ray direction in world space
-            using the camera rotation matrix (R_cam2world), then dot with the
-            world-space normal. If the camera matrix is not available, fall back
-            to using only the world-Z component of the normal as a cos_inc proxy
-            (valid when the camera looks along the world -Z axis, the Blender default).
-
-        BUG 3 – Intensity gate rejects all points at realistic ranges
-            Old: intensity = 0.5 * cos_inc / r^2
-                if intensity < 0.01: continue   ← kills everything beyond ~7 m
-            Fix: normalise intensity by (max_range)^2 so the scale is [0,1]
-                across the full sensor range:
-                intensity = albedo * cos_inc / (r / max_range)^2
-            Now intensity = 1.0 for albedo=1, cos_inc=1, r=max_range (near limit),
-            and the gate min_intensity=0.01 is meaningful.
-
-        BUG 5 – h_fov (-180,+180) fires 1800 beams, only ~60-deg FOV hits the image
-            This is a configuration issue, not a code bug, but _beam_grid now
-            auto-clips h_fov to the camera's horizontal FOV when set_scan_pattern
-            is called with use_camera_fov=True (default).
-            Alternatively the user sets h_fov explicitly to match their camera,
-            e.g. h_fov=(-30, +30) for a 60-deg camera.
+see S10_Spacecraft.py for a complete example.
 
 Output files
 -------------

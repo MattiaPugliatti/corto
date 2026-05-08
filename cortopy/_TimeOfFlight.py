@@ -2,52 +2,26 @@
 ===================
 Simulated Time-of-Flight (ToF) camera class for the CORTO rendering pipeline.
 
-Mirrors the LiDAR class pattern exactly:
-  - Instantiated once before the rendering loop.
-  - Configured via set_* methods.
-  - process_one() called inside the loop after each ENV.RenderOne().
 
-Output
-------
+Mirrors the Camera class pattern: the ToF object is instantiated once,
+configured via set_* methods or directly from the State JSON, and then
+process_one() is called inside the rendering loop after each
+ENV.RenderOne() call to convert the rendered EXR passes into a ToF images.
+
+Typical usage in a rendering script
+-------------------------------------
+see S10_Spacecraft.py for a complete example.
+
+Output files
+-------------
 Two images per frame, saved under <output_path>/tof/images/:
 
     <######>_depth.npy      float32 (H, W)   metric radial range (m),
                                               NaN where no valid return.
+
     <######>_intensity.npy  float32 (H, W)   normalised return amplitude
                                               [0, 1], NaN where invalid.
-
-Physics modelled
-----------------
-  1. Z-depth -> radial range        (axis-orthogonal -> slant correction)
-  2. Range discretisation           (ADC bin quantisation)
-  3. Wiggling / phase noise         (systematic Gaussian, grows with r^2)
-  4. Thermal / read noise           (additive Gaussian, constant floor)
-  5. Shot noise (Poisson)           (photon-count dependent)
-  6. Multi-path bias                (positive bias near depth edges)
-  7. Flying pixels at edges         (interpolated artefact near boundaries)
-  8. Incidence-angle intensity      (Lambertian x albedo / r^2)
-  9. Invalid-pixel masking          (grazing angle, max range, low signal)
-
-Typical usage
--------------
-    import cortopy as corto
-
-    corto.Compositing.create_tof_branch(tree, render_node, State)
-
-    tof = corto.ToF(State)
-    tof.set_sensor(width=640, height=480, fov_x_deg=70.0)
-    tof.set_range(max_range=10.0, range_bin_m=0.001)
-    tof.set_noise(sigma_thermal=0.005, sigma_wiggling_k=0.003,
-                  shot_noise=True)
-    tof.set_artefacts(multipath_strength=0.02, flying_pixel_radius=2)
-    tof.set_returns(min_intensity=0.005, grazing_deg=75.0)
-
-    for idx in range(n_img):
-        ENV.PositionAll(State, index=idx)
-        ENV.RenderOne(cam, State, index=idx)
-        tof.process_one(State, index=idx, cam=cam)
 """
-
 from __future__ import annotations
 
 import os
