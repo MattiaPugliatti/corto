@@ -28,33 +28,30 @@ setup_fidelity = 'lowres' # "lowres" or "hires"
 
 if setup_fidelity == 'lowres': # LOW-RES setup
     body_name = ["g_phobos_287m_spc_0000n00000_v002.obj",
-                "Mars_65k.obj",
+                "Mars_65k_km.obj",
                 "g_deimos_162m_spc_0000n00000_v001.obj"] # name of the body input
     # Load inputs and settings into the State object
     State = corto.State(scene = scene_name, geometry = geometry_name, body = body_name, scenario = scenario_name)
     # Add extra inputs 
-    State.add_path('albedo_path_1',os.path.join(State.path["input_path"],'body','albedo','Phobos Grayscale.jpg'))
     State.add_path('uv_data_path_1',os.path.join(State.path["input_path"],'body','uv data','g_phobos_287m_spc_0000n00000_v002.json'))
-    State.add_path('albedo_path_2',os.path.join(State.path["input_path"],'body','albedo','Mars_MOC_f32.tif'))
     State.add_path('uv_data_path_2',os.path.join(State.path["input_path"],'body','uv data','Mars_65k.json'))
-    State.add_path('displacement_path_2', os.path.join(State.path["input_path"], 'body', 'displacement', 'Mars_MOLA_DEM_f32_8x.tif'))
-    State.add_path('albedo_path_3',os.path.join(State.path["input_path"],'body','albedo','Deimos Grayscale.jpg'))
     State.add_path('uv_data_path_3',os.path.join(State.path["input_path"],'body','uv data','g_deimos_162m_spc_0000n00000_v001.json'))
+    State.add_path('displacement_path_2', os.path.join(State.path["input_path"], 'body', 'displacement', 'Mars_MOLA_DEM_f32_8x.tif'))
 elif setup_fidelity == 'hires': # HIGH-RES setup (run at your own risk)
     body_name = ["g_phobos_018m_spc_0000n00000_v002.obj",
-                "Mars_65k.obj",
+                "Mars_65k_km.obj",
                 "g_deimos_020m_spc_0000n00000_v001.obj"] # name of the body input
     # Load inputs and settings into the State object
     State = corto.State(scene = scene_name, geometry = geometry_name, body = body_name, scenario = scenario_name)
     # Add extra inputs 
-    State.add_path('albedo_path_1',os.path.join(State.path["input_path"],'body','albedo','Phobos Grayscale.jpg'))
     State.add_path('uv_data_path_1',os.path.join(State.path["input_path"],'body','uv data','g_phobos_018m_spc_0000n00000_v002.json'))
-    State.add_path('albedo_path_2',os.path.join(State.path["input_path"],'body','albedo','Mars_MOC_f32.tif'))
     State.add_path('uv_data_path_2',os.path.join(State.path["input_path"],'body','uv data','Mars_65k.json'))
-    State.add_path('displacement_path_2', os.path.join(State.path["input_path"], 'body', 'displacement', 'Mars_MOLA_DEM_f32.tif'))
-    # State.add_path('displacement_path_2', os.path.join(State.path["input_path"], 'body', 'displacement', 'Mars_MOLA_DEM_f32_8x.tif'))
-    State.add_path('albedo_path_3',os.path.join(State.path["input_path"],'body','albedo','Deimos Grayscale.jpg'))
     State.add_path('uv_data_path_3',os.path.join(State.path["input_path"],'body','uv data','g_deimos_020m_spc_0000n00000_v001.json'))
+    State.add_path('displacement_path_2', os.path.join(State.path["input_path"], 'body', 'displacement', 'Mars_MOLA_DEM_f32.tif'))
+
+State.add_path('albedo_path_1',os.path.join(State.path["input_path"],'body','albedo','Phobos Grayscale.jpg'))
+State.add_path('albedo_path_2',os.path.join(State.path["input_path"],'body','albedo','Mars_MOC_f32.tif'))
+State.add_path('albedo_path_3',os.path.join(State.path["input_path"],'body','albedo','Deimos Grayscale.jpg'))
 
 ### (2) SETUP THE SCENE ###
 cam = corto.Camera('WFOV_Camera', State.properties_cam)
@@ -76,12 +73,12 @@ material_2 = corto.Shading.create_new_material('Mars_Standard')
 material_3 = corto.Shading.create_new_material('Deimos_Standard')
 
 settings_phobos_shader = {
-    "base_gray": 0.5854006741991221,
-    "tex_mix": 0.8253680350717726,
-    "oren_rough": 0.9541235132345137,
-    "princ_rough": 0.49655068351162784,
-    "shader_mix": 0.5531372578612878,
-    "ior": 1.330575673667888
+    "base_gray": 0.078728177,
+    "tex_mix": 0.945619706,
+    "oren_rough": 0.589395605,
+    "princ_rough": 0.999369463,
+    "shader_mix": 0.766477108,
+    "ior": 4.999947443
     }
 
 settings_mars_shader = {
@@ -92,18 +89,14 @@ settings_mars_shader = {
     "albedo": {
         'weight_diffuse': 0.95
         },
-    "base_gray": 0.5468756598827581,
-    "tex_mix": 0.05593282890485482,
-    "oren_rough": 0.9998320451129385,
-    "princ_rough": 0.7399105387301975,
-    "shader_mix": 0.08013107968798325,
-    "ior": 2.382993288552901,
-    "albedo_mul": 4.282003588146343,
-    "contrast": 0.1567607232962447
-    }
-
-settings_thr_val ={
-    "threshold_value": 0.002319883899697151
+    "base_gray": 0.54687566,
+    "tex_mix": 0.055932829,
+    "oren_rough": 0.999832045,
+    "princ_rough": 0.739910539,
+    "shader_mix": 0.08013108,
+    "ior": 2.382993289,
+    "albedo_mul": 4.282003588,
+    "contrast": 0.156760723
     }
 
 corto.Shading.create_phobos_opt_shader(material_1, State, settings_phobos_shader, 1)
@@ -133,7 +126,7 @@ def set_sun_energy_idx(sun):
     """Calculate Sun lamp energy from Sun position (inverse-square law)."""
     AU_KM = 149597870.7
     W_1AU = 427.815 # Solar irradiance at 1 AU in Blender units
-    SUN_BLENDER_SCALER = 1.0
+    SUN_BLENDER_SCALER = 3.90232e-1 
     # geom = json.load(open(os.path.join('input', scenario_name, 'geometry', geometry_name)))
     # sun_pos = np.array(geom['sun']['position'][idx])
     sun_pos = sun.get_position()    
