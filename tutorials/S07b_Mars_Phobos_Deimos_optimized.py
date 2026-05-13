@@ -6,7 +6,6 @@ You can download the tutorial data from:
 https://drive.google.com/drive/folders/1K3e5MyQin6T9d_EXLG_gFywJt3I18r6H?usp=sharing
 """
 
-# TODO: move the shading tree as a method in the Shading class instead
 # TODO: atmosphere loading standardized 
 
 import sys
@@ -14,7 +13,6 @@ import os
 sys.path.append(os.getcwd())
 import cortopy as corto
 import numpy as np
-import json
 import math
 
 ## Clean all existing/Default objects in the scene 
@@ -24,7 +22,7 @@ corto.Utils.clean_scene()
 scenario_name = "S07_Mars_Phobos_Deimos" # Name of the scenario folder
 scene_name = "scene_optimized.json" # name of the scene input
 geometry_name = "geometry_optimized.json" # name of the geometry input
-setup_fidelity = 'lowres' # "lowres" or "hires"
+setup_fidelity = 'medres' # "lowres", "midres" or "hires"
 
 if setup_fidelity == 'lowres': # LOW-RES setup
     body_name = ["g_phobos_287m_spc_0000n00000_v002.obj",
@@ -34,6 +32,18 @@ if setup_fidelity == 'lowres': # LOW-RES setup
     State = corto.State(scene = scene_name, geometry = geometry_name, body = body_name, scenario = scenario_name)
     # Add extra inputs 
     State.add_path('uv_data_path_1',os.path.join(State.path["input_path"],'body','uv data','g_phobos_287m_spc_0000n00000_v002.json'))
+    State.add_path('uv_data_path_2',os.path.join(State.path["input_path"],'body','uv data','Mars_65k.json'))
+    State.add_path('uv_data_path_3',os.path.join(State.path["input_path"],'body','uv data','g_deimos_162m_spc_0000n00000_v001.json'))
+    State.add_path('displacement_path_2', os.path.join(State.path["input_path"], 'body', 'displacement', 'Mars_MOLA_DEM_f32_8x.tif'))
+elif setup_fidelity == 'medres': # MED-RES setup
+    body_name = ["g_phobos_036m_spc_0000n00000_v002.obj",
+                "Mars_65k_km.obj",
+                "g_deimos_162m_spc_0000n00000_v001.obj"] # name of the body input
+    
+    # Load inputs and settings into the State object
+    State = corto.State(scene = scene_name, geometry = geometry_name, body = body_name, scenario = scenario_name)
+    # Add extra inputs 
+    State.add_path('uv_data_path_1',os.path.join(State.path["input_path"],'body','uv data','g_phobos_036m_spc_0000n00000_v002.json'))
     State.add_path('uv_data_path_2',os.path.join(State.path["input_path"],'body','uv data','Mars_65k.json'))
     State.add_path('uv_data_path_3',os.path.join(State.path["input_path"],'body','uv data','g_deimos_162m_spc_0000n00000_v001.json'))
     State.add_path('displacement_path_2', os.path.join(State.path["input_path"], 'body', 'displacement', 'Mars_MOLA_DEM_f32_8x.tif'))
@@ -126,9 +136,8 @@ def set_sun_energy_idx(sun):
     """Calculate Sun lamp energy from Sun position (inverse-square law)."""
     AU_KM = 149597870.7
     W_1AU = 427.815 # Solar irradiance at 1 AU in Blender units
-    SUN_BLENDER_SCALER = 3.90232e-1 
-    # geom = json.load(open(os.path.join('input', scenario_name, 'geometry', geometry_name)))
-    # sun_pos = np.array(geom['sun']['position'][idx])
+    SUN_BLENDER_SCALER = 3.90232e-1
+    #TODO: generalize the solar_dist_km computation to work with any scenario (e.g. by using the position of the Sun and the target body) 
     sun_pos = sun.get_position()    
     solar_dist_km = float(np.linalg.norm(sun_pos))
     dist_au = solar_dist_km / AU_KM if solar_dist_km > 0 else 1.0
@@ -150,5 +159,4 @@ for idx in range(0, n_img):
     ENV.PositionAll(State, index=idx)
     set_sun_energy_idx(sun) # Set Sun energy per frame
     ENV.RenderOne(cam, State, index=idx)
-
 corto.Utils.save_blend(State)
