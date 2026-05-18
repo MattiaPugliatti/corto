@@ -59,7 +59,7 @@ elif setup_fidelity == 'hires': # HIGH-RES setup (run at your own risk)
     State.add_path('uv_data_path_3',os.path.join(State.path["input_path"],'body','uv data','g_deimos_020m_spc_0000n00000_v001.json'))
     State.add_path('displacement_path_2', os.path.join(State.path["input_path"], 'body', 'displacement', 'Mars_MOLA_DEM_f32.tif'))
 
-State.add_path('albedo_path_1',os.path.join(State.path["input_path"],'body','albedo','Phobos Grayscale.jpg'))
+State.add_path('albedo_path_1',os.path.join(State.path["input_path"],'body','albedo','Phobos_Viking_dimmed_ior133.tif'))
 State.add_path('albedo_path_2',os.path.join(State.path["input_path"],'body','albedo','Mars_MOC_f32.tif'))
 State.add_path('albedo_path_3',os.path.join(State.path["input_path"],'body','albedo','Deimos Grayscale.jpg'))
 
@@ -83,30 +83,30 @@ material_2 = corto.Shading.create_new_material('Mars_Standard')
 material_3 = corto.Shading.create_new_material('Deimos_Standard')
 
 settings_phobos_shader = {
-    "base_gray": 0.078728177,
-    "tex_mix": 0.945619706,
-    "oren_rough": 0.589395605,
-    "princ_rough": 0.999369463,
-    "shader_mix": 0.766477108,
-    "ior": 4.999947443
+    "base_gray": 0.092111,
+    "tex_mix": 0.999273,
+    "oren_rough": 0.56654,
+    "princ_rough": 0.948496,
+    "shader_mix": 0.427206,
+    "ior": 1.011997
     }
 
 settings_mars_shader = {
     "displacement": {
         'scale': 0.001, 
-        'mid_level': 6690.0, 
+        'mid_level': 0.0, 
         },
     "albedo": {
         'weight_diffuse': 0.95
         },
-    "base_gray": 0.54687566,
-    "tex_mix": 0.055932829,
-    "oren_rough": 0.999832045,
-    "princ_rough": 0.739910539,
-    "shader_mix": 0.08013108,
-    "ior": 2.382993289,
-    "albedo_mul": 4.282003588,
-    "contrast": 0.156760723
+    "base_gray": 0.206732,
+    "tex_mix": 0.014412,
+    "oren_rough": 0.87688,
+    "princ_rough": 0.725968,
+    "shader_mix": 0.793117,
+    "ior": 3.448357,
+    "albedo_mul": 2.6,
+    "contrast": 0.314671
     }
 
 corto.Shading.create_phobos_opt_shader(material_1, State, settings_phobos_shader, 1)
@@ -134,9 +134,10 @@ body_3.set_scale(np.array([1, 1, 1]))
 # Optional, define sun_energy function to set sun energy per frame (if needed, e.g. for non-constant sun distance)
 def set_sun_energy_idx(sun):
     """Calculate Sun lamp energy from Sun position (inverse-square law)."""
+    # Per-frame Sun energy (inverse-square law, matching optimizer pipeline)
     AU_KM = 149597870.7
-    W_1AU = 427.815 # Solar irradiance at 1 AU in Blender units
-    SUN_BLENDER_SCALER = 3.90232e-1
+    W_1AU = 427.815   # Solar irradiance at 1 AU in Blender units
+    SUN_BLENDER_SCALER = 6.26713e-4  #
     #TODO: generalize the solar_dist_km computation to work with any scenario (e.g. by using the position of the Sun and the target body) 
     sun_pos = sun.get_position()    
     solar_dist_km = float(np.linalg.norm(sun_pos))
