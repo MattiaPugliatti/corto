@@ -83,31 +83,32 @@ material_2 = corto.Shading.create_new_material('Mars_Standard')
 material_3 = corto.Shading.create_new_material('Deimos_Standard')
 
 settings_phobos_shader = {
-    "base_gray": 0.092111,
-    "tex_mix": 0.999273,
-    "oren_rough": 0.56654,
-    "princ_rough": 0.948496,
-    "shader_mix": 0.427206,
-    "ior": 1.011997
+    "base_gray": 0.096221,
+    "tex_mix": 0.977073,
+    "oren_rough": 0.868596,
+    "princ_rough": 0.691211,
+    "shader_mix": 0.42494,
+    "ior": 1.105869,
     }
-
+ 
 settings_mars_shader = {
     "displacement": {
-        'scale': 0.001, 
-        'mid_level': 0.0, 
+        'scale': 0.001,
+        'mid_level': 0.0,
         },
     "albedo": {
         'weight_diffuse': 0.95
         },
-    "base_gray": 0.206732,
-    "tex_mix": 0.014412,
-    "oren_rough": 0.87688,
-    "princ_rough": 0.725968,
-    "shader_mix": 0.793117,
-    "ior": 3.448357,
+    "base_gray": 0.170541,
+    "tex_mix": 0.065276,
+    "oren_rough": 0.767492,
+    "princ_rough": 0.550212,
+    "shader_mix": 0.33165,
+    "ior": 2.117499,
     "albedo_mul": 2.6,
-    "contrast": 0.314671
+    "contrast": 0.124885
     }
+
 
 corto.Shading.create_phobos_opt_shader(material_1, State, settings_phobos_shader, 1)
 corto.Shading.create_mars_opt_shader(material_2, State, settings_mars_shader, 2)
@@ -137,7 +138,7 @@ def set_sun_energy_idx(sun):
     # Per-frame Sun energy (inverse-square law, matching optimizer pipeline)
     AU_KM = 149597870.7
     W_1AU = 427.815   # Solar irradiance at 1 AU in Blender units
-    SUN_BLENDER_SCALER = 6.26713e-4  #
+    SUN_BLENDER_SCALER = 2.341393524e-2
     #TODO: generalize the solar_dist_km computation to work with any scenario (e.g. by using the position of the Sun and the target body) 
     sun_pos = sun.get_position()    
     solar_dist_km = float(np.linalg.norm(sun_pos))
