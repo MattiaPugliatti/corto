@@ -23,13 +23,9 @@ Dependencies: numpy, matplotlib
 """
 
 from __future__ import annotations
-
-import sys
-import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-from matplotlib.cm import get_cmap
 
 
 def visualize_tof(
@@ -85,7 +81,7 @@ def visualize_tof(
     vmin = float(depth[valid].min()) if n_valid > 0 else 0.0
 
     # ── Colour-mapped depth (NaN -> black) ────────────────────────────
-    cmap_d = get_cmap(depth_cmap).copy()
+    cmap_d = plt.colormaps[depth_cmap].copy()
     cmap_d.set_bad(color="black")
 
     # ── Figure layout ─────────────────────────────────────────────────
@@ -110,7 +106,7 @@ def visualize_tof(
 
     # ── Panel 2: intensity image ──────────────────────────────────────
     if has_intensity:
-        cmap_i = get_cmap("gray").copy()
+        cmap_i = plt.colormaps["gray"].copy()
         cmap_i.set_bad(color="black")
         im_i = ax_inten.imshow(
             intensity, cmap=cmap_i, vmin=0.0, vmax=1.0,
@@ -127,7 +123,7 @@ def visualize_tof(
     if n_valid > 0:
         ax_hist.hist(
             depth[valid].ravel(), bins=80,
-            color=get_cmap(depth_cmap)(0.6), edgecolor="none", alpha=0.85
+            color=plt.colormaps[depth_cmap](0.6), edgecolor="none", alpha=0.85
         )
         ax_hist.set_xlabel("Range (m)", fontsize=10)
         ax_hist.set_ylabel("Pixel count", fontsize=10)
@@ -146,7 +142,7 @@ def visualize_tof(
     if has_intensity and n_valid > 0:
         # Normalise depth to [0,1] for colour mapping
         norm_d  = mcolors.Normalize(vmin=vmin, vmax=vmax)
-        rgb_d   = get_cmap(depth_cmap)(norm_d(depth))[:, :, :3]   # (H,W,3)
+        rgb_d   = plt.colormaps[depth_cmap](norm_d(depth))[:, :, :3]   # (H,W,3)
 
         # Use intensity as alpha; NaN pixels -> fully transparent
         inten_clean = np.where(np.isnan(intensity), 0.0, intensity)
@@ -175,8 +171,8 @@ def visualize_tof(
 
     return fig
 
+## MAIN 
 
-
-depth_p   = "/Users/mattia.pugliatti/Repos/corto/corto/output/S10_Spacecraft/tof/images/000000_depth.npy"
-inten_p   = "/Users/mattia.pugliatti/Repos/corto/corto/output/S10_Spacecraft/tof/images/000000_intensity.npy"
+depth_p   = "output/S10_Spacecraft/tof/images/000000_depth.npy"
+inten_p   = "output/S10_Spacecraft/tof/images/000000_intensity.npy"
 visualize_tof(depth_p, inten_p)

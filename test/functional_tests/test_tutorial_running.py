@@ -11,10 +11,6 @@ def test_basics_GeneratePA_input():
     corto.Utils.run_script("tutorials/basics_GeneratePA_input.py")
 
 
-def test_basics_Visualize_DepthMap():
-    corto.Utils.run_script("tutorials/basics_Visualize_DepthMap.py")
-
-
 def test_S00_Calibration():
     corto.Utils.run_script("tutorials/S00_Calibration.py")
 
@@ -56,7 +52,11 @@ def test_S06b_Moon():
 
 
 def test_S07_Mars_Phobos_Deimos():
-    corto.Utils.run_script("tutorials/S07_Mars_Phobos_Deimos.py")
+    corto.Utils.run_script("tutorials/S07a_Mars_Phobos_Deimos.py")
+
+
+def test_S07_Mars_Phobos_Deimos():
+    corto.Utils.run_script("tutorials/S07b_Mars_Phobos_Deimos_optimized.py")
 
 
 def test_S08_Earth():
@@ -69,3 +69,20 @@ def test_S09_Frankenstein_Asteroids():
 
 def test_S10_Spacecraft():
     corto.Utils.run_script("tutorials/S10_Spacecraft.py")
+
+## RUN THESE AFTER AN OUTPUT IS GENERATED FROM THE TUTORIALS
+
+def test_basics_Visualize_depth_from_exr():
+    corto.Utils.run_script("tutorials/basics_Visualize_depth_from_exr.py")
+
+
+def test_basics_Visualize_depth_from_txt():
+    corto.Utils.run_script("tutorials/basics_Visualize_depth_from_txt.py")
+
+
+def test_basics_Visualize_lidar_out():
+    corto.Utils.run_script("tutorials/basics_Visualize_lidar_out.py")
+
+
+def test_basics_visualize_tof_out():
+    corto.Utils.run_script("tutorials/basics_visualize_tof_out.py")

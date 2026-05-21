@@ -51,7 +51,7 @@ corto.Shading.assign_material_to_object(material, body)
 ### (4) GENERATION OF IMG-LBL PAIRS ###
 body.set_scale(np.array([0.1, 0.1, 0.1])) # adjust body scale for better test renderings
 
-n_img = 5 # Render the first "n_img" images
+n_img = int(os.environ.get("CORTO_N_IMG", 5)) # Render the first "n_img" images
 for idx in range(0,n_img):
     ENV.PositionAll(State,index=idx)
     ENV.RenderOne(cam, State, index=idx)

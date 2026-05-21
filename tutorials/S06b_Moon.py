@@ -186,7 +186,7 @@ def function_to_generate_labels(k, State, depth_dir, YOLO1_dir, YOLO2_dir):
 
 ### (5) GENERATION OF IMG-LBL PAIRS ###
 osl_geometry_settings = {}
-n_img = 5 # Render the first "n_img" images
+n_img = int(os.environ.get("CORTO_N_IMG", 5)) # Render the first "n_img" images
 
 for idx in range(0,n_img):
     ENV.PositionAll(State,index=idx)

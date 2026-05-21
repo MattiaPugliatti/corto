@@ -99,7 +99,7 @@ body_1.set_scale(np.array([1, 1, 1])) # adjust body scale for better test render
 body_2.set_scale(np.array([1e3, 1e3, 1e3])) # adjust body scale for better test renderings
 body_3.set_scale(np.array([1, 1, 1])) # adjust body scale for better test renderings
 
-n_img = 5 # Render the first "n_img" images
+n_img = int(os.environ.get("CORTO_N_IMG", 5)) # Render the first "n_img" images
 for idx in range(0,n_img):
     ENV.PositionAll(State,index=idx)
     ENV.RenderOne(cam, State, index=idx)

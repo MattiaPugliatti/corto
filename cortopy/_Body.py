@@ -30,34 +30,33 @@ class Body:
         # BODY name
         self.name = name
 
-        # BODY properties
-        self.pass_index = properties["pass_index"]
-        if type(self.pass_index) != int:
-            raise TypeError("Pass index must have integer values.")
+        # BODY properties — all keys are optional; Blender Cycles defaults are used as fallback.
+        _DEFAULTS = {
+            "pass_index":          0,
+            "total_bounces":       12,
+            "diffuse_bounces":     4,
+            "glossy_bounces":      4,
+            "transmission_bounces": 12,
+            "volume_bounces":      0,
+            "transparent_bounces": 8,
+        }
 
-        self.total_bounces = properties["total_bounces"]
-        if type(self.total_bounces) != int:
-            raise TypeError("Number of total bounces must have integer values.")
+        def _get(key: str) -> int:
+            if key not in properties:
+                print(f"Body '{name}': '{key}' not found in properties, using default value {_DEFAULTS[key]}.")
+                return _DEFAULTS[key]
+            val = properties[key]
+            if type(val) != int:
+                raise TypeError(f"'{key}' must have an integer value, got {type(val).__name__}.")
+            return val
 
-        self.diffuse_bounces = properties["diffuse_bounces"]
-        if type(self.diffuse_bounces) != int:
-            raise TypeError("Number of bounces must have integer values.")
-
-        self.glossy_bounces = properties["glossy_bounces"]
-        if type(self.glossy_bounces) != int:
-            raise TypeError("Number of glossy bounces must have integer values.")
-
-        self.transmission = properties["transmission_bounces"]
-        if type(self.transmission) != int:
-            raise TypeError("Number of transmission bounces must have integer values.")
-
-        self.volume_bounces = properties["volume_bounces"]
-        if type(self.volume_bounces) != int:
-            raise TypeError("Number of volume bounces must have integer values.")
-
-        self.transparent_bounces = properties["transparent_bounces"]
-        if type(self.transparent_bounces) != int:
-            raise TypeError("Number of transparent bounces must have integer values.")
+        self.pass_index         = _get("pass_index")
+        self.total_bounces      = _get("total_bounces")
+        self.diffuse_bounces    = _get("diffuse_bounces")
+        self.glossy_bounces     = _get("glossy_bounces")
+        self.transmission       = _get("transmission_bounces")
+        self.volume_bounces     = _get("volume_bounces")
+        self.transparent_bounces = _get("transparent_bounces")
 
         # BODY pose
         self.position = np.array([0, 0, 0])

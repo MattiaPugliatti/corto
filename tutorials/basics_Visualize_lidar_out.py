@@ -19,7 +19,6 @@ Dependencies: numpy, matplotlib
 """
 
 from __future__ import annotations
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D          # noqa: F401  (registers 3D projection)
@@ -136,5 +135,6 @@ def visualize_lidar(
     return fig
 
 ## MAIN 
-path = "/Users/mattia.pugliatti/Repos/corto/corto/output/S10_Spacecraft/lidar/pointclouds/000000.npy"
+
+path = "output/S10_Spacecraft/lidar/pointclouds/000000.npy"
 visualize_lidar(path, color_by="ring")

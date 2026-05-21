@@ -81,8 +81,8 @@ sl.setup(State, cam)
 ### (5) GENERATION OF IMG-LBL PAIRS ###
 body.set_scale(np.array([0.1, 0.1, 0.1])) # adjust body scale for better test renderings
 
-import bpy
-n_img = 1 # Render the first "n_img" images
+import bpy # TODO: fix this import to get the R consistenly
+n_img = int(os.environ.get("CORTO_N_IMG", 5)) # Render the first "n_img" images
 for idx in range(0,n_img):
     ENV.PositionAll(State,index=idx)
     ENV.RenderOne(cam, State, index=idx)

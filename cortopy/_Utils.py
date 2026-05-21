@@ -10,6 +10,8 @@ import subprocess
 import shutil
 import cortopy as corto
 import imageio.v3 as iio
+import OpenEXR
+import Imath
 
 from datetime import datetime
 
@@ -111,15 +113,19 @@ class Utils:
             path (str): The path of the .exr depth map
         """
 
-        depth = iio.imread(sys.path, plugin="EXR-FI")
-        # If multi-channel (H, W, C), take the first channel
-        if depth.ndim == 3:
-            depth = depth[:, :, 0]
-        # Define a threshold above which values are invalid (e.g. inf, nan, or 0)
-        invalid_mask = (depth == 0) | np.isinf(depth) | np.isnan(depth)
-        # Mask the depth map
+        exr = OpenEXR.InputFile(path)
+        header = exr.header()
+        dw = header['dataWindow']
+        width  = dw.max.x - dw.min.x + 1
+        height = dw.max.y - dw.min.y + 1
+
+        pt = Imath.PixelType(Imath.PixelType.FLOAT)
+        depth = np.frombuffer(exr.channel('V', pt), dtype=np.float32).reshape(height, width)
+
+        # Values >= 1e9 are background / no-hit pixels set by the renderer
+        invalid_mask = (depth >= 1e9) | np.isinf(depth) | np.isnan(depth)
         masked_depth = np.ma.masked_where(invalid_mask, depth)
-        # Compute min and max of the masked (valid) depth
+
         dmin = np.min(masked_depth)
         dmax = np.max(masked_depth)
 
@@ -212,6 +218,7 @@ class Utils:
 
         env = os.environ.copy()
         env["MPLBACKEND"] = "Agg"   # disables GUI plots
+        env["CORTO_N_IMG"] = "1"
 
         result = subprocess.run(
             [sys.executable, script_name],

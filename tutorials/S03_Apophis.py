@@ -95,7 +95,7 @@ body.set_scale(np.array([3, 3, 3])) # adjust body scale for better test renderin
 
 osl_geometry_settings = {}
 
-n_img = 5 # Render the first "n_img" images
+n_img = int(os.environ.get("CORTO_N_IMG", 5)) # Render the first "n_img" images
 for idx in range(0,n_img):
     ENV.PositionAll(State,index=idx)
     # Update OSL shading properties (CAM and SUN GEOMETRY)

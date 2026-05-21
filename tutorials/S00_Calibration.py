@@ -20,7 +20,7 @@ corto.Utils.clean_scene()
 scenario_name = "S00_Calibration" # Name of the scenario folder
 scene_name = "scene_CYCLES.json" # name of the scene input, fast rendering setup
 # geometry_name = "geometry_calib.json" # name of the geometry input
-geometry_name = "geometry_generated_0_180.json" # name of the geometry input
+geometry_name = "geometry_calib.json" # name of the geometry input
 body_name = "Sphere_HiRes.obj" # name of the body input
 
 # Load inputs and settings into the State object
@@ -93,7 +93,7 @@ body.set_scale(np.array([0.1, 0.1, 0.1])) # adjust body scale for better test re
 
 osl_geometry_settings = {}
 
-n_img = 60 # Render the first "n_img" images
+n_img = int(os.environ.get("CORTO_N_IMG", 60)) # Render the first "n_img" images
 for idx in range(0,n_img):
     ENV.PositionAll(State,index=idx)
     _, pos_cam, pos_sun = ENV.get_positions() # TODO: add a check on pos_bod such that the vectors are all body-referenced for the OSL shader

@@ -1,10 +1,15 @@
 """
-This script generates a simple geometry file with fixed camera and body positions and orietnations, and varying sun positions producing different, regular, phase angles.
+This script generates a simple geometry file with:
+    - fixed camera position and orientation 
+    - fixed body position and orientation 
+    - varying sun positions
 
+This generates different regularly spaced phase angles conditions. 
 """
 
 import numpy as np
 import json
+import os 
 
 # ==============================
 # USER INPUT
@@ -20,7 +25,7 @@ camera_quat = np.array([0.5, 0.5, 0.5, 0.5]) # W, X, Y, Z
 body_position = np.array([0.0, 0.0, 0.0]) # W, X, Y, Z
 body_quat = np.array([1.0, 0.0, 0.0, 0.0]) # in [BU]
 
-json_name = "geometry_generated.json" # name of the geometry output file
+json_name = "geometry_phase_angles.json" # name of the geometry output file
 
 # ==============================
 # SUN SAMPLING
@@ -95,7 +100,7 @@ GEOM = {
 # JSON save
 # ==============================
 
-with open(json_name, "w") as f:
+with open(os.path.join('output',json_name), "w") as f:
     json.dump(GEOM, f, indent=2)
 
 print("Generated", N, "poses.")

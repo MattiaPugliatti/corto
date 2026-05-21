@@ -1,20 +1,37 @@
 """
-This script shows how to generate a cloud of points around a target body.
+This script generates a 3D cloud of points around the illuminated side of a target body. The geometry file is generated with:
+    - varying camera position and orientation 
+    - varying body position and orientation 
+    - varying sun positions
+
 The pointcloud is saved as a .json file, that can be then used as a geometry input file in your desired scenario.
+Handling the input section [1], the user can modify the properties of the pointcloud. The data structure of the pointcloud is: 
 
-Handling the input section [1], the user can modify
-the properties of the pointcloud. The data structure of the pointcloud is: 
+    sun: position
+    camera: position and orientation
+    body: position and orientation 
 
-sun: position
-camera: position and orientation
-body: position and orientation 
+The point cloud is structured to cover the illuminated side of a body in 3D space with the following constraints: 
 
-For example, to access the first relative camera-body-sun poses: 
-data['sun']['position'][0]
-data['camera']['position'][0]
-data['camera']['orientation'][0]
-data['body']['position'][0]
-data['body']['orientation'][0]
+    - nPoints: total number of points in the 3D cloud
+    - [R_min,R_max]: minimum and maximum distance (in Blender Units) from the target body
+    - [theta_min, theta_max]: minimum and maximum angle (in deg) w.r.t the Y-axis. a theta of 90deg corresponds to a phase angle of 0 deg. 
+    - [phi_min, phi_max]: minimum and maximum angle (in deg) w.r.t XY plane. 
+
+To access the first relative camera-body-sun poses: 
+    data['sun']['position'][0]
+    data['camera']['position'][0]
+    data['camera']['orientation'][0]
+    data['body']['position'][0]
+    data['body']['orientation'][0]
+
+NOTE: All partecipating bodies in the scene (sun, camera, body) share the same reference frame (origin and orientation).
+
+NOTE: Reminder that the Blender's camera has the boresight on the -Z axis. So a neutral camera orientation with a quaternion of:
+
+    q_wxyz = (1,0,0,0)
+
+results in a camera pointing downward in the scene. For your renderings, you should tune the orientation accordingly.
 
 """
 
@@ -23,6 +40,7 @@ sys.path.append("./src/")
 import numpy as np
 import matplotlib.pyplot as plt
 import json 
+import os 
 
 from numpy.random import rand
 from datetime import datetime
@@ -166,9 +184,9 @@ for ii in range(0, nPoints, 1):
     LABEL[ii, 13] = q_Cam_dist[ii, 2]
     LABEL[ii, 14] = q_Cam_dist[ii, 3]
     # [15,16,17] Sun pos [BU]
-    LABEL[ii, 15] = x_Sun_dist[ii]
-    LABEL[ii, 16] = y_Sun_dist[ii]
-    LABEL[ii, 17] = z_Sun_dist[ii]
+    LABEL[ii, 15] = x_Sun_dist[ii][0]
+    LABEL[ii, 16] = y_Sun_dist[ii][0]
+    LABEL[ii, 17] = z_Sun_dist[ii][0]
 
 sun_pos_all = LABEL[:,15:18]
 cam_pos_all = LABEL[:,8:11]
@@ -194,10 +212,10 @@ GEOM = {
 json_data = json.dumps(GEOM, indent=4)
 
 # Write the JSON string to a file
-with open(output_timestamp + '.json', "w") as json_file:
+with open(os.path.join('output',output_timestamp + '.json'), "w") as json_file:
     json_file.write(json_data)
 
-print(f"JSON file successfully generated: {output_timestamp}.json")
+print(f"JSON file successfully generated in the /output folder: {output_timestamp}.json")
 
 # 3D scatter plot of camera positions
 fig = plt.figure(figsize=(8, 6))

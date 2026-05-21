@@ -151,7 +151,7 @@ def set_sun_energy_idx(sun):
 OSIRIS_FOV_DEG = 2.0 * math.degrees(math.atan(27.648 / (2.0 * 712.4))) # 2.2226 deg 
 HRSC_FOV = cam.CAM_Blender.data.angle  # save original HRSC FOV 
 
-n_img = 8 # 0-5: HRSC, 6-7: OSIRIS
+n_img = int(os.environ.get("CORTO_N_IMG", 8)) # Render the first "n_img" images
 for idx in range(0, n_img):
     # Camera handling (SWAP BETWEEN HRSC and OSIRIS)
     if idx == 6:

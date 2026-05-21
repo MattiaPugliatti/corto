@@ -98,7 +98,7 @@ tree = corto.Compositing.create_compositing()
 render_node = corto.Compositing.rendering_node(tree, (0,0)) # Create Render node
 corto.Compositing.create_img_denoise_branch(tree,render_node) # Create img_denoise branch
 
-n_img = 5 # Render the first "n_img" images
+n_img = int(os.environ.get("CORTO_N_IMG", 5)) # Render the first "n_img" images
 for idx in range(0,n_img):
     ENV.PositionAll(State,index=idx)
     ENV.RenderOne(cam, State, index=idx, depth_flag = False)
