@@ -11,6 +11,14 @@ def test_basics_GeneratePA_input():
     corto.Utils.run_script("tutorials/basics_GeneratePA_input.py")
 
 
+def test_advanced_CIL_OpenLoop_Coop():
+    corto.Utils.run_script("tutorials/advanced_CIL_OpenLoop_Coop.py")
+
+
+def test_advanced_CIL_ClosedLoop_Coop():
+    corto.Utils.run_script("tutorials/advanced_CIL_ClosedLoop_Coop.py")
+
+
 def test_S00_Calibration():
     corto.Utils.run_script("tutorials/S00_Calibration.py")
 
