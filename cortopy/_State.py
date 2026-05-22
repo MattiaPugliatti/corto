@@ -48,7 +48,10 @@ class State:
         print(f"Script is running in: {corto_path}")
 
         scene_file = os.path.join("input", scenario, "scene", scene)
-        geometry_file = os.path.join("input", scenario, "geometry", geometry)
+        if geometry is not None:
+            geometry_file = os.path.join("input", scenario, "geometry", geometry)
+        else:
+            geometry_file = None
         # body_file_according to single or multiple bodies
         if self.n_bodies == 1:
             body_file = os.path.join("input", scenario, "body", "shape", body)
@@ -73,48 +76,53 @@ class State:
         self.add_path("input_path", os.path.join(corto_path, "input", scenario))
         self.add_path("output_path", os.path.join(corto_path, "output", scenario))
 
-    def import_geometry(self, geometry: str) -> None:
+    def import_geometry(self, geometry: str = None) -> None:
         """
         Import scene geometry configuration
 
         Args:
             geometry (str): path to json file with geometry settings
         """
-        try:
-            with open(geometry, "r") as json_file:
-                self.geometry = json.load(json_file)
-            # Sun
-            self.geometry["sun"]["position"] = np.array(
-                self.geometry["sun"]["position"]
-            )
-            # Body
-            if self.n_bodies ==1:
-                self.geometry["body"]["position"] = np.array(
-                    self.geometry["body"]["position"]
-                )
-                self.geometry["body"]["orientation"] = np.array(
-                    self.geometry["body"]["orientation"]
-                )
+        if geometry is not None:
+            try:
+                with open(geometry, "r") as json_file:
+                    self.geometry = json.load(json_file)
+                # Sun
+                self.geometry["sun"]["position"] = np.array(self.geometry["sun"]["position"])
+                # Body
+                if self.n_bodies ==1:
+                    self.geometry["body"]["position"] = np.array(self.geometry["body"]["position"])
+                    self.geometry["body"]["orientation"] = np.array(self.geometry["body"]["orientation"])
+                else:
+                    for ii in range(0,self.n_bodies):
+                        body_key = f"body_{ii+1}"    
+                        self.geometry[body_key]["position"] = np.array(self.geometry[body_key]["position"])
+                        self.geometry[body_key]["orientation"] = np.array(self.geometry[body_key]["orientation"])
+                # Camera
+                self.geometry["camera"]["position"] = np.array(self.geometry["camera"]["position"])
+                self.geometry["camera"]["orientation"] = np.array(self.geometry["camera"]["orientation"])
+            except:
+                self.geometry = {}
+                ValueError('Geometry dictionary is empty')
+        else:
+            self.geometry = dict()
+            self.geometry["sun"] = {"position": np.array([0,0,0])}
+            if self.n_bodies == 1:
+                self.geometry["body"] = {
+                    "position": np.array([0,0,0]),
+                    "orientation": np.array([1,0,0,0])
+                }
             else:
-                for ii in range(0,self.n_bodies):
-                    body_key = f"body_{ii+1}"    
-                    self.geometry[body_key]["position"] = np.array(
-                        self.geometry[body_key]["position"]
-                    )
-                    self.geometry[body_key]["orientation"] = np.array(
-                        self.geometry[body_key]["orientation"]
-                    )
-            # Camera
-            self.geometry["camera"]["position"] = np.array(
-                self.geometry["camera"]["position"]
-            )
-            self.geometry["camera"]["orientation"] = np.array(
-                self.geometry["camera"]["orientation"]
-            )
-
-        except:
-            self.geometry = {}
-            ValueError('Geometry dictionary is empty')
+                for ii in range(0, self.n_bodies):
+                    body_key = f"body_{ii+1}"
+                    self.geometry[body_key] = {
+                        "position": np.array([0,0,0]),
+                        "orientation": np.array([1,0,0,0])
+                    }
+            self.geometry["camera"] = {
+                "position": np.array([0,0,0]),
+                "orientation": np.array([1,0,0,0])
+            }
 
     def import_scene(self, scene: str) -> None:
         """

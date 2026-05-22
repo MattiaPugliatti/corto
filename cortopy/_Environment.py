@@ -88,14 +88,7 @@ class Environment:
         quat_cam = self.camera.get_orientation()
         return quat_body, quat_cam
     
-    def PositionAll(self, state: corto.State, index: int = 0) -> None :
-        """
-        Set position and orientation of BODY, CAM, and SUN instances in the scene
-
-        Args:
-            state: instance of cortopy.State class containing scene, geometry, and body settings
-            index: (optional) geometry config file may contain multiple configurations, this index selects a specific sample, by default it gathers the first one available.
-        """
+    def get_poses_from_geometry(state: corto.State, index: int = 0):
         # Unpack relative poses from the state
         position_cam = state.geometry['camera']['position'][index]
         orientation_cam = state.geometry['camera']['orientation'][index]
@@ -109,6 +102,39 @@ class Environment:
                 position_body.append(state.geometry[f"body_{ii+1}"]['position'][index])
                 orientation_body.append(state.geometry[f"body_{ii+1}"]['orientation'][index])     
         position_sun = state.geometry['sun']['position'][index]
+
+        return position_cam, orientation_cam, position_body, orientation_body, position_sun
+    
+    def get_poses_from_list(state, poses: list):
+        # Unpack relative poses from the state
+        position_cam = poses[0]
+        orientation_cam = poses[1]
+        if state.n_bodies==1:
+            position_body = poses[2]
+            orientation_body = poses[3]
+        else:
+            position_body = []
+            orientation_body = []
+            for ii in range(0,state.n_bodies):
+                position_body.append(poses[2][ii])
+                orientation_body.append(poses[3][ii])     
+        position_sun = poses[4]
+
+        return position_cam, orientation_cam, position_body, orientation_body, position_sun
+    
+
+    def PositionAll(self, state: corto.State, index: int = None, poses:list = None) -> None :
+        """
+        Set position and orientation of BODY, CAM, and SUN instances in the scene
+
+        Args:
+            state: instance of cortopy.State class containing scene, geometry, and body settings
+            index: (optional) geometry config file may contain multiple configurations, this index selects a specific sample, by default it gathers the first one available.
+        """
+        if index is not None:
+            position_cam, orientation_cam, position_body, orientation_body, position_sun = Environment.get_poses_from_geometry(state,index)
+        elif index is None and poses is not None:
+            position_cam, orientation_cam, position_body, orientation_body, position_sun = Environment.get_poses_from_list(state, poses)
 
         # Set bodies positions and orientations
         self.camera.set_position(position_cam)
