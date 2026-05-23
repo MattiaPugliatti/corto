@@ -1,7 +1,10 @@
 """
-Tutorial script to render images of the S02_Itokawa scenario. 
+Tutorial script to render images of the S01_Eros scenario. 
+This is the path-tracing setup using CYCLES. 
+It's slower than case S01b_Eros, but is generating more labels and a more sophisticated rendering engine (CYCLES)
+
 To run this tutorial, you first need to put data in the input folder. 
-You can download the tutorial data from: 
+You can download the tutorial data from:
 
 https://drive.google.com/drive/folders/1K3e5MyQin6T9d_EXLG_gFywJt3I18r6H?usp=sharing
 
@@ -16,15 +19,15 @@ import numpy as np
 corto.Utils.clean_scene()
 
 ### (1) DEFINE INPUT ### 
-scenario_name = "S02_Itokawa" # Name of the scenario folder
-scene_name = "scene.json" # name of the scene input
+scenario_name = "S01_Eros" # Name of the scenario folder
+scene_name = "scene_CYCLES.json" # name of the scene input, path-tracing setup
 geometry_name = "geometry.json" # name of the geometry input
-body_name = "25143_Itokawa_512ICQ.obj" # name of the body input
+body_name = "433_Eros_512ICQ.obj" # name of the body input
 
 # Load inputs and settings into the State object
 State = corto.State(scene = scene_name, geometry = geometry_name, body = body_name, scenario = scenario_name)
 # Add extra inputs 
-State.add_path('albedo_path',os.path.join(State.path["input_path"],'body','albedo','Itokawa Grayscale.jpg'))
+State.add_path('albedo_path',os.path.join(State.path["input_path"],'body','albedo','Eros grayscale.jpg'))
 State.add_path('uv_data_path',os.path.join(State.path["input_path"],'body','uv data','uv_data.json'))
 
 ### (2) SETUP THE SCENE ###
@@ -54,7 +57,7 @@ corto.Compositing.create_slopes_branch(tree,render_node,State) # Create slopes b
 corto.Compositing.create_maskID_branch(tree,render_node,State) # Create ID mask branch
 
 ### (5) GENERATION OF IMG-LBL PAIRS ###
-body.set_scale(np.array([1, 1, 1])) # adjust body scale for better test renderings
+body.set_scale(np.array([0.1, 0.1, 0.1])) # adjust body scale for better test renderings
 
 n_img = int(os.environ.get("CORTO_N_IMG", 5)) # Render the first "n_img" images
 for idx in range(0,n_img):

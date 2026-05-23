@@ -1,23 +1,51 @@
 """
-This script shows how to generate a cloud of points around a target body.
-The pointcloud is saved as a .txt. Handling the input section [1], the user can modify
-the properties of the pointcloud. The data structure of the pointcloud is: 
+This script generates a 3D cloud of points around the illuminated side of a target body. The geometry file is generated with:
+    - varying camera position and orientation 
+    - varying body position and orientation 
+    - varying sun positions
 
-[0] ID or ET
-[1,2,3] Body pos [BU] and [4,5,6,7] orientation [-]
-[8,9,10] Camera pos [BU] and [11,12,13,14] orientation [-]
-[15,16,17] Sun pos [BU]
+The pointcloud is saved as a .json file, that can be then used as a geometry input file in your desired scenario.
+Handling the input section [1], the user can modify the properties of the pointcloud. The data structure of the pointcloud is: 
+
+    sun: position
+    camera: position and orientation
+    body: position and orientation 
+
+The point cloud is structured to cover the illuminated side of a body in 3D space with the following constraints: 
+
+    - nPoints: total number of points in the 3D cloud
+    - [R_min,R_max]: minimum and maximum distance (in Blender Units) from the target body
+    - [theta_min, theta_max]: minimum and maximum angle (in deg) w.r.t the Y-axis. a theta of 90deg corresponds to a phase angle of 0 deg. 
+    - [phi_min, phi_max]: minimum and maximum angle (in deg) w.r.t XY plane. 
+
+To access the first relative camera-body-sun poses: 
+    data['sun']['position'][0]
+    data['camera']['position'][0]
+    data['camera']['orientation'][0]
+    data['body']['position'][0]
+    data['body']['orientation'][0]
+
+NOTE: All partecipating bodies in the scene (sun, camera, body) share the same reference frame (origin and orientation).
+
+NOTE: Reminder that the Blender's camera has the boresight on the -Z axis. So a neutral camera orientation with a quaternion of:
+
+    q_wxyz = (1,0,0,0)
+
+results in a camera pointing downward in the scene. For your renderings, you should tune the orientation accordingly.
 
 """
 
 import sys
-
 sys.path.append("./src/")
 import numpy as np
 import matplotlib.pyplot as plt
+import json 
+import os 
+
 from numpy.random import rand
 from datetime import datetime
 from scipy.spatial.transform import Rotation as R
+from mpl_toolkits.mplot3d import Axes3D  # needed for 3D projection
 
 ######[1]  (START) INPUT SECTION (START) [1]######
 
@@ -134,17 +162,6 @@ z_Sun_dist = np.zeros((nPoints, 1))  # [BU]
 # Generate output timestamp
 output_timestamp = GenerateTimestamp()
 
-# Display camera positions
-plt.figure()
-# ax.axes(projection='3d')
-plt.scatter(
-    x_Cam_dist, y_Cam_dist, z_Cam_dist, c=theta_dist, cmap="viridis", linewidth=0.1
-)
-plt.axis("equal")
-plt.xlabel("X axis [BU]")
-plt.ylabel("Y axis [BU]")
-plt.show()
-
 # Generate LABEL matrix for export as .txt
 LABEL = np.zeros((nPoints, 18))
 for ii in range(0, nPoints, 1):
@@ -167,9 +184,54 @@ for ii in range(0, nPoints, 1):
     LABEL[ii, 13] = q_Cam_dist[ii, 2]
     LABEL[ii, 14] = q_Cam_dist[ii, 3]
     # [15,16,17] Sun pos [BU]
-    LABEL[ii, 15] = x_Sun_dist[ii]
-    LABEL[ii, 16] = y_Sun_dist[ii]
-    LABEL[ii, 17] = z_Sun_dist[ii]
+    LABEL[ii, 15] = x_Sun_dist[ii][0]
+    LABEL[ii, 16] = y_Sun_dist[ii][0]
+    LABEL[ii, 17] = z_Sun_dist[ii][0]
 
-# Export the LABEL matrix for rendering in CORTO
-np.savetxt("Cloud_" + output_timestamp + ".txt", LABEL)
+sun_pos_all = LABEL[:,15:18]
+cam_pos_all = LABEL[:,8:11]
+cam_orientation_all = LABEL[:,11:15]
+body_pos_all = LABEL[:,1:4]
+body_orientation_all = LABEL[:,4:8]
+
+# Generate GEOM dictionary (CASE with 1 body)
+GEOM = {
+    "sun": {
+        "position": sun_pos_all.tolist()},
+    "camera": {
+        "position": cam_pos_all.tolist(),
+        "orientation": cam_orientation_all.tolist(),
+    },
+    "body": {
+        "position": body_pos_all.tolist(),
+        "orientation": body_orientation_all.tolist(),
+    },
+}
+
+# Convert the GEOM dictionary to a JSON string
+json_data = json.dumps(GEOM, indent=4)
+
+# Write the JSON string to a file
+with open(os.path.join('output',output_timestamp + '.json'), "w") as json_file:
+    json_file.write(json_data)
+
+print(f"JSON file successfully generated in the /output folder: {output_timestamp}.json")
+
+# 3D scatter plot of camera positions
+fig = plt.figure(figsize=(8, 6))
+ax = fig.add_subplot(111, projection='3d')
+ax.scatter(
+    cam_pos_all[:, 0],
+    cam_pos_all[:, 1],
+    cam_pos_all[:, 2],
+    c=cam_pos_all[:, 2],  # color by z-axis
+    cmap="viridis",
+    s=10,  # point size
+    linewidth=0.1
+)
+ax.set_xlabel("X axis [BU]")
+ax.set_ylabel("Y axis [BU]")
+ax.set_zlabel("Z axis [BU]")
+ax.set_title(output_timestamp)
+ax.set_box_aspect([1, 1, 1])  # equal aspect ratio for x,y,z
+plt.show()

@@ -38,6 +38,8 @@ class State:
             self.n_bodies = 1
         elif isinstance(body, list) and len(body)>1:
             self.n_bodies = len(body)
+        elif not isinstance(body, list):
+            self.n_bodies = 0
         else:
             TypeError("You have used a list to specify a single body")
 
@@ -46,14 +48,20 @@ class State:
         print(f"Script is running in: {corto_path}")
 
         scene_file = os.path.join("input", scenario, "scene", scene)
-        geometry_file = os.path.join("input", scenario, "geometry", geometry)
+        if geometry is not None:
+            geometry_file = os.path.join("input", scenario, "geometry", geometry)
+        else:
+            geometry_file = None
         # body_file_according to single or multiple bodies
         if self.n_bodies == 1:
             body_file = os.path.join("input", scenario, "body", "shape", body)
-        else: #n_bodies>1
+        elif self.n_bodies>1:
             body_file = []
             for ii in range(0,self.n_bodies):
                 body_file.append(os.path.join("input", scenario, "body", "shape", body[ii]))
+        elif self.n_bodies==0:
+            body_file = os.path.join("input", scenario, "body", "shape", "None")
+
 
         # Import inputs
         self.import_scene(scene_file)
@@ -68,48 +76,53 @@ class State:
         self.add_path("input_path", os.path.join(corto_path, "input", scenario))
         self.add_path("output_path", os.path.join(corto_path, "output", scenario))
 
-    def import_geometry(self, geometry: str) -> None:
+    def import_geometry(self, geometry: str = None) -> None:
         """
         Import scene geometry configuration
 
         Args:
             geometry (str): path to json file with geometry settings
         """
-        try:
-            with open(geometry, "r") as json_file:
-                self.geometry = json.load(json_file)
-            # Sun
-            self.geometry["sun"]["position"] = np.array(
-                self.geometry["sun"]["position"]
-            )
-            # Body
-            if self.n_bodies ==1:
-                self.geometry["body"]["position"] = np.array(
-                    self.geometry["body"]["position"]
-                )
-                self.geometry["body"]["orientation"] = np.array(
-                    self.geometry["body"]["orientation"]
-                )
+        if geometry is not None:
+            try:
+                with open(geometry, "r") as json_file:
+                    self.geometry = json.load(json_file)
+                # Sun
+                self.geometry["sun"]["position"] = np.array(self.geometry["sun"]["position"])
+                # Body
+                if self.n_bodies ==1:
+                    self.geometry["body"]["position"] = np.array(self.geometry["body"]["position"])
+                    self.geometry["body"]["orientation"] = np.array(self.geometry["body"]["orientation"])
+                else:
+                    for ii in range(0,self.n_bodies):
+                        body_key = f"body_{ii+1}"    
+                        self.geometry[body_key]["position"] = np.array(self.geometry[body_key]["position"])
+                        self.geometry[body_key]["orientation"] = np.array(self.geometry[body_key]["orientation"])
+                # Camera
+                self.geometry["camera"]["position"] = np.array(self.geometry["camera"]["position"])
+                self.geometry["camera"]["orientation"] = np.array(self.geometry["camera"]["orientation"])
+            except:
+                self.geometry = {}
+                ValueError('Geometry dictionary is empty')
+        else:
+            self.geometry = dict()
+            self.geometry["sun"] = {"position": np.array([0,0,0])}
+            if self.n_bodies == 1:
+                self.geometry["body"] = {
+                    "position": np.array([0,0,0]),
+                    "orientation": np.array([1,0,0,0])
+                }
             else:
-                for ii in range(0,self.n_bodies):
-                    body_key = f"body_{ii+1}"    
-                    self.geometry[body_key]["position"] = np.array(
-                        self.geometry[body_key]["position"]
-                    )
-                    self.geometry[body_key]["orientation"] = np.array(
-                        self.geometry[body_key]["orientation"]
-                    )
-            # Camera
-            self.geometry["camera"]["position"] = np.array(
-                self.geometry["camera"]["position"]
-            )
-            self.geometry["camera"]["orientation"] = np.array(
-                self.geometry["camera"]["orientation"]
-            )
-
-        except:
-            self.geometry = {}
-            ValueError('Geometry dictionary is empty')
+                for ii in range(0, self.n_bodies):
+                    body_key = f"body_{ii+1}"
+                    self.geometry[body_key] = {
+                        "position": np.array([0,0,0]),
+                        "orientation": np.array([1,0,0,0])
+                    }
+            self.geometry["camera"] = {
+                "position": np.array([0,0,0]),
+                "orientation": np.array([1,0,0,0])
+            }
 
     def import_scene(self, scene: str) -> None:
         """
@@ -137,19 +150,30 @@ class State:
             self.properties_body = {}
             self.properties_rendering = {}
 
-    def import_body(self, body_filepath: str, load_mode: str = "obj") -> None:
+    def import_body(self, body_filepath: str) -> None:
         """Import body
 
         Args:
             body_filepath (str): filepath of the body
-            load_mode (str, optional): loading mode flag. Defaults to 'obj'.
+            load_mode (str): loading mode flag: "obj", "gltf", "glb"
         """
-        if load_mode == "obj":
+
+        if not Path(body_filepath).exists():
+            raise FileNotFoundError(f"File not found: {body_filepath}")
+    
+        body_type = Path(body_filepath).suffix.lower()
+
+        if body_type == ".obj":
             bpy.ops.wm.obj_import(filepath=body_filepath)
             bpy.ops.object.shade_smooth() # Default setup smooth property of the mesh
             print(f"Imported .obj file from {body_filepath}")
-        elif load_mode == ".blend":
+        elif body_type in {".gltf", ".glb"}:
+            bpy.ops.import_scene.gltf(filepath=str(body_filepath))
+            print(f"Imported .gltf file from {body_filepath}")
+        elif body_type == ".blend":
             print("Not implemented")
+        else:
+            raise ValueError(f"Unsupported body file")
 
     def add_path(self, name: str, path: str) -> None:
         """add path into the State dictionary containing all relevant paths

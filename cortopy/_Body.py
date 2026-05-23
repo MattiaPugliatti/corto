@@ -30,14 +30,33 @@ class Body:
         # BODY name
         self.name = name
 
-        # BODY properties
-        self.pass_index = properties["pass_index"]
-        if type(self.pass_index) != int:
-            raise TypeError("Pass index must have integer values.")
+        # BODY properties — all keys are optional; Blender Cycles defaults are used as fallback.
+        _DEFAULTS = {
+            "pass_index":          0,
+            "total_bounces":       12,
+            "diffuse_bounces":     4,
+            "glossy_bounces":      4,
+            "transmission_bounces": 12,
+            "volume_bounces":      0,
+            "transparent_bounces": 8,
+        }
 
-        self.diffuse_bounces = properties["diffuse_bounces"]
-        if type(self.diffuse_bounces) != int:
-            raise TypeError("Number of bounces must have integer values.")
+        def _get(key: str) -> int:
+            if key not in properties:
+                print(f"Body '{name}': '{key}' not found in properties, using default value {_DEFAULTS[key]}.")
+                return _DEFAULTS[key]
+            val = properties[key]
+            if type(val) != int:
+                raise TypeError(f"'{key}' must have an integer value, got {type(val).__name__}.")
+            return val
+
+        self.pass_index         = _get("pass_index")
+        self.total_bounces      = _get("total_bounces")
+        self.diffuse_bounces    = _get("diffuse_bounces")
+        self.glossy_bounces     = _get("glossy_bounces")
+        self.transmission       = _get("transmission_bounces")
+        self.volume_bounces     = _get("volume_bounces")
+        self.transparent_bounces = _get("transparent_bounces")
 
         # BODY pose
         self.position = np.array([0, 0, 0])
@@ -51,9 +70,14 @@ class Body:
         BODY.rotation_quaternion = self.orientation  # [-]
         BODY.pass_index = self.pass_index  # [-]
         BODY.scale = self.scale  # [-]
-        bpy.context.scene.cycles.diffuse_bounces = (
-            self.diffuse_bounces
-        )  # [-] # TODO: workout if this property should be in body or in scene
+
+        # TODO: workout if these properties should be in body or in scene
+        bpy.context.scene.cycles.max_bounces = self.total_bounces
+        bpy.context.scene.cycles.diffuse_bounces = self.diffuse_bounces
+        bpy.context.scene.cycles.glossy_bounces = self.glossy_bounces
+        bpy.context.scene.cycles.transmission_bounces = self.transmission
+        bpy.context.scene.cycles.volume_bounces = self.volume_bounces
+        bpy.context.scene.cycles.transparent_max_bounces = self.transparent_bounces
 
         # Link the corto and blender objects
         self.BODY_Blender = BODY
@@ -183,7 +207,7 @@ class Body:
             ValueError : Provided quaternion is not a unit vector, it does not represent a rotation
         """
 
-        if not math.isclose(np.linalg.norm(orientation), 1.0, rel_tol=1e-9):
+        if not math.isclose(np.linalg.norm(orientation), 1.0, rel_tol=1e-4):
             raise ValueError("Provided quaternion is not a unit vector")
 
         self.orientation = orientation
@@ -232,3 +256,164 @@ class Body:
             raise TypeError("Number of bounces must have integer values.")
         self.diffuse_bounces = par
         bpy.context.scene.cycles.diffuse_bounces = self.diffuse_bounces  # [-]
+
+    def visible(self, visibility_flag:bool = True) -> None: 
+        """
+        Make the body object visible in both the viewport and render
+        """
+        self.BODY_Blender.hide_viewport = not(visibility_flag)
+        self.BODY_Blender.hide_render = not(visibility_flag)
+
+    def get_total_bounces(self) -> int:
+        """
+        Get total bounces setting for the BODY instance
+
+        Raises:
+            ValueError : BODY instance has mismatching property
+
+        Returns:
+            total bounces : setting of total bounces property
+        """
+        if bpy.context.scene.cycles.max_bounces != self.total_bounces:
+            raise ValueError("parameter mismatch between workspaces.")
+        return self.total_bounces
+
+
+    def set_total_bounces(self, par: int) -> None:
+        """
+        Set total bounces property for the BODY instance
+
+        Args:
+            par (int) : scalar value for total bounces property
+
+        Raises:
+            TypeError : number of bounces must have integer values
+        """
+        if type(par) != int:
+            raise TypeError("Number of bounces must have integer values.")
+        self.total_bounces = par
+        bpy.context.scene.cycles.max_bounces = self.total_bounces
+
+
+    def get_glossy_bounces(self) -> int:
+        """
+        Get glossy bounces setting for the BODY instance
+
+        Raises:
+            ValueError : BODY instance has mismatching property
+
+        Returns:
+            glossy bounces : setting of glossy bounces property
+        """
+        if bpy.context.scene.cycles.glossy_bounces != self.glossy_bounces:
+            raise ValueError("parameter mismatch between workspaces.")
+        return self.glossy_bounces
+
+
+    def set_glossy_bounces(self, par: int) -> None:
+        """
+        Set glossy bounces property for the BODY instance
+
+        Args:
+            par (int) : scalar value for glossy bounces property
+
+        Raises:
+            TypeError : number of bounces must have integer values
+        """
+        if type(par) != int:
+            raise TypeError("Number of bounces must have integer values.")
+        self.glossy_bounces = par
+        bpy.context.scene.cycles.glossy_bounces = self.glossy_bounces
+
+
+    def get_transmission(self) -> int:
+        """
+        Get transmission bounces setting for the BODY instance
+
+        Raises:
+            ValueError : BODY instance has mismatching property
+
+        Returns:
+            transmission bounces : setting of transmission bounces property
+        """
+        if bpy.context.scene.cycles.transmission_bounces != self.transmission:
+            raise ValueError("parameter mismatch between workspaces.")
+        return self.transmission
+
+
+    def set_transmission(self, par: int) -> None:
+        """
+        Set transmission bounces property for the BODY instance
+
+        Args:
+            par (int) : scalar value for transmission bounces property
+
+        Raises:
+            TypeError : number of bounces must have integer values
+        """
+        if type(par) != int:
+            raise TypeError("Number of bounces must have integer values.")
+        self.transmission = par
+        bpy.context.scene.cycles.transmission_bounces = self.transmission
+
+
+    def get_volume_bounces(self) -> int:
+        """
+        Get volume bounces setting for the BODY instance
+
+        Raises:
+            ValueError : BODY instance has mismatching property
+
+        Returns:
+            volume bounces : setting of volume bounces property
+        """
+        if bpy.context.scene.cycles.volume_bounces != self.volume_bounces:
+            raise ValueError("parameter mismatch between workspaces.")
+        return self.volume_bounces
+
+
+    def set_volume_bounces(self, par: int) -> None:
+        """
+        Set volume bounces property for the BODY instance
+
+        Args:
+            par (int) : scalar value for volume bounces property
+
+        Raises:
+            TypeError : number of bounces must have integer values
+        """
+        if type(par) != int:
+            raise TypeError("Number of bounces must have integer values.")
+        self.volume_bounces = par
+        bpy.context.scene.cycles.volume_bounces = self.volume_bounces
+
+
+    def get_transparent_bounces(self) -> int:
+        """
+        Get transparent bounces setting for the BODY instance
+
+        Raises:
+            ValueError : BODY instance has mismatching property
+
+        Returns:
+            transparent bounces : setting of transparent bounces property
+        """
+        if bpy.context.scene.cycles.transparent_max_bounces != self.transparent_bounces:
+            raise ValueError("parameter mismatch between workspaces.")
+        return self.transparent_bounces
+
+
+    def set_transparent_bounces(self, par: int) -> None:
+        """
+        Set transparent bounces property for the BODY instance
+
+        Args:
+            par (int) : scalar value for transparent bounces property
+
+        Raises:
+            TypeError : number of bounces must have integer values
+        """
+        if type(par) != int:
+            raise TypeError("Number of bounces must have integer values.")
+        self.transparent_bounces = par
+        bpy.context.scene.cycles.transparent_max_bounces = self.transparent_bounces

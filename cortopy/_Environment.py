@@ -6,6 +6,8 @@ import numpy as np
 import bpy 
 import os
 import cortopy as corto
+import OpenEXR
+import Imath
 
 class Environment:
     """
@@ -86,14 +88,7 @@ class Environment:
         quat_cam = self.camera.get_orientation()
         return quat_body, quat_cam
     
-    def PositionAll(self, state: corto.State, index: int = 0) -> None :
-        """
-        Set position and orientation of BODY, CAM, and SUN instances in the scene
-
-        Args:
-            state: instance of cortopy.State class containing scene, geometry, and body settings
-            index: (optional) geometry config file may contain multiple configurations, this index selects a specific sample, by default it gathers the first one available.
-        """
+    def get_poses_from_geometry(state: corto.State, index: int = 0):
         # Unpack relative poses from the state
         position_cam = state.geometry['camera']['position'][index]
         orientation_cam = state.geometry['camera']['orientation'][index]
@@ -107,6 +102,39 @@ class Environment:
                 position_body.append(state.geometry[f"body_{ii+1}"]['position'][index])
                 orientation_body.append(state.geometry[f"body_{ii+1}"]['orientation'][index])     
         position_sun = state.geometry['sun']['position'][index]
+
+        return position_cam, orientation_cam, position_body, orientation_body, position_sun
+    
+    def get_poses_from_list(state, poses: list):
+        # Unpack relative poses from the state
+        position_cam = poses[0]
+        orientation_cam = poses[1]
+        if state.n_bodies==1:
+            position_body = poses[2]
+            orientation_body = poses[3]
+        else:
+            position_body = []
+            orientation_body = []
+            for ii in range(0,state.n_bodies):
+                position_body.append(poses[2][ii])
+                orientation_body.append(poses[3][ii])     
+        position_sun = poses[4]
+
+        return position_cam, orientation_cam, position_body, orientation_body, position_sun
+    
+
+    def PositionAll(self, state: corto.State, index: int = None, poses:list = None) -> None :
+        """
+        Set position and orientation of BODY, CAM, and SUN instances in the scene
+
+        Args:
+            state: instance of cortopy.State class containing scene, geometry, and body settings
+            index: (optional) geometry config file may contain multiple configurations, this index selects a specific sample, by default it gathers the first one available.
+        """
+        if index is not None:
+            position_cam, orientation_cam, position_body, orientation_body, position_sun = Environment.get_poses_from_geometry(state,index)
+        elif index is None and poses is not None:
+            position_cam, orientation_cam, position_body, orientation_body, position_sun = Environment.get_poses_from_list(state, poses)
 
         # Set bodies positions and orientations
         self.camera.set_position(position_cam)
@@ -135,18 +163,66 @@ class Environment:
         rendering_name = '{}.png'.format(str(int(index)).zfill(6))
         bpy.context.scene.render.filepath = os.path.join(state.path["output_path"],'img',rendering_name)
         bpy.context.scene.frame_current = index
-        bpy.ops.render.render(write_still = True)
+        if bpy.context.scene.render.engine == 'CYCLES':
+            bpy.context.scene.render.engine = 'CYCLES'
+            bpy.context.scene.cycles.shading_system = True
+            bpy.ops.render.render(write_still = True)
+
+        if depth_flag and bpy.context.scene.render.engine == 'CYCLES':
+            Environment.GenerateDepthMap(state,index)
+            
         
-        if depth_flag: # TODO: debug while its not saving anything in output
-            z = bpy.data.images['Viewer Node']#TODO: does this work with multiple viewer nodes?
-            w, h = z.size
-            dmap = np.array(z.pixels[:], dtype=np.float16)
-            dmap = np.reshape(dmap, (h, w, 4))[:,:,0]
-            dmap = np.rot90(dmap, k=2)
-            dmap = np.fliplr(dmap)
-            txtname = '{num:06d}'
-            depth_dir = os.path.join(state.path["output_path"],'depth')
-            if not os.path.exists(depth_dir):
-                os.makedirs(depth_dir)
-            np.savetxt(os.path.join(state.path["output_path"],'depth', txtname.format(num=(index+0)) + '.txt'), dmap, delimiter=' ',fmt='%.5f')    
+        if bpy.context.scene.render.engine == 'BLENDER_EEVEE_NEXT':
+            # EEVEE cache between renders — disable
+            bpy.context.scene.render.use_persistent_data = False
+            # If you don't use the compositor, disable nodes
+            bpy.context.scene.use_nodes = False
+            bpy.ops.render.render(write_still = True, use_viewport=False)
+            rr = bpy.data.images.get("Render Result")
+            if rr:
+                # frees float buffers/tiles in RAM without destroying the datablock
+                rr.buffers_free()
         return
+    
+    def GenerateDepthMap(state, index, precision: int = 2):
+        """
+        Generate a depthmap and save it both in .exr and .txt formats.
+
+        Args:
+            state: instance of cortopy.State class containing scene, geometry, and body settings
+            index: (optional) geometry config file may contain multiple configurations, this index selects a specific sample, by default it gathers the first one available.
+            precision: number of decimal digits to save in the .txt file (default = 5)
+
+        Note: 
+            A higher precision means a larger size depth map. Tune this according to your needs
+        """
+
+        txtname = '{num:06d}'
+        # Define the depth folder and create it if needed
+        depth_dir = os.path.join(state.path["output_path"], 'depth_txt')
+        if not os.path.exists(depth_dir):
+            os.makedirs(depth_dir)
+
+        # Path to the saved EXR depth file
+        exr_path = os.path.join(state.path["output_path"],'depth_exr', txtname.format(num=(index)) + '.exr')
+
+        # Open the EXR file
+        exr = OpenEXR.InputFile(exr_path)
+
+        # Get image resolution from the EXR header
+        header = exr.header()
+        dw = header['dataWindow']
+        width = dw.max.x - dw.min.x + 1
+        height = dw.max.y - dw.min.y + 1
+
+        # Define pixel type
+        pt = Imath.PixelType(Imath.PixelType.FLOAT)
+
+        # Read depth from 'V' channel (as EXR stores grayscale depth in V)
+        depth_str = exr.channel('V', pt)
+        depth_np = np.frombuffer(depth_str, dtype=np.float32).reshape(height, width)
+        # Remove the 1e9 max values and susbtite them with zeros
+        depth_np_clean = np.where(depth_np >= 1e9, 0, depth_np)
+        # Save depth map as a .txt with the precision specified by "precision". 
+        txt_path = os.path.join(depth_dir, txtname.format(num=(index)) + '.txt')
+        np.savetxt(txt_path, depth_np_clean, fmt=f'%.{precision}f', delimiter=' ')

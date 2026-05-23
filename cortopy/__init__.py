@@ -14,6 +14,9 @@ Copyright (c) 2023 Mattia Pugliatti
 __all__ = (
     "version",
     "Camera",
+    "LiDAR",
+    "TimeOfFlight",
+    "StructuredLight",
     "Body",
     "Sun",
     "State",
@@ -21,11 +24,15 @@ __all__ = (
     "Rendering"
     "PostPro",
     "Shading",
-    "Compositing"
+    "Compositing",
+    "DataProcessing"
 )
 
 from ._version import __version__
 from ._Camera import Camera
+from ._LiDAR import LiDAR
+from ._TimeOfFlight import TimeOfFlight
+from ._StructuredLight import StructuredLight
 from ._Body import Body
 from ._Sun import Sun
 from ._State import State
@@ -34,3 +41,4 @@ from ._Rendering import Rendering
 from ._Shading import Shading
 from ._Compositing import Compositing
 from ._Utils import Utils 
+from ._DataProcessing import DataProcessing
