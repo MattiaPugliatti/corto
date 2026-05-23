@@ -14,6 +14,7 @@ To install the library you have two options:
 Then you can install a virtual environment in VSC with the modules listed in the requirements.txt
 
 If you have problems installing the bpy library into VSC, contact the authors. 
+NOTE: you need to install 4.2.0. Future releases will be made compatible with newer versions. 
 
 To run a tutorial, you need to populate the input folder with one of the scenarios from:
 
@@ -26,7 +27,7 @@ Download the scenario of interest, and then locate it into the input folder. The
 	- _Body.py
 	- ...
 - input 
-	- S05_Didymos_Milani (from GDrive)
+	- S01a_Eros (from GDrive, see the link)
 - monet
 	- input
 	- output
@@ -34,7 +35,7 @@ Download the scenario of interest, and then locate it into the input folder. The
 - scripts 
 - tutorials
 	- ...
-	- S06_Didymos_Milani.py
+	- S01a_Eros.py
 - .gitignore
 - LICENSE
 - requirements.txt
@@ -138,7 +139,7 @@ The characteristics for the Scenarios from S00 to S10 are summarized in the foll
 | S07_Mars_Phobos_Deimos.py | Mars, Phobos, and Deimos | create_branch_albedo_mix (x3) | YES | Depth, Slopes, Mask, Mask w. Shadows | Example of a multi-body architecture. |
 | S08_Earth.py | Earth | Earth, Atmosphere, Clouds | YES | NO | Example of a multi-body architecture for a celestial body with an atmosphere. |
 | S09_Frankenstein_Asteroids.py | Multiple Asteroids | Randomized texture PBSDF | NO | Mask, Mask w. Shadows | Showcases domain randomization via procedully generated asteroid textures. |
-| S10_Spacecraft.py | Dawn | None (loaded from object) | YES | NO | - |
+| S10_Spacecraft.py | Dawn | None (loaded from object) | YES | Depth, Slopes | - |
 
 # How to run a tutorial script (Visual Studio Code reccomended)
 
