@@ -10,15 +10,21 @@ Currently, the _cortopy_ library uses bpy 4.2.0 and Python 3.11.7. Optionally, B
 
 CORTO can be used in a variety of lunar application from  far, medium, and close navigation regimes. For example, you can use CORTO to generate high-fidelity images with lunar craters and their labels, which you can use to develop crater detection and navigation pipelines. 
 
+<p align="center">
 <img src="docs/img/CORTO_examples_1.png" alt="CORTO Examples 1" width="600">
+</p>
 
 CORTO can also be used to render artificial satellites. You can use CORTO to get normal and depth maps of the target satellites or you can use it to get istance segmentation labels to train image processing algorithms that are capable to distinguish an antenna from a solar panel. You can play with different noise settings, and you can generate images of satelittes with Earth in the background as a disturbance. Lastly, you can generate grayscale and RGB images as well as LiDAR, Structured light, and ToF sensor's output.
 
+<p align="center">
 <img src="docs/img/CORTO_examples_2.png" alt="CORTO Examples 2" width="600">
+</p>
 
 Lastly, CORTO has been originally developed to generate image-label pairs for the Didymos system to develop, validate, and test the image processing of the Milani mission: at its hearth, CORTO was born to provide flexibility in generating image-label pair datasets for a variety of tasks focused on small bodies. These functionalities still exists and over the year they have been extended. CORTO can be used to generate instance segmentation masks for multi-body systems, it can be used to generate depth and normal maps, to generate synthetic images of procedurally generated shapes (in conjunction with monet), images of mixed planetary-moon systems (e.g. Mars-Phobos-Deimos), as well as images with BRDF functions that model different material properties.
 
+<p align="center">
 <img src="docs/img/CORTO_examples_3.png" alt="CORTO Examples 3" width="600">
+</p>
 
 Currently, material properties can be simulated by standalone or mixed shading trees comprising: 
 - _diffuseBSDF_
@@ -193,14 +199,14 @@ To shape your own scenario, you can imitate the ones provided in the tutorials. 
 |    v2.0    |Stable release; Extended scnario set; OSL-shader enabled; LiDAR, Structured Light and ToF sensors enabled; Fix bugs|
 
 # Collaborative history
-Many student, researchers, and professionals have contributed to CORTO functionalities over the year. In most cases, you can trace these functionalities back from their commit, in this section key CORTO contributors are listed. 
+Many students, researchers, and professionals have contributed to CORTO functionalities over the years. In most cases, you can trace these functionalities back to their commits. In this section, we honor CORTO contributors: 
 
-- Mattia Pugliatti (2020-present): started the core functionalities relative to small bodies. Current mantainer and developer.
+- Mattia Pugliatti (2020-present): started the core functionalities related to small bodies. Current maintainer and developer.
 - Carmine Buonagura (2021-2026): principal developer of monet, co-developer of many small body functionalities.
 - Michele Maestrini (2023-2026): dev team member, strategy, maintenance, artificial satellite scenarios.
 - Niccolo Faraco (2023-2026): dev team member, strategy, maintenance, artificial satellite scenarios.
 - Andrea Pizzetti (2023-2026): dev team member, strategy, maintenance, BRDF functions. 
-- Dario Pisanti (2023-2026): dev team member, strategy, maintenance, mars scenario.
+- Dario Pisanti (2023-2026): dev team member, strategy, maintenance, Mars scenario.
 - Omar Elzeiny (2024-2025): M.Sc. Thesis work. Developed the high-resolution close-proximity lunar tile scenario.
 - Tolgahan Tanrikulu (2025-2026): M.Sc. Thesis work. Developed the optimized Mars-Phobos-Deimos scenario.
 
