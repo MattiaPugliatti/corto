@@ -20,25 +20,37 @@ Currently, the _cortopy_ library uses bpy 4.2.0 and Python 3.11.7. Optionally, B
         <li><a href="#experimental-installation">Experimental installation</a></li>
       </ul>
     </li>
-    <li><a href="#directories-descriptions">Directories descriptions</a></li>
+    <li><a href="#folders-description">Folders description</a></li>
+ 	<li><a href="#tutorials">Tutorials</a></li>
+      <ul>
+        <li><a href="#tutorials-existing">Running an existing tutorial</a></li>
+        <li><a href="#tutorials-new">Running your own script</a></li>
+      </ul>
+	<li><a href="#changelog">Changelog</a></li>
+ 	<li><a href="#contributors">Contributors</a></li>
+   	<li><a href="#references">References</a></li>
+	<ul>
+		<li><a href="#corto-direct-ref">CORTO and MONET references</a></li>
+		<li><a href="#corto-indirect-ref">Other works in which CORTO was used</a></li>
+	</ul>
   </ol>
 </details>
 
 # Use cases
 
-CORTO can be used in a variety of lunar application from  far, medium, and close navigation regimes. For example, you can use CORTO to generate high-fidelity images with lunar craters and their labels, which you can use to develop crater detection and navigation pipelines. 
+CORTO can be used in a variety of lunar applications from far, medium, and close navigation regimes. For example, you can use CORTO to generate high-fidelity images with lunar craters and their labels, which you can use to develop crater detection and navigation pipelines. 
 
 <p align="center">
 <img src="docs/img/CORTO_examples_1.png" alt="CORTO Examples 1" width="600">
 </p>
 
-CORTO can also be used to render artificial satellites. You can use CORTO to get normal and depth maps of the target satellites or you can use it to get istance segmentation labels to train image processing algorithms that are capable to distinguish an antenna from a solar panel. You can play with different noise settings, and you can generate images of satelittes with Earth in the background as a disturbance. Lastly, you can generate grayscale and RGB images as well as LiDAR, Structured light, and ToF sensor's output.
+CORTO can also be used to render artificial satellites. You can use CORTO to get normal and depth maps of the target satellites or you can use it to get instance segmentation labels to train image processing algorithms that are capable of distinguishing an antenna from a solar panel. You can play with different noise settings, and you can generate images of satellites with Earth in the background as a disturbance. Lastly, you can generate grayscale and RGB images as well as LiDAR, Structured light, and ToF sensors' output.
 
 <p align="center">
 <img src="docs/img/CORTO_examples_2.png" alt="CORTO Examples 2" width="600">
 </p>
 
-Lastly, CORTO has been originally developed to generate image-label pairs for the Didymos system to develop, validate, and test the image processing of the Milani mission: at its hearth, CORTO was born to provide flexibility in generating image-label pair datasets for a variety of tasks focused on small bodies. These functionalities still exists and over the year they have been extended. CORTO can be used to generate instance segmentation masks for multi-body systems, it can be used to generate depth and normal maps, to generate synthetic images of procedurally generated shapes (in conjunction with monet), images of mixed planetary-moon systems (e.g. Mars-Phobos-Deimos), as well as images with BRDF functions that model different material properties.
+Lastly, CORTO was originally developed to generate image-label pairs for the Didymos system to develop, validate, and test the image processing of the Milani mission: at its heart, CORTO was born to provide flexibility in generating image-label pair datasets for a variety of tasks focused on small bodies. These functionalities still exist, and over the years they have been extended. CORTO can be used to generate instance segmentation masks for multi-body systems; it can be used to generate depth and normal maps, to generate synthetic images of procedurally generated shapes (in conjunction with monet), images of mixed planetary-moon systems (e.g., Mars-Phobos-Deimos), as well as images with BRDF functions that model different material properties.
 
 <p align="center">
 <img src="docs/img/CORTO_examples_3.png" alt="CORTO Examples 3" width="600">
@@ -128,17 +140,19 @@ If compatibility checks pass but `pip install bpy` still returns an error (e.g.,
    ```
 This should allow the installation to complete if all compatibility requirements are satisfied. 
 
-# Directories description
-(cortopy) all classes of the corto library are included in this folder
-(docs) all documentation associated with the corto library 
-(input) input folder, here is were you need to position all necessary input to run a scenario
-(monet) this folder contains the monet tool. Refer to the specific readme within this folder to run monet and generate proceedural asteroid models
-(output) this is the output folder in which the image-label pairs are going to be saved. It's going to be populated once you ran a script or a tutorial
-(scripts) all sorts of useful scripts are grouped here
-(test) test folder for CI/CD
-(tutorials) folder containing several tutorials. They are meant to showcase high-level functionalities and the user should use them for imitation learning.
+# Folders description
 
-# Tutorial summary 
+- (**cortopy**) the entire corto library codebase 
+- (**docs**) all documentation
+- (**input**) input folder, where you need to position all necessary input files to run a scenario
+- (**monet**) Codebase of the monet tool. For mor info, refer to the monet readme
+- (**output**) Output folder in which the image-label pairs are going to be saved. It's going to be populated once you run a script or a tutorial
+- (**scripts**) all sorts of useful scripts that can be used in CORTO
+- (**test**) test folder for CI/CD
+- (**tutorials**) Tutorials are meant to showcase CORTO high-level functionalities. The user is encouraged to take them and bend to their need via imitation learning.
+
+# Tutorials 
+What follows is a brief description of each tutorial. You are encouraged to explore them at your own pace.
 
 - basics_Generated_Cloud_input.py : it can be used to showcase the generation of a geometry input in the form of a point cloud
 
@@ -150,29 +164,29 @@ This should allow the installation to complete if all compatibility requirements
 
 - S01a_Eros.py : it's the high-fidelity, slower version that you can use to generate image-label pairs of the asteroid Eros. It uses CYCLES.
 
--S01b_Eros.py : it's the lower-fidelity, faster verion that you can use to generate images of the asteroid Eros. It uses EEVEE.
+- S01b_Eros.py : it's the lower-fidelity, faster verion that you can use to generate images of the asteroid Eros. It uses EEVEE.
 
--S02_Itokawa.py : it generates image-label pairs for the Itokawa scenario. 
+- S02_Itokawa.py : it generates image-label pairs for the Itokawa scenario. 
 
--S03_Apophis.py : it generates image-label pairs for the Apophis scenario using OSL shaders.
+- S03_Apophis.py : it generates image-label pairs for the Apophis scenario using OSL shaders.
 
--S04_Bennu.py: it generates image-label pairs for the Bennu scenario. 
+- S04_Bennu.py: it generates image-label pairs for the Bennu scenario. 
 
--S05a_Didymos_Milani.py: it generates image-label pairs for the Didymos scenario. It has been used for the training of the image processing of Milani (it uses older shape models).
+- S05a_Didymos_Milani.py: it generates image-label pairs for the Didymos scenario. It has been used for the training of the image processing of Milani (it uses older shape models).
 
--S05b_Didymos.py : it generate image-label pairs for the Didymos scenario.
+- S05b_Didymos.py : it generate image-label pairs for the Didymos scenario.
 
--S06a_Moon.py : it generates image-label pairs of the Moon in a full-disk scenario. Useful for far and medium navigation regimes (approach, far orbits). 
+- S06a_Moon.py : it generates image-label pairs of the Moon in a full-disk scenario. Useful for far and medium navigation regimes (approach, far orbits). 
 
--S06b_Moon.py : it generates image-label pairs of a tile of the Lunar surface. Useful for close navigation regimes (low orbits, landings).
+- S06b_Moon.py : it generates image-label pairs of a tile of the Lunar surface. Useful for close navigation regimes (low orbits, landings).
 
--S07_Mars_Phobos_Deimos.py : it generates image-label pairs for the Mars, Phobos, Deimos multi-body scenario. 
+- S07_Mars_Phobos_Deimos.py : it generates image-label pairs for the Mars, Phobos, Deimos multi-body scenario. 
 
--S08_Earth.py : it generates image-label pairs with Earth as a target body. 
+- S08_Earth.py : it generates image-label pairs with Earth as a target body. 
 
--S09_Frankenstein_Asteroids : it generate image-label pairs for a variety of asteroids with procedurally generated artificial textures. 
+- S09_Frankenstein_Asteroids : it generate image-label pairs for a variety of asteroids with procedurally generated artificial textures. 
 
--S10_Spacecraft.py : it generates image-label pairs about artificial spacecraft. 
+- S10_Spacecraft.py : it generates image-label pairs about artificial spacecraft. 
 
 
 The characteristics for the Scenarios from S00 to S10 are summarized in the following table
@@ -194,23 +208,24 @@ The characteristics for the Scenarios from S00 to S10 are summarized in the foll
 | S09_Frankenstein_Asteroids.py | Multiple Asteroids | Randomized texture PBSDF | NO | Mask, Mask w. Shadows | Showcases domain randomization via procedurally generated asteroid textures. |
 | S10_Spacecraft.py | Dawn | None (loaded from object) | YES | Depth, Slopes | - |
 
-# How to run a tutorial script (Visual Studio Code recommended)
+## Running an existing tutorial
+Visual Studio Code is highly recommended.
 
 1) Install the repository 
 
 2) Install the bpy module in VSC
 
-3) Install the other libraries listed in the requirements.txt into a virtual environment
+3) Create a virtual environment and install the dependencies listed in the requirements.txt
 
-4) Download the input data for a specific tutorial from https://drive.google.com/drive/folders/1K3e5MyQin6T9d_EXLG_gFywJt3I18r6H?usp=sharing (For example, download the folder S05_Didymos)
+4) Download the input data for a specific tutorial and position it in the "_input_" folder. You can download the data from https://drive.google.com/drive/folders/1K3e5MyQin6T9d_EXLG_gFywJt3I18r6H?usp=sharing (For example, download the folder S05_Didymos)
 
-5) Run the script from the "tutorial" folder (For example, the S05_Didymos.py)
+5) Run the script from the "_tutorial_" folder (For example, the >>S05_Didymos.py)
 
-6) You should see images and labels generated in an output folder
+6) Image-label pairs are going to be generated in the corresponding "_output_" folder
 
-# How to run your own script 
-To shape your own scenario, you can imitate the ones provided in the tutorials. In case you are happy with one of the scenarios, you can always change the inputs and or the tutorial script. Otherwise, if you want to use this library for a different target, you can also imitate how the tutorials script builds on it.
+## Running your own script 
 
+To shape your own scenario, you can imitate the ones provided in the tutorials. We are constantly adding new tutorials and capabilities to stimulate users to create their own scripts!  
 
 # Changelog
 
@@ -219,32 +234,58 @@ To shape your own scenario, you can imitate the ones provided in the tutorials. 
 |    v1.1    |Added Lambert and Oren-Nayar; Added multi-body capability; Added scenario script for Mars-Phobos-Deimos; Fix bugs|
 |    v2.0    |Stable release; Extended scnario set; OSL-shader enabled; LiDAR, Structured Light and ToF sensors enabled; Fix bugs|
 
-# Collaborative history
+# Contributors
 Many students, researchers, and professionals have contributed to CORTO functionalities over the years. In most cases, you can trace these functionalities back to their commits. In this section, we honor CORTO contributors: 
 
-- Mattia Pugliatti (2020-present): started the core functionalities related to small bodies. Current maintainer and developer.
-- Carmine Buonagura (2021-2026): principal developer of monet, co-developer of many small body functionalities.
-- Michele Maestrini (2023-2026): dev team member, strategy, maintenance, artificial satellite scenarios.
-- Niccolo Faraco (2023-2026): dev team member, strategy, maintenance, artificial satellite scenarios.
-- Andrea Pizzetti (2023-2026): dev team member, strategy, maintenance, BRDF functions. 
-- Dario Pisanti (2023-2026): dev team member, strategy, maintenance, Mars scenario.
-- Omar Elzeiny (2024-2025): M.Sc. Thesis work. Developed the high-resolution close-proximity lunar tile scenario.
-- Tolgahan Tanrikulu (2025-2026): M.Sc. Thesis work. Developed the optimized Mars-Phobos-Deimos scenario.
+- **Mattia Pugliatti** (2020-present): started the core functionalities related to small bodies. Current maintainer and developer.
+- **Carmine Buonagura** (2021-2026): principal developer of monet, co-developer of many small body functionalities.
+- **Michele Maestrini** (2023-2026): dev team member, strategy, maintenance, artificial satellite scenarios.
+- **Niccolo Faraco** (2023-2026): dev team member, strategy, maintenance, artificial satellite scenarios.
+- **Andrea Pizzetti** (2023-2026): dev team member, strategy, maintenance, BRDF functions. 
+- **Dario Pisanti** (2023-2026): dev team member, strategy, maintenance, Mars scenario.
+- **Omar Elzeiny** (2024-2025): M.Sc. Thesis work. Developed the high-resolution close-proximity lunar tile scenario.
+- **Tolgahan Tanrikulu** (2025-2026): M.Sc. Thesis work. Developed the optimized Mars-Phobos-Deimos scenario.
+
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated** and are indeed **encouraged!**
+
+If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement" or contact the developers.
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+If you find CORTO useful, don't forget to give the project a star! Thanks again!
 
 # References 
 
 ## CORTO and MONET references 
 
-- [A1] - "CORTO: The Celestial Object Rendering TOol at DART Lab", Pugliatti M., Buonagura C., Topputo F. Sensors (2023), Vol.23, doi: 10.3390/s23239595
-- [A2] - "MONET: The Minor Body Generator Tool at DART Lab", Buonagura C., Pugliatti M., Topputo F. Sensors (2024), Vol. 24 
-- [A3] - "Design and cases studies of CORTO, an open access rendering tool for celestial and artificial bodies", Pugliatti M., Buonagura C., Pisanti D., Niccolo F., Pizzetti A., Maestrini M., Topputo F. 75th International Astronautical Congress, Milan, Italy (2024)
-- [A4] - "Photorealistic Camera Images for the Japanese MMX Project: Towards Phobos", Tanrikulu T., Pugliatti M., Ciccarelli E., Baresi N. ISSFD conference (2026) 
+- [A4] - (2026) "Photorealistic Camera Images for the Japanese MMX Project: Towards Phobos", Tanrikulu T., Pugliatti M., Ciccarelli E., Baresi N. ISSFD conference (2026)
+  
+- [A3] - (2024) "Design and cases studies of CORTO, an open access rendering tool for celestial and artificial bodies", Pugliatti M., Buonagura C., Pisanti D., Niccolo F., Pizzetti A., Maestrini M., Topputo F. 75th International Astronautical Congress, Milan, Italy (2024)
+  
+- [A2] - (2024) "MONET: The Minor Body Generator Tool at DART Lab", Buonagura C., Pugliatti M., Topputo F. Sensors (2024), Vol. 24
 
-## Other works in which CORTO has been used
-- [B1] - "Navigating the Unknown: Data-Driven Image Processing and Simplified Renderings for Small Body Flybys" by Pugliatti M, McMahon J.W. (2025)
-- [B2] - "Robustness analysis of data driven image processing methods for autonomous navigation with application to the Hera mission" by Kalunthantrige A., Pugliatti M., Feng J., Gil-Fernandez J., Topputo F. 75th International Astronautical Congress, Milan, Italy (2024)
-- [B3] - "The image processing of Milani: challenges after DART impact" by Pugliatti M., Giordano C., Topputo F. ESA-GNC conference 2023
-- [B4] - "The vision-based guidance, navigation, and control system of Hera’s Milani Cubesat" by Pugliatti M., Piccolo F., Rizza A., Franzese V., Topputo F. Acta Astronautica (2023)
+- [A1] - (2023) "CORTO: The Celestial Object Rendering TOol at DART Lab", Pugliatti M., Buonagura C., Topputo F. Sensors (2023), Vol.23, doi: 10.3390/s23239595
+  
+## Other works in which CORTO was used
+
+(highlight)
+
+- [B6] - (2025) "Navigating the Unknown: Data-Driven Image Processing and Simplified Renderings for Small Body Flybys" by Pugliatti M, McMahon J.W.
+
+- [B5] - (2024) "Robustness analysis of data driven image processing methods for autonomous navigation with application to the Hera mission" by Kalunthantrige A., Pugliatti M., Feng J., Gil-Fernandez J., Topputo F. 75th International Astronautical Congress, Milan, Italy
+  
+- [B4] - (2023) "The image processing of Milani: challenges after DART impact" by Pugliatti M., Giordano C., Topputo F. ESA-GNC conference 2023
+  
+- [B3] - (2023) "The vision-based guidance, navigation, and control system of Hera’s Milani Cubesat" by Pugliatti M., Piccolo F., Rizza A., Franzese V., Topputo F. Acta Astronautica (2023)
+
+- [B2] - (2023) "A Multi-Scale Labelled Dataset for Boulder Segmentation and Navigation on Small Bodies" by Pugliatti M., Maestrini M. 2023 IAC Conference, Baku
+
+- [B1] - (2022) "Boulders identification on small bodies under varying illumination conditions" by Pugliatti M., Topputo F., 3rd Space Imaging Workshop, Atlanta
+  
 
 
 <!-- MARKDOWN LINKS & IMAGES -->
