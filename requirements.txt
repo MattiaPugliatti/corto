@@ -1,5 +1,5 @@
 numpy 
-matplotlib 
+matplotlib==3.9.0
 scipy
 datetime
 bpy==4.2.0
